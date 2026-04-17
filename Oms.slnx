@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/Oms.Api/Oms.Api.csproj" />
+  </Folder>
+</Solution>

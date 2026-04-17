@@ -1,0 +1,41 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: oms
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+      - oms_mysql_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ./backend/Oms.Api
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__OmsDb: Server=mysql;Port=3306;Database=oms;User=root;Password=root;
+      Jwt__Issuer: oms
+      Jwt__Audience: oms
+      Jwt__SigningKey: CHANGE_ME_IN_PROD_please_use_env_or_secret_store
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  oms_mysql_data:
+
