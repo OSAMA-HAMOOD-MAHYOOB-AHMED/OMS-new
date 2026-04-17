@@ -2,20 +2,19 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Oms.Api.Catalog;
+using Oms.Api.Dashboards;
+using Oms.Api.Invoicing;
 
 namespace Oms.Api.Orders;
 
 [ApiController]
 [Route("api/orders")]
-public sealed class OrdersController(ProductRepository products, OrderRepository orders) : ControllerBase
+public sealed class OrdersController(ProductRepository products, OrderRepository orders, InvoiceService invoices) : ControllerBase
 {
     [HttpPost("checkout")]
     [Authorize(Roles = "Customer")]
     public async Task<ActionResult<CheckoutResponse>> Checkout([FromBody] CheckoutRequest req)
     {
-        if (!string.Equals(req.PaymentMethod, "Cash", StringComparison.OrdinalIgnoreCase))
-            return BadRequest("Phase 1 supports only Cash checkout.");
-
         if (req.Items is null || req.Items.Count == 0)
             return BadRequest("Cart is empty.");
 
@@ -36,7 +35,16 @@ public sealed class OrdersController(ProductRepository products, OrderRepository
 
         try
         {
-            var orderID = await orders.CreateCashOrder(email, expanded);
+            string orderID;
+
+            if (string.Equals(req.PaymentMethod, "Cash", StringComparison.OrdinalIgnoreCase))
+                orderID = await orders.CreateCashOrder(email, expanded);
+            else if (string.Equals(req.PaymentMethod, "Credit", StringComparison.OrdinalIgnoreCase))
+                orderID = await orders.CreateCreditOrder(email, expanded);
+            else
+                return BadRequest("Invalid payment method. Use Cash or Credit.");
+
+            await invoices.GenerateAndSend(orderID, email);
             return Ok(new CheckoutResponse(orderID));
         }
         catch (InvalidOperationException ex)
@@ -55,6 +63,54 @@ public sealed class OrdersController(ProductRepository products, OrderRepository
 
         var rows = await orders.ListMine(email);
         return Ok(rows);
+    }
+
+    [HttpGet]
+    [Authorize(Roles = "Retail Salesperson")]
+    public async Task<ActionResult<IReadOnlyList<RecentOrderRow>>> ListAll([FromQuery] int limit = 50)
+    {
+        var rows = await orders.ListAllOrders(Math.Clamp(limit, 1, 200));
+        return Ok(rows);
+    }
+
+    [HttpPost("status")]
+    [Authorize(Roles = "Retail Salesperson")]
+    public async Task<IActionResult> UpdateStatus([FromBody] UpdateOrderStatusRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.OrderID) || string.IsNullOrWhiteSpace(req.OrderStatus))
+            return BadRequest("Missing fields.");
+
+        try
+        {
+            await orders.UpdateStatus(req.OrderID, req.OrderStatus);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("credit/decision")]
+    [Authorize(Roles = "Retail Salesperson")]
+    public async Task<IActionResult> CreditDecision([FromBody] CreditDecisionRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.OrderID))
+            return BadRequest("Missing orderID.");
+
+        try
+        {
+            if (req.Approve)
+                await orders.SetCreditStatus(req.OrderID, "Approved", "Placed");
+            else
+                await orders.SetCreditStatus(req.OrderID, "Rejected", "Credit Rejected");
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }
 

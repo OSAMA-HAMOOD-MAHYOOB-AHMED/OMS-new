@@ -61,3 +61,15 @@ CREATE TABLE IF NOT EXISTS Inventory_Audit (
   CONSTRAINT fk_audit_inventory FOREIGN KEY (inventoryID) REFERENCES Inventory(inventoryID)
 );
 
+-- Phase 2: simple invoice capture (for demo email/content)
+CREATE TABLE IF NOT EXISTS Invoice (
+  invoiceID BIGINT PRIMARY KEY AUTO_INCREMENT,
+  orderID VARCHAR(50) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  body MEDIUMTEXT NOT NULL,
+  createdAt DATETIME NOT NULL,
+  CONSTRAINT fk_invoice_order FOREIGN KEY (orderID) REFERENCES `Order`(orderID),
+  CONSTRAINT fk_invoice_user FOREIGN KEY (email) REFERENCES `User`(email)
+);
+

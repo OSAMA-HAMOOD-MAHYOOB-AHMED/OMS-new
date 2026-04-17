@@ -10,6 +10,7 @@ import CustomerOrdersPage from '../views/CustomerOrdersPage.vue'
 import WarehouseInventoryPage from '../views/WarehouseInventoryPage.vue'
 import SalesDashboardPage from '../views/SalesDashboardPage.vue'
 import WarehouseDashboardPage from '../views/WarehouseDashboardPage.vue'
+import SalesOrdersPage from '../views/SalesOrdersPage.vue'
 
 function roleHome(role) {
   if (role === 'Customer') return { name: 'products' }
@@ -29,6 +30,7 @@ const router = createRouter({
     { path: '/customer/orders', name: 'customerOrders', component: CustomerOrdersPage, meta: { auth: true, roles: ['Customer'] } },
     { path: '/warehouse/inventory', name: 'warehouseInventory', component: WarehouseInventoryPage, meta: { auth: true, roles: ['Warehouse Manager'] } },
     { path: '/dashboard/sales', name: 'salesDashboard', component: SalesDashboardPage, meta: { auth: true, roles: ['Retail Salesperson'] } },
+    { path: '/sales/orders', name: 'salesOrders', component: SalesOrdersPage, meta: { auth: true, roles: ['Retail Salesperson'] } },
     { path: '/dashboard/warehouse', name: 'warehouseDashboard', component: WarehouseDashboardPage, meta: { auth: true, roles: ['Warehouse Manager'] } },
   ],
 })

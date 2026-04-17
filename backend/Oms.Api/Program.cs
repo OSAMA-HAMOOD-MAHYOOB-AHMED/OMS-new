@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Oms.Api.Auth;
 using Oms.Api.Data;
+using Oms.Api.Invoicing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,18 @@ builder.Services.AddSingleton<Oms.Api.Catalog.ProductRepository>();
 builder.Services.AddSingleton<Oms.Api.Orders.OrderRepository>();
 builder.Services.AddSingleton<Oms.Api.Inventory.InventoryRepository>();
 builder.Services.AddSingleton<Oms.Api.Dashboards.DashboardRepository>();
+builder.Services.AddSingleton<InvoiceRepository>();
+builder.Services.AddSingleton<InvoiceService>();
+builder.Services.AddSingleton<ConsoleEmailSender>();
+builder.Services.AddSingleton<SmtpEmailSender>();
+builder.Services.AddSingleton<IEmailSender>(sp =>
+{
+    // Prefer SMTP if enabled, otherwise log invoice to console.
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    return string.Equals(cfg["Smtp:Enabled"], "true", StringComparison.OrdinalIgnoreCase)
+        ? sp.GetRequiredService<SmtpEmailSender>()
+        : sp.GetRequiredService<ConsoleEmailSender>();
+});
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
                  ?? throw new InvalidOperationException("Missing Jwt configuration.");

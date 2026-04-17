@@ -12,6 +12,7 @@
         <RouterLink v-if="isAuthed && role === 'Customer'" class="link" to="/cart">Cart</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Warehouse Manager'" class="link" to="/warehouse/inventory">Inventory</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Retail Salesperson'" class="link" to="/dashboard/sales">Sales Dashboard</RouterLink>
+        <RouterLink v-if="isAuthed && role === 'Retail Salesperson'" class="link" to="/sales/orders">Orders</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Warehouse Manager'" class="link" to="/dashboard/warehouse">Warehouse Dashboard</RouterLink>
       </nav>
 

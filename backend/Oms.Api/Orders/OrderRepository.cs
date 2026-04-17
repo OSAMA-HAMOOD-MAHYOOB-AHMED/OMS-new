@@ -1,11 +1,113 @@
 using System.Data;
 using Dapper;
 using Oms.Api.Data;
+using Oms.Api.Dashboards;
 
 namespace Oms.Api.Orders;
 
 public sealed class OrderRepository(IDbConnectionFactory db)
 {
+    public async Task<string> CreateCreditOrder(
+        string customerEmail,
+        IReadOnlyList<(string ProductID, string ProductName, decimal Price, int Quantity)> items)
+    {
+        var orderID = $"ORD-{Guid.NewGuid():N}".ToUpperInvariant();
+        var now = DateTime.UtcNow;
+
+        var total = items.Sum(i => i.Price * i.Quantity);
+
+        using var conn = db.Create();
+        if (conn is System.Data.Common.DbConnection dbc)
+            await dbc.OpenAsync();
+        else
+            conn.Open();
+
+        using var tx = conn.BeginTransaction();
+
+        // Lock inventory rows to avoid races
+        const string invSql = """
+            SELECT inventoryID AS InventoryID, productID AS ProductID, quantityAvailable AS QuantityAvailable
+            FROM Inventory
+            WHERE productID = @productID
+            FOR UPDATE;
+            """;
+
+        foreach (var item in items)
+        {
+            var inv = await conn.QuerySingleOrDefaultAsync<(string InventoryID, string ProductID, int QuantityAvailable)>(
+                invSql, new { productID = item.ProductID }, tx);
+
+            if (inv.InventoryID is null)
+            {
+                tx.Rollback();
+                throw new InvalidOperationException($"No inventory row for product {item.ProductID}.");
+            }
+
+            if (inv.QuantityAvailable < item.Quantity)
+            {
+                tx.Rollback();
+                throw new InvalidOperationException($"Insufficient stock for product {item.ProductID}.");
+            }
+
+            const string updateInv = """
+                UPDATE Inventory
+                SET quantityAvailable = quantityAvailable - @qty
+                WHERE inventoryID = @inventoryID;
+                """;
+            await conn.ExecuteAsync(updateInv, new { qty = item.Quantity, inventoryID = inv.InventoryID }, tx);
+
+            const string updateProduct = """
+                UPDATE Product
+                SET stockLevel = GREATEST(stockLevel - @qty, 0)
+                WHERE productID = @productID;
+                """;
+            await conn.ExecuteAsync(updateProduct, new { qty = item.Quantity, productID = item.ProductID }, tx);
+
+            const string audit = """
+                INSERT INTO Inventory_Audit (inventoryID, action, deltaQuantity, note, createdAt)
+                VALUES (@inventoryID, 'DEDUCT', @delta, @note, @createdAt);
+                """;
+            await conn.ExecuteAsync(audit, new
+            {
+                inventoryID = inv.InventoryID,
+                delta = -item.Quantity,
+                note = $"Order {orderID}",
+                createdAt = now
+            }, tx);
+        }
+
+        const string insertOrder = """
+            INSERT INTO `Order` (orderID, email, orderDate, totalPrice, orderStatus, paymentMethod, creditStatus)
+            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Pending Credit', 'Credit', 'Pending');
+            """;
+        await conn.ExecuteAsync(insertOrder, new
+        {
+            orderID,
+            email = customerEmail,
+            orderDate = now,
+            totalPrice = total
+        }, tx);
+
+        const string insertItem = """
+            INSERT INTO Order_Item (orderID, productID, quantity, subtotal)
+            VALUES (@orderID, @productID, @quantity, @subtotal);
+            """;
+
+        foreach (var item in items)
+        {
+            await conn.ExecuteAsync(insertItem, new
+            {
+                orderID,
+                productID = item.ProductID,
+                quantity = item.Quantity,
+                subtotal = item.Price * item.Quantity
+            }, tx);
+        }
+
+        tx.Commit();
+        return orderID;
+    }
+
     public async Task<string> CreateCashOrder(
         string customerEmail,
         IReadOnlyList<(string ProductID, string ProductName, decimal Price, int Quantity)> items)
@@ -158,6 +260,51 @@ public sealed class OrderRepository(IDbConnectionFactory db)
             CreditStatus = h.CreditStatus,
             Items = grouped.TryGetValue(h.OrderID, out var its) ? its : Array.Empty<OrderItemResponse>()
         }).ToList();
+    }
+
+    public async Task<IReadOnlyList<RecentOrderRow>> ListAllOrders(int limit = 50)
+    {
+        const string sql = """
+            SELECT
+              orderID AS OrderID,
+              orderDate AS OrderDate,
+              totalPrice AS TotalPrice,
+              orderStatus AS OrderStatus,
+              paymentMethod AS PaymentMethod,
+              email AS Email
+            FROM `Order`
+            ORDER BY orderDate DESC
+            LIMIT @limit;
+            """;
+
+        using var conn = db.Create();
+        var rows = await conn.QueryAsync<RecentOrderRow>(sql, new { limit });
+        return rows.ToList();
+    }
+
+    public async Task UpdateStatus(string orderID, string orderStatus)
+    {
+        using var conn = db.Create();
+        const string sql = """
+            UPDATE `Order`
+            SET orderStatus = @orderStatus
+            WHERE orderID = @orderID;
+            """;
+        var rows = await conn.ExecuteAsync(sql, new { orderID, orderStatus });
+        if (rows != 1) throw new InvalidOperationException("Unknown orderID.");
+    }
+
+    public async Task SetCreditStatus(string orderID, string creditStatus, string orderStatus)
+    {
+        using var conn = db.Create();
+        const string sql = """
+            UPDATE `Order`
+            SET creditStatus = @creditStatus,
+                orderStatus = @orderStatus
+            WHERE orderID = @orderID;
+            """;
+        var rows = await conn.ExecuteAsync(sql, new { orderID, creditStatus, orderStatus });
+        if (rows != 1) throw new InvalidOperationException("Unknown orderID.");
     }
 }
 

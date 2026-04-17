@@ -28,9 +28,15 @@
           <span>Total</span>
           <strong>${{ cart.total.toFixed(2) }}</strong>
         </div>
-        <button class="btn" :disabled="loading" @click="checkoutCash">
-          {{ loading ? 'Placing order...' : 'Checkout (Cash)' }}
-        </button>
+        <div class="pay">
+          <select v-model="paymentMethod">
+            <option value="Cash">Cash</option>
+            <option value="Credit">Credit</option>
+          </select>
+          <button class="btn" :disabled="loading" @click="checkout">
+            {{ loading ? 'Placing order...' : `Checkout (${paymentMethod})` }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -51,13 +57,15 @@ const loading = ref(false)
 const error = ref(null)
 const success = ref(null)
 
-async function checkoutCash() {
+const paymentMethod = ref('Cash')
+
+async function checkout() {
   loading.value = true
   error.value = null
   success.value = null
   try {
     const res = await api.post('/api/orders/checkout', {
-      paymentMethod: 'Cash',
+      paymentMethod: paymentMethod.value,
       items: cart.items.map((i) => ({ productID: i.productID, quantity: i.quantity })),
     })
     success.value = res.data.orderID
@@ -127,6 +135,19 @@ async function checkoutCash() {
   align-items: center;
   gap: 12px;
   padding-top: 8px;
+}
+.pay {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.6);
 }
 .total {
   display: flex;
