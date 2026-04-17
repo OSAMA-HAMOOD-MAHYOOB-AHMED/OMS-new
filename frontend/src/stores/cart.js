@@ -40,6 +40,10 @@ export const useCartStore = defineStore('cart', {
       this.items = []
       this.persist()
     },
+    setItems(items) {
+      this.items = Array.isArray(items) ? items : []
+      this.persist()
+    },
   },
   getters: {
     total: (s) => s.items.reduce((acc, i) => acc + i.price * i.quantity, 0),

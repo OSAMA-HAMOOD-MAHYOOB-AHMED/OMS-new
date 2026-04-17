@@ -33,6 +33,8 @@ builder.Services.AddSingleton<Oms.Api.Catalog.ProductRepository>();
 builder.Services.AddSingleton<Oms.Api.Orders.OrderRepository>();
 builder.Services.AddSingleton<Oms.Api.Inventory.InventoryRepository>();
 builder.Services.AddSingleton<Oms.Api.Dashboards.DashboardRepository>();
+builder.Services.AddSingleton<Oms.Api.Users.UserProfileRepository>();
+builder.Services.AddSingleton<Oms.Api.Admin.AdminRepository>();
 builder.Services.AddSingleton<InvoiceRepository>();
 builder.Services.AddSingleton<InvoiceService>();
 builder.Services.AddSingleton<ConsoleEmailSender>();

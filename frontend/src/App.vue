@@ -10,10 +10,15 @@
         <RouterLink class="link" to="/">Home</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Customer'" class="link" to="/products">Products</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Customer'" class="link" to="/cart">Cart</RouterLink>
+        <RouterLink v-if="isAuthed && role === 'Customer'" class="link" to="/customer/orders">Orders</RouterLink>
+        <RouterLink v-if="isAuthed && role === 'Customer'" class="link" to="/profile">Profile</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Warehouse Manager'" class="link" to="/warehouse/inventory">Inventory</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Retail Salesperson'" class="link" to="/dashboard/sales">Sales Dashboard</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Retail Salesperson'" class="link" to="/sales/orders">Orders</RouterLink>
         <RouterLink v-if="isAuthed && role === 'Warehouse Manager'" class="link" to="/dashboard/warehouse">Warehouse Dashboard</RouterLink>
+        <RouterLink v-if="isAuthed && role === 'Admin'" class="link" to="/admin/dashboard">Admin</RouterLink>
+        <RouterLink v-if="isAuthed && role === 'Admin'" class="link" to="/admin/products">Products</RouterLink>
+        <RouterLink v-if="isAuthed && role === 'Admin'" class="link" to="/admin/customers">Customers</RouterLink>
       </nav>
 
       <div class="actions">

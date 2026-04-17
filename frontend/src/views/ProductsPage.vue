@@ -14,7 +14,7 @@
     <div v-else-if="error" class="error">{{ error }}</div>
 
     <div v-else class="grid">
-      <article v-for="p in products" :key="p.productID" class="product">
+      <article v-for="p in products" :key="p.productID" class="product" @click="open(p.productID)">
         <div class="top">
           <div class="name">{{ p.name }}</div>
           <div class="cat">{{ p.category }}</div>
@@ -24,7 +24,7 @@
           <div class="price">${{ Number(p.price).toFixed(2) }}</div>
           <div class="stock">In stock: {{ p.stockLevel }}</div>
         </div>
-        <div v-if="role === 'Customer'" class="actions">
+        <div v-if="role === 'Customer'" class="actions" @click.stop>
           <button class="btn small" :disabled="p.stockLevel <= 0" @click="add(p)">Add to cart</button>
         </div>
       </article>
@@ -37,6 +37,7 @@ import { onMounted, ref, computed } from 'vue'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
+import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
 auth.hydrate()
@@ -44,6 +45,7 @@ const role = computed(() => auth.role)
 
 const cart = useCartStore()
 cart.hydrate()
+const router = useRouter()
 
 const products = ref([])
 const loading = ref(false)
@@ -64,6 +66,10 @@ async function load() {
 
 function add(p) {
   cart.add(p, 1)
+}
+
+function open(productID) {
+  router.push({ name: 'productDetails', params: { id: productID } })
 }
 
 onMounted(load)
@@ -98,6 +104,7 @@ onMounted(load)
   background: rgba(255, 255, 255, 0.55);
   display: grid;
   gap: 8px;
+  cursor: pointer;
 }
 .name {
   font-weight: 800;

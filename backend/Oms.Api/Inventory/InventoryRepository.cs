@@ -84,6 +84,11 @@ public sealed class InventoryRepository(IDbConnectionFactory db)
     public async Task Checkup(string inventoryID, string? note)
     {
         using var conn = db.Create();
+        if (conn is System.Data.Common.DbConnection dbc)
+            await dbc.OpenAsync();
+        else
+            conn.Open();
+
         const string update = """
             UPDATE Inventory
             SET lastCheckupDate = @now
