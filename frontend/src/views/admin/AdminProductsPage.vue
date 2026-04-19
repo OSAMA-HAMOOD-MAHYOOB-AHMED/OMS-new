@@ -1,14 +1,17 @@
 <template>
-  <section class="card">
-    <div class="row">
+  <section class="page">
+    <div class="head">
       <div>
-        <h2>Product Management</h2>
-        <p class="muted">Create/edit/delete products (demo CRUD).</p>
+        <h1 class="h1">Product Management</h1>
+        <p class="sub">Manage your product inventory</p>
       </div>
-      <button class="btn secondary" :disabled="loading" @click="load">Refresh</button>
+      <div class="headActions">
+        <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
+        <button class="btnPrimary" type="button" @click="focusPanel">+ Add Product</button>
+      </div>
     </div>
 
-    <div class="panel">
+    <div id="admin-product-panel" class="panel">
       <h3 class="h3">Add / Update</h3>
       <div class="form">
         <input v-model.trim="form.productID" placeholder="ProductID (e.g. P-NEW-01)" />
@@ -18,35 +21,50 @@
         <input v-model.number="form.stockLevel" type="number" step="1" placeholder="StockLevel" />
         <input v-model.trim="form.description" placeholder="Description (optional)" />
       </div>
-      <button class="btn" :disabled="saving" @click="save">
+      <button class="btnPrimary" type="button" :disabled="saving" @click="save">
         {{ saving ? 'Saving...' : 'Save product' }}
       </button>
       <p v-if="ok" class="success">{{ ok }}</p>
       <p v-if="error" class="error">{{ error }}</p>
     </div>
 
+    <div class="toolbar">
+      <div class="search">
+        <span class="searchIcon" aria-hidden="true">⌕</span>
+        <input v-model.trim="q" class="searchInput" type="search" placeholder="Search products..." />
+      </div>
+    </div>
+
     <div class="tableWrap">
       <table class="table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Name</th>
+            <th>Product</th>
             <th>Category</th>
             <th>Price</th>
             <th>Stock</th>
-            <th></th>
+            <th class="right">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="p in products" :key="p.productID">
-            <td class="mono">{{ p.productID }}</td>
-            <td>{{ p.name }}</td>
+          <tr v-for="p in filtered" :key="p.productID">
+            <td>
+              <div class="prodCell">
+                <div class="thumb" :style="{ backgroundImage: `url(${productImage(p)})` }" />
+                <div>
+                  <div class="pName">{{ p.name }}</div>
+                  <div class="pId mono">{{ p.productID }}</div>
+                </div>
+              </div>
+            </td>
             <td>{{ p.category }}</td>
-            <td>${{ Number(p.price).toFixed(2) }}</td>
-            <td>{{ p.stockLevel }}</td>
-            <td class="actions">
-              <button class="btn secondary small" @click="edit(p)">Edit</button>
-              <button class="btn danger small" @click="del(p.productID)">Delete</button>
+            <td class="strong">${{ Number(p.price).toFixed(2) }}</td>
+            <td>
+              <span class="stock" :class="stockClass(p.stockLevel)">{{ p.stockLevel }}</span>
+            </td>
+            <td class="actions right">
+              <button class="iconBtn" type="button" title="Edit" @click="edit(p)">✎</button>
+              <button class="iconBtn danger" type="button" title="Delete" @click="del(p.productID)">🗑</button>
             </td>
           </tr>
         </tbody>
@@ -56,7 +74,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { api } from '../../api/client'
 
 const products = ref([])
@@ -64,6 +82,8 @@ const loading = ref(false)
 const saving = ref(false)
 const error = ref(null)
 const ok = ref(null)
+
+const q = ref('')
 
 const form = reactive({
   productID: '',
@@ -73,6 +93,34 @@ const form = reactive({
   stockLevel: 0,
   description: '',
 })
+
+const filtered = computed(() => {
+  const needle = q.value.toLowerCase()
+  if (!needle) return products.value
+  return products.value.filter((p) => `${p.name} ${p.category} ${p.productID}`.toLowerCase().includes(needle))
+})
+
+function focusPanel() {
+  document.getElementById('admin-product-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function productImage(p) {
+  const c = String(p.category || '').toLowerCase()
+  if (c.includes('charge')) return '/mock/frame-03.png'
+  if (c.includes('ear')) return '/mock/frame-06.png'
+  if (c.includes('power')) return '/mock/frame-09.png'
+  if (c.includes('case')) return '/mock/frame-12.png'
+  const id = String(p.productID || 'x')
+  const n = (id.charCodeAt(id.length - 1) || 7) % 16
+  const idx = String(n + 1).padStart(2, '0')
+  return `/mock/frame-${idx}.png`
+}
+
+function stockClass(level) {
+  const n = Number(level) || 0
+  if (n <= 10) return 'low'
+  return 'ok'
+}
 
 async function load() {
   loading.value = true
@@ -138,31 +186,47 @@ onMounted(load)
 </script>
 
 <style scoped>
-.card {
+.page {
+  display: grid;
+  gap: 14px;
+}
+.head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 950;
+  letter-spacing: -0.8px;
+  color: var(--text-h);
+}
+.sub {
+  margin: 6px 0 0;
+  color: var(--text);
+  font-weight: 650;
+}
+.headActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.panel {
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 18px;
-}
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  gap: 12px;
-}
-.muted {
-  color: var(--text);
-  margin-top: 6px;
-}
-.panel {
-  margin-top: 12px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.55);
+  padding: 14px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
 }
 .h3 {
   margin: 0 0 10px;
   color: var(--text-h);
+  font-weight: 950;
 }
 .form {
   display: grid;
@@ -170,69 +234,184 @@ onMounted(load)
   gap: 10px;
 }
 input {
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 12px 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.6);
+  background: #fff;
+  font-weight: 650;
+  color: var(--text-h);
 }
-.tableWrap {
-  margin-top: 12px;
-  overflow: auto;
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.search {
+  flex: 1 1 420px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.55);
+  padding: 10px 12px;
+  background: #fff;
+}
+.searchIcon {
+  color: var(--muted);
+  font-weight: 900;
+}
+.searchInput {
+  border: 0;
+  outline: none;
+  width: 100%;
+  font-weight: 650;
+  color: var(--text-h);
+  background: transparent;
+}
+
+.tableWrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
 }
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 860px;
+  min-width: 980px;
 }
-th,
-td {
+thead th {
   text-align: left;
-  padding: 12px;
-  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 950;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
 }
-th {
-  font-size: 13px;
-  color: var(--text);
+tbody td {
+  padding: 14px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
 }
-.actions {
+.right {
+  text-align: right;
+}
+.prodCell {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: end;
+  gap: 12px;
+  align-items: center;
 }
-.mono {
-  font-family: ui-monospace, Consolas, monospace;
-}
-.btn {
-  border: 0;
-  cursor: pointer;
-  background: #007aff;
-  color: white;
-  padding: 10px 14px;
+.thumb {
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
-  font-weight: 800;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background-size: cover;
+  background-position: center;
+  background-color: #f1f5f9;
+  flex: 0 0 auto;
 }
-.secondary {
-  background: rgba(0, 0, 0, 0.08);
+.pName {
+  font-weight: 950;
   color: var(--text-h);
 }
-.small {
-  padding: 8px 10px;
-  border-radius: 10px;
+.pId {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 750;
 }
-.danger {
-  background: rgba(180, 35, 24, 0.92);
+.strong {
+  font-weight: 950;
+  color: var(--text-h);
+}
+.stock {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  border: 1px solid transparent;
+}
+.stock.ok {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.22);
+}
+.stock.low {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.22);
+}
+.actions {
+  display: inline-flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.iconBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+  font-weight: 950;
+  cursor: pointer;
+}
+.iconBtn.danger {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.btnPrimary {
+  border: 0;
+  cursor: pointer;
+  background: var(--brand-blue);
+  color: white;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 950;
+  box-shadow: var(--shadow-sm);
+}
+.btnGhost {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-weight: 950;
+  cursor: pointer;
+  color: var(--text-h);
 }
 .error {
   margin-top: 10px;
   color: #b42318;
+  background: rgba(180, 35, 24, 0.08);
+  border: 1px solid rgba(180, 35, 24, 0.2);
+  padding: 8px 10px;
+  border-radius: 12px;
 }
 .success {
   margin-top: 10px;
   color: #05603a;
+  background: rgba(5, 96, 58, 0.08);
+  border: 1px solid rgba(5, 96, 58, 0.18);
+  padding: 8px 10px;
+  border-radius: 12px;
 }
 </style>
 

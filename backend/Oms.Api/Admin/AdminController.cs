@@ -50,5 +50,12 @@ public sealed class AdminController(AdminRepository admin, DashboardRepository d
         var rows = await admin.ListCustomers(q);
         return Ok(rows);
     }
+
+    [HttpGet("reports/sales")]
+    public async Task<ActionResult<AdminSalesReportResponse>> SalesReport([FromQuery] int dailyLimit = 60)
+    {
+        var res = await admin.SalesReport(dailyLimit);
+        return Ok(res);
+    }
 }
 

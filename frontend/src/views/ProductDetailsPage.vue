@@ -1,41 +1,50 @@
 <template>
-  <section class="card">
-    <button class="link" @click="$router.push({ name: 'products' })">← Back to products</button>
+  <section class="page">
+    <button class="back" type="button" @click="$router.push({ name: 'products' })">← Back to products</button>
 
     <div v-if="loading" class="muted">Loading...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
 
-    <div v-else-if="product" class="wrap">
+    <div v-else-if="product" class="heroCard">
       <div class="media">
-        <div class="img">{{ product.name.slice(0, 1).toUpperCase() }}</div>
-        <div class="thumbs">
-          <div class="thumb" v-for="n in 4" :key="n">{{ n }}</div>
-        </div>
+        <div class="img" :style="{ backgroundImage: `url(${productImage(product)})` }" />
       </div>
 
       <div class="info">
-        <h2>{{ product.name }}</h2>
-        <div class="meta">
-          <span class="pill">{{ product.category }}</span>
-          <span class="muted">In stock: {{ product.stockLevel }}</span>
+        <div class="cat">{{ product.category }}</div>
+        <h1 class="title">{{ product.name }}</h1>
+
+        <div class="priceRow">
+          <div class="price">${{ Number(product.price).toFixed(2) }}</div>
+          <div class="stock">{{ product.stockLevel }} in stock</div>
         </div>
-        <p class="desc">{{ product.description || '—' }}</p>
+
+        <p class="desc">{{ product.description || 'Premium accessory with reliable performance for everyday use.' }}</p>
 
         <div class="buy">
-          <div class="price">${{ Number(product.price).toFixed(2) }}</div>
           <div class="qty">
-            <span class="muted">Qty</span>
+            <span class="lbl">Quantity</span>
             <input v-model.number="qty" type="number" min="1" />
           </div>
-          <button class="btn" :disabled="product.stockLevel <= 0" @click="addToCart">Add to cart</button>
+          <button class="btn" type="button" :disabled="product.stockLevel <= 0" @click="addToCart">🛒 Add to Cart</button>
         </div>
+
+        <div class="divider" />
+
+        <div class="featuresTitle">Product Features</div>
+        <ul class="features">
+          <li><span class="ficon blue" aria-hidden="true">▣</span> High quality materials and construction.</li>
+          <li><span class="ficon green" aria-hidden="true">🛡</span> 1 year warranty included.</li>
+          <li><span class="ficon purple" aria-hidden="true">🚚</span> Free shipping on orders over $50.</li>
+        </ul>
       </div>
     </div>
 
     <div v-if="related.length" class="related">
-      <h3 class="h3">Related products</h3>
+      <h2 class="h2">Related Products</h2>
       <div class="grid">
         <article v-for="p in related" :key="p.productID" class="product" @click="open(p.productID)">
+          <div class="mini" :style="{ backgroundImage: `url(${productImage(p)})` }" />
           <div class="name">{{ p.name }}</div>
           <div class="muted">{{ p.category }}</div>
         </article>
@@ -90,154 +99,232 @@ function open(productID) {
   router.push({ name: 'productDetails', params: { id: productID } })
 }
 
+function productImage(p) {
+  const c = String(p.category || '').toLowerCase()
+  if (c.includes('charge')) return '/mock/frame-04.png'
+  if (c.includes('ear')) return '/mock/frame-07.png'
+  if (c.includes('power')) return '/mock/frame-10.png'
+  if (c.includes('case')) return '/mock/frame-13.png'
+  const id = String(p.productID || 'x')
+  const n = (id.charCodeAt(id.length - 1) || 7) % 16
+  const idx = String(n + 1).padStart(2, '0')
+  return `/mock/frame-${idx}.png`
+}
+
 watch(id, load)
 onMounted(load)
 </script>
 
 <style scoped>
-.card {
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 18px;
+.page {
+  display: grid;
+  gap: 14px;
 }
-.link {
+.back {
   border: 0;
   background: transparent;
   cursor: pointer;
-  color: #007aff;
-  font-weight: 700;
+  color: var(--brand-blue);
+  font-weight: 900;
   padding: 0;
+  justify-self: start;
 }
-.wrap {
-  margin-top: 12px;
+.heroCard {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
 }
 @media (min-width: 980px) {
-  .wrap {
-    grid-template-columns: 380px 1fr;
+  .heroCard {
+    grid-template-columns: 1.05fr 1fr;
   }
 }
 .media {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.55);
+  padding: 14px;
+  background: linear-gradient(180deg, #f8fafc, #ffffff);
 }
 .img {
-  height: 240px;
-  border-radius: 12px;
-  border: 1px solid rgba(17, 24, 39, 0.1);
-  background: radial-gradient(circle at top left, rgba(0, 200, 150, 0.18), rgba(0, 122, 255, 0.14));
-  display: grid;
-  place-items: center;
-  font-size: 72px;
-  font-weight: 900;
-  color: var(--text-h);
-}
-.thumbs {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-.thumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  border: 1px solid rgba(17, 24, 39, 0.1);
-  display: grid;
-  place-items: center;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.7);
+  height: min(420px, 52vh);
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background-size: cover;
+  background-position: center;
+  background-color: #eef2ff;
 }
 .info {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.55);
+  padding: 18px 18px 20px;
 }
-.meta {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-.pill {
+.cat {
   font-size: 12px;
-  font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 122, 255, 0.2);
-  background: rgba(0, 122, 255, 0.08);
-  color: #007aff;
+  font-weight: 950;
+  color: var(--brand-blue);
+  letter-spacing: 0.02em;
 }
-.muted {
-  color: var(--text);
-}
-.desc {
-  margin-top: 10px;
+.title {
+  margin: 8px 0 0;
+  font-size: 34px;
+  line-height: 1.05;
+  font-weight: 950;
+  letter-spacing: -0.9px;
   color: var(--text-h);
 }
+.priceRow {
+  margin-top: 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.price {
+  font-size: 30px;
+  font-weight: 950;
+  letter-spacing: -0.8px;
+  color: var(--text-h);
+}
+.stock {
+  color: var(--muted);
+  font-weight: 850;
+}
+.desc {
+  margin-top: 12px;
+  color: var(--text);
+  line-height: 1.55;
+}
 .buy {
+  margin-top: 14px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(17, 24, 39, 0.08);
 }
-@media (min-width: 520px) {
+@media (min-width: 640px) {
   .buy {
-    grid-template-columns: 1fr 140px 160px;
+    grid-template-columns: 160px 1fr;
     align-items: end;
   }
 }
-.price {
-  font-size: 28px;
+.qty {
+  display: grid;
+  gap: 8px;
+}
+.lbl {
+  font-size: 12px;
   font-weight: 900;
-  color: var(--text-h);
+  color: #334155;
 }
 .qty input {
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 12px 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.6);
+  background: #fff;
   box-sizing: border-box;
+  font-weight: 800;
 }
 .btn {
   border: 0;
   cursor: pointer;
-  background: #007aff;
+  background: var(--brand-blue);
   color: white;
-  padding: 10px 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 950;
+  box-shadow: var(--shadow-sm);
+}
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+.featuresTitle {
+  font-weight: 950;
+  color: var(--text-h);
+}
+.features {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  color: var(--text-h);
+  font-weight: 650;
+}
+.features li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.ficon {
+  width: 34px;
+  height: 34px;
   border-radius: 12px;
-  font-weight: 800;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  font-weight: 950;
 }
+.ficon.blue {
+  color: var(--brand-blue);
+  background: rgba(37, 99, 235, 0.08);
+}
+.ficon.green {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.10);
+}
+.ficon.purple {
+  color: #6d28d9;
+  background: rgba(139, 92, 246, 0.10);
+}
+
 .related {
-  margin-top: 16px;
+  margin-top: 6px;
 }
-.h3 {
-  margin: 0 0 10px;
+.h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 950;
+  letter-spacing: -0.3px;
   color: var(--text-h);
 }
 .grid {
+  margin-top: 12px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .product {
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.55);
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.mini {
+  height: 110px;
+  background-size: cover;
+  background-position: center;
+  background-color: #eef2ff;
 }
 .name {
-  font-weight: 900;
+  padding: 10px 12px 0;
+  font-weight: 950;
   color: var(--text-h);
+}
+.muted {
+  padding: 4px 12px 12px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
 }
 .error {
   margin-top: 12px;

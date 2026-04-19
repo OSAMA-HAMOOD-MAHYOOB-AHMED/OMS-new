@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Oms.Api.Catalog;
 using Oms.Api.Dashboards;
 using Oms.Api.Invoicing;
+using Oms.Api.Models;
 
 namespace Oms.Api.Orders;
 
@@ -66,7 +67,7 @@ public sealed class OrdersController(ProductRepository products, OrderRepository
     }
 
     [HttpGet]
-    [Authorize(Roles = "Retail Salesperson")]
+    [Authorize(Roles = $"{UserRole.RetailSalesperson},{UserRole.Admin}")]
     public async Task<ActionResult<IReadOnlyList<RecentOrderRow>>> ListAll([FromQuery] int limit = 50)
     {
         var rows = await orders.ListAllOrders(Math.Clamp(limit, 1, 200));
@@ -74,7 +75,7 @@ public sealed class OrdersController(ProductRepository products, OrderRepository
     }
 
     [HttpPost("status")]
-    [Authorize(Roles = "Retail Salesperson")]
+    [Authorize(Roles = $"{UserRole.RetailSalesperson},{UserRole.Admin}")]
     public async Task<IActionResult> UpdateStatus([FromBody] UpdateOrderStatusRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.OrderID) || string.IsNullOrWhiteSpace(req.OrderStatus))
@@ -92,7 +93,7 @@ public sealed class OrdersController(ProductRepository products, OrderRepository
     }
 
     [HttpPost("credit/decision")]
-    [Authorize(Roles = "Retail Salesperson")]
+    [Authorize(Roles = $"{UserRole.RetailSalesperson},{UserRole.Admin}")]
     public async Task<IActionResult> CreditDecision([FromBody] CreditDecisionRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.OrderID))

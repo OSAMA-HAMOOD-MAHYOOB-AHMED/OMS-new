@@ -17,6 +17,8 @@ import AdminLoginPage from '../views/admin/AdminLoginPage.vue'
 import AdminDashboardPage from '../views/admin/AdminDashboardPage.vue'
 import AdminProductsPage from '../views/admin/AdminProductsPage.vue'
 import AdminCustomersPage from '../views/admin/AdminCustomersPage.vue'
+import AdminOrdersPage from '../views/admin/AdminOrdersPage.vue'
+import AdminReportsPage from '../views/admin/AdminReportsPage.vue'
 
 function roleHome(role) {
   if (role === 'Customer') return { name: 'products' }
@@ -27,7 +29,7 @@ function roleHome(role) {
 }
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', name: 'home', component: HomePage },
     { path: '/login', name: 'login', component: LoginPage, meta: { guestOnly: true } },
@@ -46,6 +48,8 @@ const router = createRouter({
     { path: '/admin/dashboard', name: 'adminDashboard', component: AdminDashboardPage, meta: { auth: true, roles: ['Admin'] } },
     { path: '/admin/products', name: 'adminProducts', component: AdminProductsPage, meta: { auth: true, roles: ['Admin'] } },
     { path: '/admin/customers', name: 'adminCustomers', component: AdminCustomersPage, meta: { auth: true, roles: ['Admin'] } },
+    { path: '/admin/orders', name: 'adminOrders', component: AdminOrdersPage, meta: { auth: true, roles: ['Admin'] } },
+    { path: '/admin/reports', name: 'adminReports', component: AdminReportsPage, meta: { auth: true, roles: ['Admin'] } },
   ],
 })
 

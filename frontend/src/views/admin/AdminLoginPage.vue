@@ -1,24 +1,33 @@
 <template>
-  <div class="card">
-    <h2>Admin Login</h2>
-    <p class="muted">Sign in with an Admin account.</p>
+  <div class="wrap">
+    <div class="card">
+      <div class="avatar" aria-hidden="true">AW</div>
+      <h2 class="h2">Admin Login</h2>
+      <p class="sub">Sign in with an Admin account</p>
 
-    <form class="form" @submit.prevent="submit">
-      <label>
-        <span>Email</span>
-        <input v-model.trim="email" type="email" required />
-      </label>
-      <label>
-        <span>Password</span>
-        <input v-model="password" type="password" required />
-      </label>
+      <form class="form" @submit.prevent="submit">
+        <label class="field">
+          <span class="lbl">Email Address</span>
+          <div class="input">
+            <span class="glyph" aria-hidden="true">✉</span>
+            <input v-model.trim="email" type="email" autocomplete="username" required />
+          </div>
+        </label>
+        <label class="field">
+          <span class="lbl">Password</span>
+          <div class="input">
+            <span class="glyph" aria-hidden="true">🔒</span>
+            <input v-model="password" type="password" autocomplete="current-password" required />
+          </div>
+        </label>
 
-      <button class="btn" :disabled="auth.loading">
-        {{ auth.loading ? 'Signing in...' : 'Sign In' }}
-      </button>
-    </form>
+        <button class="btn" type="submit" :disabled="auth.loading">
+          {{ auth.loading ? 'Signing in...' : 'Sign In' }}
+        </button>
+      </form>
 
-    <p v-if="auth.error" class="error">{{ auth.error }}</p>
+      <p v-if="auth.error" class="error">{{ auth.error }}</p>
+    </div>
   </div>
 </template>
 
@@ -45,48 +54,94 @@ async function submit() {
 </script>
 
 <style scoped>
+.wrap {
+  min-height: calc(100svh - 140px);
+  display: grid;
+  place-items: center;
+  padding: 18px 0;
+}
 .card {
-  max-width: 440px;
-  margin: 10px auto;
+  width: min(520px, 100%);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 18px;
-  background: rgba(255, 255, 255, 0.4);
-  text-align: left;
+  padding: 22px 22px 18px;
+  background: #ffffff;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  margin: 0 auto 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 950;
+  letter-spacing: 0.6px;
+  color: #fff;
+  background: linear-gradient(135deg, #0f172a, var(--brand-blue));
+  box-shadow: var(--shadow-sm);
+}
+.h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: -0.6px;
+  color: var(--text-h);
+}
+.sub {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-weight: 650;
 }
 .form {
   display: grid;
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 16px;
+  text-align: left;
 }
-label span {
-  display: block;
-  font-size: 14px;
-  color: var(--text);
-  margin-bottom: 6px;
+.field {
+  display: grid;
+  gap: 8px;
+}
+.lbl {
+  font-size: 12px;
+  font-weight: 900;
+  color: #334155;
+}
+.input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+.glyph {
+  color: var(--muted);
+  width: 18px;
+  display: grid;
+  place-items: center;
 }
 input {
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.6);
+  border: 0;
+  outline: none;
+  background: transparent;
   color: var(--text-h);
-  box-sizing: border-box;
+  font-weight: 650;
 }
 .btn {
   border: 0;
   cursor: pointer;
-  background: #111827;
+  background: #0f172a;
   color: white;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-radius: 12px;
-  font-weight: 800;
-}
-.muted {
-  margin-top: 8px;
-  color: var(--text);
-  font-size: 14px;
+  font-weight: 950;
+  margin-top: 4px;
+  box-shadow: var(--shadow-sm);
 }
 .error {
   margin-top: 10px;
@@ -95,6 +150,7 @@ input {
   border: 1px solid rgba(180, 35, 24, 0.2);
   padding: 8px 10px;
   border-radius: 12px;
+  text-align: left;
 }
 </style>
 

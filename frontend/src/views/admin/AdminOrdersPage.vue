@@ -3,15 +3,26 @@
     <div class="head">
       <div>
         <h1 class="h1">Order Management</h1>
-        <p class="sub">Approve/reject credit and update order statuses</p>
+        <p class="sub">View and manage customer orders</p>
       </div>
       <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <span class="searchIcon" aria-hidden="true">⌕</span>
+        <input v-model.trim="q" class="searchInput" type="search" placeholder="Search by order ID or customer..." />
+      </div>
+      <select v-model="filterStatus" class="select">
+        <option value="All">All</option>
+        <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
+      </select>
     </div>
 
     <div v-if="loading" class="muted">Loading...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
 
-    <div v-else class="tableWrap">
+    <div v-else class="tableCard">
       <table class="table">
         <thead>
           <tr>
@@ -20,12 +31,11 @@
             <th>Date</th>
             <th>Total</th>
             <th>Status</th>
-            <th>Payment</th>
             <th class="right">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="o in orders" :key="o.orderID">
+          <tr v-for="o in filtered" :key="o.orderID">
             <td class="mono strong">{{ o.orderID }}</td>
             <td>
               <div class="custName">{{ customerName(o.email) }}</div>
@@ -34,27 +44,23 @@
             <td class="mutedTd">{{ formatDate(o.orderDate) }}</td>
             <td class="strong">${{ Number(o.totalPrice).toFixed(2) }}</td>
             <td>
-              <span class="badge" :class="badgeClass(o.orderStatus)">{{ o.orderStatus }}</span>
-            </td>
-            <td class="mutedTd">{{ o.paymentMethod }}</td>
-            <td class="actions right">
-              <div class="stack">
-                <div v-if="o.paymentMethod === 'Credit' && o.orderStatus === 'Pending Credit'" class="credit">
-                  <button class="btnMini" type="button" :disabled="saving" @click="creditDecision(o.orderID, true)">
-                    Approve
-                  </button>
-                  <button class="btnMini danger" type="button" :disabled="saving" @click="creditDecision(o.orderID, false)">
-                    Reject
-                  </button>
-                </div>
-
-                <div class="rowAct">
-                  <select v-model="statusEdits[o.orderID]" class="statusSel">
-                    <option v-for="s in statusChoices(o.orderStatus)" :key="s" :value="s">{{ s }}</option>
-                  </select>
-                  <button class="btnMini primary" type="button" :disabled="saving" @click="setStatus(o.orderID)">Apply</button>
-                </div>
+              <div class="statusRow">
+                <span class="badge" :class="badgeClass(o.orderStatus)">{{ o.orderStatus }}</span>
+                <select v-model="statusEdits[o.orderID]" class="miniSelect">
+                  <option v-for="s in statusChoices(o.orderStatus)" :key="s" :value="s">{{ s }}</option>
+                </select>
               </div>
+              <div class="creditRow" v-if="o.paymentMethod === 'Credit' && o.orderStatus === 'Pending Credit'">
+                <button class="btnMini" type="button" :disabled="saving" @click="creditDecision(o.orderID, true)">Approve</button>
+                <button class="btnMini danger" type="button" :disabled="saving" @click="creditDecision(o.orderID, false)">
+                  Reject
+                </button>
+              </div>
+            </td>
+            <td class="right">
+              <button class="iconBtn" type="button" :disabled="saving" title="Apply status" @click="setStatus(o.orderID)">
+                ✓
+              </button>
             </td>
           </tr>
         </tbody>
@@ -66,14 +72,17 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
-import { api } from '../api/client'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { api } from '../../api/client'
 
 const orders = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const error = ref(null)
 const ok = ref(null)
+
+const q = ref('')
+const filterStatus = ref('All')
 const statusEdits = reactive({})
 
 const settableStatuses = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
@@ -87,6 +96,21 @@ function statusChoices(current) {
   }
   return out
 }
+
+const statusOptions = computed(() => {
+  const s = new Set(orders.value.map((o) => o.orderStatus).filter(Boolean))
+  return Array.from(s).sort((a, b) => a.localeCompare(b))
+})
+
+const filtered = computed(() => {
+  const needle = q.value.toLowerCase()
+  return orders.value.filter((o) => {
+    if (filterStatus.value !== 'All' && o.orderStatus !== filterStatus.value) return false
+    if (!needle) return true
+    const hay = `${o.orderID} ${o.email}`.toLowerCase()
+    return hay.includes(needle)
+  })
+})
 
 function formatDate(iso) {
   const d = new Date(iso)
@@ -117,10 +141,10 @@ function customerId(email) {
 
 function badgeClass(status) {
   const s = String(status || '').toLowerCase()
-  if (s.includes('complete') || s.includes('deliver')) return 'bGreen'
-  if (s.includes('confirm') || s.includes('placed') || s.includes('process') || s.includes('ship')) return 'bBlue'
+  if (s.includes('complete')) return 'bGreen'
+  if (s.includes('confirm')) return 'bBlue'
   if (s.includes('pending') || s.includes('credit')) return 'bAmber'
-  if (s.includes('cancel') || s.includes('reject')) return 'bRed'
+  if (s.includes('cancel')) return 'bRed'
   return 'bGray'
 }
 
@@ -129,7 +153,7 @@ async function load() {
   error.value = null
   ok.value = null
   try {
-    const res = await api.get('/api/orders?limit=100')
+    const res = await api.get('/api/orders?limit=200')
     orders.value = res.data
     for (const o of orders.value) {
       if (!statusEdits[o.orderID]) statusEdits[o.orderID] = o.orderStatus
@@ -184,7 +208,6 @@ onMounted(load)
   align-items: start;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
 }
 .h1 {
   margin: 0;
@@ -196,33 +219,61 @@ onMounted(load)
 .sub {
   margin: 6px 0 0;
   color: var(--text);
-  font-weight: 650;
 }
-.btnGhost {
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px;
   border: 1px solid var(--border);
-  background: #fff;
-  padding: 10px 12px;
   border-radius: 14px;
-  font-weight: 950;
-  cursor: pointer;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.search {
+  flex: 1 1 420px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+.searchIcon {
+  color: var(--muted);
+  font-weight: 900;
+}
+.searchInput {
+  border: 0;
+  outline: none;
+  width: 100%;
+  font-weight: 650;
+  color: var(--text-h);
+  background: transparent;
+}
+.select {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  font-weight: 800;
   color: var(--text-h);
 }
 
-.muted {
-  color: var(--text);
-  margin-top: 6px;
-}
-.tableWrap {
-  overflow: auto;
+.tableCard {
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   background: #fff;
+  overflow: auto;
   box-shadow: var(--shadow-sm);
 }
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1100px;
+  min-width: 980px;
 }
 thead th {
   text-align: left;
@@ -230,7 +281,7 @@ thead th {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  font-weight: 950;
+  font-weight: 900;
   padding: 12px 14px;
   background: #f8fafc;
   border-bottom: 1px solid var(--border);
@@ -251,18 +302,31 @@ tbody td {
   color: var(--text-h);
 }
 .custName {
-  font-weight: 950;
+  font-weight: 900;
   color: var(--text-h);
 }
 .custId {
   margin-top: 4px;
   font-size: 12px;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 750;
 }
 .mutedTd {
   color: var(--text);
   font-weight: 650;
+}
+
+.statusRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.creditRow {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .badge {
@@ -271,7 +335,7 @@ tbody td {
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 950;
+  font-weight: 900;
   border: 1px solid transparent;
 }
 .bGreen {
@@ -300,48 +364,32 @@ tbody td {
   border-color: rgba(148, 163, 184, 0.22);
 }
 
-.actions {
-  display: flex;
-  justify-content: flex-end;
-}
-.stack {
-  display: grid;
-  gap: 10px;
-  justify-items: end;
-}
-.credit {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-.rowAct {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-}
-.statusSel {
-  padding: 8px 10px;
-  border-radius: 12px;
+.miniSelect {
   border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
   background: #fff;
-  font-weight: 850;
+  font-weight: 800;
   color: var(--text-h);
+}
+
+.iconBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+  font-weight: 950;
+  cursor: pointer;
 }
 .btnMini {
   border: 1px solid var(--border);
   background: #fff;
   padding: 8px 10px;
   border-radius: 12px;
-  font-weight: 950;
+  font-weight: 900;
   cursor: pointer;
-}
-.btnMini.primary {
-  border-color: rgba(37, 99, 235, 0.28);
-  background: rgba(37, 99, 235, 0.10);
-  color: #1d4ed8;
 }
 .btnMini.danger {
   border-color: rgba(239, 68, 68, 0.35);
@@ -349,21 +397,31 @@ tbody td {
   color: #b91c1c;
 }
 
+.btnGhost {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  color: var(--text-h);
+}
+
+.muted {
+  color: var(--text);
+}
 .error {
-  margin-top: 12px;
   color: #b42318;
   background: rgba(180, 35, 24, 0.08);
   border: 1px solid rgba(180, 35, 24, 0.2);
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 12px;
 }
 .success {
-  margin-top: 12px;
   color: #05603a;
   background: rgba(5, 96, 58, 0.08);
   border: 1px solid rgba(5, 96, 58, 0.18);
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 12px;
 }
 </style>
-

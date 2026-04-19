@@ -1,11 +1,20 @@
 using Dapper;
 using Oms.Api.Data;
 using Oms.Api.Models;
+using System.Data.Common;
 
 namespace Oms.Api.Admin;
 
 public sealed class AdminRepository(IDbConnectionFactory db)
 {
+    private static async Task OpenAsync(System.Data.IDbConnection conn)
+    {
+        if (conn is DbConnection dbc)
+            await dbc.OpenAsync();
+        else
+            conn.Open();
+    }
+
     public async Task<IReadOnlyList<ProductRow>> ListProducts()
     {
         const string sql = """
@@ -20,6 +29,7 @@ public sealed class AdminRepository(IDbConnectionFactory db)
             ORDER BY name ASC;
             """;
         using var conn = db.Create();
+        await OpenAsync(conn);
         return (await conn.QueryAsync<ProductRow>(sql)).ToList();
     }
 
@@ -36,6 +46,7 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               description = VALUES(description);
             """;
         using var conn = db.Create();
+        await OpenAsync(conn);
         await conn.ExecuteAsync(sql, new
         {
             productID = req.ProductID,
@@ -50,6 +61,7 @@ public sealed class AdminRepository(IDbConnectionFactory db)
     public async Task DeleteProduct(string productID)
     {
         using var conn = db.Create();
+        await OpenAsync(conn);
         const string sql = "DELETE FROM Product WHERE productID = @productID;";
         await conn.ExecuteAsync(sql, new { productID });
     }
@@ -71,7 +83,46 @@ public sealed class AdminRepository(IDbConnectionFactory db)
             """;
 
         using var conn = db.Create();
+        await OpenAsync(conn);
         return (await conn.QueryAsync<AdminCustomerRow>(sql, new { q = string.IsNullOrWhiteSpace(q) ? null : q })).ToList();
+    }
+
+    public async Task<AdminSalesReportResponse> SalesReport(int dailyLimit = 60)
+    {
+        dailyLimit = Math.Clamp(dailyLimit, 7, 120);
+
+        const string dailySql = """
+            SELECT
+              DATE(o.orderDate) AS Day,
+              COUNT(*) AS Orders,
+              SUM(o.totalPrice) AS Revenue,
+              CASE
+                WHEN COUNT(*) = 0 THEN 0
+                ELSE SUM(o.totalPrice) / COUNT(*)
+              END AS AvgValue
+            FROM `Order` o
+            GROUP BY DATE(o.orderDate)
+            ORDER BY Day DESC
+            LIMIT @dailyLimit;
+            """;
+
+        const string statusSql = """
+            SELECT
+              o.orderStatus AS OrderStatus,
+              COUNT(*) AS Orders,
+              SUM(o.totalPrice) AS Revenue
+            FROM `Order` o
+            GROUP BY o.orderStatus
+            ORDER BY Orders DESC, o.orderStatus ASC;
+            """;
+
+        using var conn = db.Create();
+        await OpenAsync(conn);
+
+        var daily = (await conn.QueryAsync<AdminSalesDailyRow>(dailySql, new { dailyLimit })).ToList();
+        var status = (await conn.QueryAsync<AdminOrderStatusBreakdownRow>(statusSql)).ToList();
+
+        return new AdminSalesReportResponse(daily, status);
     }
 }
 
