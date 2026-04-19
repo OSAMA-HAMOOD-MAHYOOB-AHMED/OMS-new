@@ -20,12 +20,26 @@ import AdminCustomersPage from '../views/admin/AdminCustomersPage.vue'
 import AdminOrdersPage from '../views/admin/AdminOrdersPage.vue'
 import AdminReportsPage from '../views/admin/AdminReportsPage.vue'
 
+const AUTH_STORAGE_KEY = 'oms_auth'
+
 function roleHome(role) {
   if (role === 'Customer') return { name: 'products' }
   if (role === 'Retail Salesperson') return { name: 'salesDashboard' }
   if (role === 'Warehouse Manager') return { name: 'warehouseDashboard' }
   if (role === 'Admin') return { name: 'adminDashboard' }
   return { name: 'home' }
+}
+
+function readPersistedToken() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return parsed?.token || null
+  } catch {
+    localStorage.removeItem(AUTH_STORAGE_KEY)
+    return null
+  }
 }
 
 const router = createRouter({
@@ -55,7 +69,12 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
-  if (!auth.token && localStorage.getItem('oms_auth')) auth.hydrate()
+  if (!auth.token && localStorage.getItem(AUTH_STORAGE_KEY)) auth.hydrate()
+
+  // If persistence was cleared but in-memory auth state is stale, reset so guest routes
+  // (like /login) don't incorrectly bounce authenticated users away during logout.
+  const persistedToken = readPersistedToken()
+  if (auth.token && !persistedToken) auth.clear()
 
   if (to.meta.guestOnly && auth.token) return roleHome(auth.role)
 

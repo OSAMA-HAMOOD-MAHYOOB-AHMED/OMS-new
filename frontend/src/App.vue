@@ -125,13 +125,13 @@ async function logout() {
 
   // After logout, don't leave the user on an authenticated-only screen.
   if (wasAdmin) {
-    await router.push({ name: 'adminLogin' })
+    await router.replace({ name: 'adminLogin' }).catch(() => {})
     return
   }
 
   if (route.name === 'login' || route.name === 'register' || route.name === 'adminLogin') return
 
-  await router.push({ name: 'login', query: { next: current } })
+  await router.replace({ name: 'login', query: { next: current } }).catch(() => {})
 }
 </script>
 
