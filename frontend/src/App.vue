@@ -88,7 +88,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
 
@@ -99,6 +99,7 @@ const cart = useCartStore()
 cart.hydrate()
 
 const route = useRoute()
+const router = useRouter()
 
 const isAuthed = computed(() => !!auth.token)
 const role = computed(() => auth.role)
@@ -116,8 +117,21 @@ function isActive(name) {
   return route.name === name
 }
 
-function logout() {
+async function logout() {
+  const wasAdmin = role.value === 'Admin'
+  const current = route.fullPath
+
   auth.logout()
+
+  // After logout, don't leave the user on an authenticated-only screen.
+  if (wasAdmin) {
+    await router.push({ name: 'adminLogin' })
+    return
+  }
+
+  if (route.name === 'login' || route.name === 'register' || route.name === 'adminLogin') return
+
+  await router.push({ name: 'login', query: { next: current } })
 }
 </script>
 
