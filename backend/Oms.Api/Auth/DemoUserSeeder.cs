@@ -62,6 +62,7 @@ public static class DemoUserSeeder
                     Password = BCrypt.Net.BCrypt.HashPassword(demoPassword),
                 });
 
+                app.Logger.LogInformation("Demo users are present (seeded if missing).");
                 return;
             }
             catch (Exception ex)
