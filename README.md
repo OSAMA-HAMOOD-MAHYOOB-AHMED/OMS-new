@@ -7,6 +7,15 @@ Order Management System (OMS) implemented as:
 
 ## Quick start (local, no Docker)
 
+## Demo logins (auto-seeded)
+
+On API startup, the backend seeds a few demo users **if they do not already exist** (disable with `DemoSeed__Enabled=false`).
+
+- **Admin**: `admin@demo.local` / `DemoPass!123` (use `/admin/login` in the UI)
+- **Customer**: `customer@demo.local` / `DemoPass!123`
+- **Retail Salesperson**: `sales@demo.local` / `DemoPass!123`
+- **Warehouse Manager**: `warehouse@demo.local` / `DemoPass!123`
+
 ### Backend
 ```powershell
 cd "backend/Oms.Api"

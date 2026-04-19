@@ -16,6 +16,7 @@ services:
       dockerfile: Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:8080
+      DemoSeed__Enabled: "true"
       ConnectionStrings__OmsDb: Server=mysql;Port=3306;Database=oms;User=root;Password=root;
       Jwt__Issuer: oms
       Jwt__Audience: oms

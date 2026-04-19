@@ -72,6 +72,9 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+var demoSeedEnabled = builder.Configuration.GetValue("DemoSeed:Enabled", true);
+await DemoUserSeeder.SeedAsync(app, demoSeedEnabled);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
