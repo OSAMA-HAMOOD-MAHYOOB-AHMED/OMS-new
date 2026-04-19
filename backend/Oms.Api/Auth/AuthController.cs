@@ -11,29 +11,36 @@ public sealed class AuthController(UserRepository users, TokenService tokens) : 
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest req)
     {
-        if (string.IsNullOrWhiteSpace(req.Email) ||
-            string.IsNullOrWhiteSpace(req.Password) ||
-            string.IsNullOrWhiteSpace(req.Name) ||
-            string.IsNullOrWhiteSpace(req.Role))
+        var email = (req.Email ?? "").Trim().ToLowerInvariant();
+        var password = (req.Password ?? "").Trim();
+        var name = (req.Name ?? "").Trim();
+        var phone = (req.Phone ?? "").Trim();
+        var address = (req.Address ?? "").Trim();
+        var role = (req.Role ?? "").Trim();
+
+        if (string.IsNullOrWhiteSpace(email) ||
+            string.IsNullOrWhiteSpace(password) ||
+            string.IsNullOrWhiteSpace(name) ||
+            string.IsNullOrWhiteSpace(role))
         {
             return BadRequest("Missing required fields.");
         }
 
-        if (!UserRole.All.Contains(req.Role))
+        if (!UserRole.All.Contains(role))
             return BadRequest("Invalid role.");
 
-        var existing = await users.GetByEmail(req.Email.Trim().ToLowerInvariant());
+        var existing = await users.GetByEmail(email);
         if (existing is not null)
             return Conflict("Email already registered.");
 
         var row = new UserRow
         {
-            Email = req.Email.Trim().ToLowerInvariant(),
-            Name = req.Name.Trim(),
-            PhoneNumber = req.Phone.Trim(),
-            Address = req.Address.Trim(),
-            Role = req.Role,
-            Password = BCrypt.Net.BCrypt.HashPassword(req.Password)
+            Email = email,
+            Name = name,
+            PhoneNumber = phone,
+            Address = address,
+            Role = role,
+            Password = BCrypt.Net.BCrypt.HashPassword(password)
         };
 
         var ok = await users.Create(row);
@@ -48,11 +55,12 @@ public sealed class AuthController(UserRepository users, TokenService tokens) : 
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest req)
     {
         var email = (req.Email ?? "").Trim().ToLowerInvariant();
+        var password = (req.Password ?? "").Trim();
         var user = await users.GetByEmail(email);
         if (user is null)
             return Unauthorized();
 
-        if (!BCrypt.Net.BCrypt.Verify(req.Password ?? "", user.Password))
+        if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
             return Unauthorized();
 
         var token = tokens.CreateToken(user.Email, user.Role);

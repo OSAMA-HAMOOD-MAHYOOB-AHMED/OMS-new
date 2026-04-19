@@ -3,6 +3,21 @@ import { api } from '../api/client'
 
 const STORAGE_KEY = 'oms_auth'
 
+function formatApiError(err) {
+  const data = err?.response?.data
+  if (!data) return 'Request failed'
+  if (typeof data === 'string') return data
+  if (typeof data === 'object') {
+    if (typeof data.detail === 'string') return data.detail
+    if (typeof data.title === 'string' && typeof data.status === 'number') return `${data.title} (${data.status})`
+  }
+  try {
+    return JSON.stringify(data)
+  } catch {
+    return 'Request failed'
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: null,
@@ -41,14 +56,17 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const res = await api.post('/api/auth/login', { email, password })
+        const res = await api.post('/api/auth/login', {
+          email: String(email ?? '').trim().toLowerCase(),
+          password: String(password ?? '').trim(),
+        })
         this.token = res.data.token
         this.email = res.data.email
         this.role = res.data.role
         this.persist()
         return true
       } catch (e) {
-        this.error = e?.response?.data || 'Login failed'
+        this.error = formatApiError(e)
         return false
       } finally {
         this.loading = false
@@ -58,14 +76,22 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const res = await api.post('/api/auth/register', payload)
+        const res = await api.post('/api/auth/register', {
+          ...payload,
+          email: String(payload?.email ?? '').trim().toLowerCase(),
+          password: String(payload?.password ?? '').trim(),
+          name: String(payload?.name ?? '').trim(),
+          phone: String(payload?.phone ?? '').trim(),
+          address: String(payload?.address ?? '').trim(),
+          role: String(payload?.role ?? '').trim(),
+        })
         this.token = res.data.token
         this.email = res.data.email
         this.role = res.data.role
         this.persist()
         return true
       } catch (e) {
-        this.error = e?.response?.data || 'Registration failed'
+        this.error = formatApiError(e)
         return false
       } finally {
         this.loading = false

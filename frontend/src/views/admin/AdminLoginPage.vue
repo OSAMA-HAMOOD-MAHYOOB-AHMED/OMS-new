@@ -27,13 +27,18 @@
       </form>
 
       <p v-if="auth.error" class="error">{{ auth.error }}</p>
+
+      <p class="hint">
+        Not an admin?
+        <RouterLink class="link" to="/login">Customer login</RouterLink>
+      </p>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 
 const auth = useAuthStore()
@@ -47,6 +52,7 @@ async function submit() {
   if (!ok) return
   if (auth.role !== 'Admin') {
     auth.logout()
+    auth.error = 'This login page is for Admin accounts only. Please use Customer login instead.'
     return
   }
   router.push({ name: 'adminDashboard' })
@@ -151,6 +157,15 @@ input {
   padding: 8px 10px;
   border-radius: 12px;
   text-align: left;
+}
+.hint {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+.link {
+  font-weight: 900;
 }
 </style>
 
