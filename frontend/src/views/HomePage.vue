@@ -67,6 +67,7 @@
 
     <footer class="footer">
       <div>© 2026 Al-Wakeel Al-Shamel Order Management System. All rights reserved.</div>
+      <div class="footerSmall">Developed by: Osama Al-Hossam</div>
     </footer>
   </div>
 </template>
