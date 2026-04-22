@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
@@ -116,6 +116,23 @@ const cartCount = computed(() => cart.items.reduce((acc, i) => acc + (Number(i.q
 function isActive(name) {
   return route.name === name
 }
+
+watch(
+  () => auth.token,
+  (token, prevToken) => {
+    if (!prevToken || token) return
+
+    const isAdminArea = String(route.path || '').startsWith('/admin')
+    if (isAdminArea) {
+      router.replace({ name: 'adminLogin' }).catch(() => {})
+      return
+    }
+
+    if (route.name === 'login' || route.name === 'register' || route.name === 'adminLogin') return
+    router.replace({ name: 'login', query: { next: route.fullPath } }).catch(() => {})
+  },
+  { flush: 'post' },
+)
 
 async function logout() {
   const wasAdmin = role.value === 'Admin'
