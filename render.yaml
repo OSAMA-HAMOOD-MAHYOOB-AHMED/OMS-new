@@ -1,0 +1,47 @@
+# Render Blueprint — free-tier ASP.NET API + Supabase Postgres
+# Deploy: Render Dashboard → New → Blueprint → connect this repo
+#
+# Before deploying:
+# 1. Create a free project at https://supabase.com
+# 2. SQL Editor → run db/supabase_init.sql
+# 3. Project Settings → Database → copy the connection string (URI or .NET format)
+# 4. Set ConnectionStrings__OmsDb on Render (see .env.supabase.example)
+
+services:
+  - type: web
+    name: oms-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./backend/Oms.Api/Dockerfile
+    dockerContext: ./backend/Oms.Api
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DemoSeed__Enabled
+        value: "true"
+      - key: App__FrontendUrl
+        value: https://frontend-three-omega-20.vercel.app
+      - key: Jwt__Issuer
+        value: oms
+      - key: Jwt__Audience
+        value: oms
+      - key: Jwt__SigningKey
+        generateValue: true
+      - key: ConnectionStrings__OmsDb
+        sync: false
+      - key: Smtp__Enabled
+        value: "true"
+      - key: Smtp__Host
+        sync: false
+      - key: Smtp__Port
+        value: "587"
+      - key: Smtp__EnableSsl
+        value: "true"
+      - key: Smtp__Username
+        sync: false
+      - key: Smtp__Password
+        sync: false
+      - key: Smtp__From
+        sync: false

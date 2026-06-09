@@ -1,14 +1,21 @@
 services:
-  mysql:
-    image: mysql:8.4
+  postgres:
+    image: postgres:16-alpine
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: oms
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: oms
     ports:
-      - "3307:3306"
+      - "5432:5432"
     volumes:
-      - ./db:/docker-entrypoint-initdb.d
-      - oms_mysql_data:/var/lib/mysql
+      - ./db/supabase_init.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - oms_postgres_data:/var/lib/postgresql/data
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 
   backend:
     build:
@@ -17,14 +24,23 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080
       DemoSeed__Enabled: "true"
-      ConnectionStrings__OmsDb: Server=mysql;Port=3306;Database=oms;User=root;Password=root;
+      ConnectionStrings__OmsDb: Host=postgres;Port=5432;Database=oms;Username=postgres;Password=postgres;
       Jwt__Issuer: oms
       Jwt__Audience: oms
       Jwt__SigningKey: CHANGE_ME_IN_PROD_please_use_env_or_secret_store
+      App__FrontendUrl: ${App__FrontendUrl:-http://localhost:5173}
+      Smtp__Enabled: ${Smtp__Enabled:-true}
+      Smtp__Host: ${Smtp__Host:-mailpit}
+      Smtp__Port: ${Smtp__Port:-1025}
+      Smtp__EnableSsl: ${Smtp__EnableSsl:-false}
+      Smtp__Username: ${Smtp__Username:-}
+      Smtp__Password: ${Smtp__Password:-}
+      Smtp__From: ${Smtp__From:-no-reply@alwakeel-alshamel.local}
     ports:
       - "8080:8080"
     depends_on:
-      - mysql
+      - postgres
+      - mailpit
 
   frontend:
     build:
@@ -38,5 +54,4 @@ services:
       - backend
 
 volumes:
-  oms_mysql_data:
-
+  oms_postgres_data:

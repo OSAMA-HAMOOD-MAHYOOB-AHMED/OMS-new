@@ -24,7 +24,8 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               category AS Category,
               price AS Price,
               stockLevel AS StockLevel,
-              description AS Description
+              description AS Description,
+              imageUrl AS ImageUrl
             FROM Product
             ORDER BY name ASC;
             """;
@@ -36,14 +37,15 @@ public sealed class AdminRepository(IDbConnectionFactory db)
     public async Task UpsertProduct(ProductUpsertRequest req)
     {
         const string sql = """
-            INSERT INTO Product (productID, name, category, price, stockLevel, description)
-            VALUES (@productID, @name, @category, @price, @stockLevel, @description)
-            ON DUPLICATE KEY UPDATE
-              name = VALUES(name),
-              category = VALUES(category),
-              price = VALUES(price),
-              stockLevel = VALUES(stockLevel),
-              description = VALUES(description);
+            INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl)
+            VALUES (@productID, @name, @category, @price, @stockLevel, @description, @imageUrl)
+            ON CONFLICT (productID) DO UPDATE SET
+              name = EXCLUDED.name,
+              category = EXCLUDED.category,
+              price = EXCLUDED.price,
+              stockLevel = EXCLUDED.stockLevel,
+              description = EXCLUDED.description,
+              imageUrl = EXCLUDED.imageUrl;
             """;
         using var conn = db.Create();
         await OpenAsync(conn);
@@ -54,7 +56,8 @@ public sealed class AdminRepository(IDbConnectionFactory db)
             category = req.Category,
             price = req.Price,
             stockLevel = req.StockLevel,
-            description = req.Description
+            description = req.Description,
+            imageUrl = req.ImageUrl
         });
     }
 
@@ -75,7 +78,7 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               phoneNumber AS PhoneNumber,
               address AS Address,
               role AS Role
-            FROM `User`
+            FROM "User"
             WHERE role = 'Customer'
               AND (@q IS NULL OR email LIKE CONCAT('%', @q, '%') OR name LIKE CONCAT('%', @q, '%'))
             ORDER BY name ASC
@@ -100,7 +103,7 @@ public sealed class AdminRepository(IDbConnectionFactory db)
                 WHEN COUNT(*) = 0 THEN 0
                 ELSE SUM(o.totalPrice) / COUNT(*)
               END AS AvgValue
-            FROM `Order` o
+            FROM "Order" o
             GROUP BY DATE(o.orderDate)
             ORDER BY Day DESC
             LIMIT @dailyLimit;
@@ -111,7 +114,7 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               o.orderStatus AS OrderStatus,
               COUNT(*) AS Orders,
               SUM(o.totalPrice) AS Revenue
-            FROM `Order` o
+            FROM "Order" o
             GROUP BY o.orderStatus
             ORDER BY Orders DESC, o.orderStatus ASC;
             """;

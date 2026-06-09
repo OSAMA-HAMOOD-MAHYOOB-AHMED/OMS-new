@@ -17,6 +17,17 @@ public sealed record LoginRequest(
 public sealed record AuthResponse(
     string Token,
     string Email,
-    string Role
+    string Role,
+    bool EmailVerified
 );
+
+public sealed record RegisterResponse(
+    string Email,
+    string Message,
+    bool RequiresVerification
+);
+
+public sealed record VerifyEmailResponse(bool Success, string Message);
+
+public sealed record ResendVerificationRequest(string Email);
 

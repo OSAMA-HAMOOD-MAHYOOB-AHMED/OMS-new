@@ -9,24 +9,22 @@ namespace Oms.Api.Invoicing;
 [ApiController]
 [Route("api/invoices")]
 [Authorize]
-public sealed class InvoiceController(IDbConnectionFactory db) : ControllerBase
+public sealed class InvoiceController(IDbConnectionFactory db, InvoiceService invoices) : ControllerBase
 {
     [HttpGet("{orderID}")]
-    public async Task<ActionResult<object>> GetByOrder([FromRoute] string orderID)
+    public async Task<ActionResult<InvoiceSummaryResponse>> GetByOrder([FromRoute] string orderID)
     {
         var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
 
-        // Customer can only access own invoices; Admin can access any.
         var isAdmin = User.IsInRole(Oms.Api.Models.UserRole.Admin);
 
         const string sql = """
             SELECT
-              invoiceID AS InvoiceID,
-              orderID AS OrderID,
+              invoiceID AS InvoiceId,
+              orderID AS OrderId,
               email AS Email,
               subject AS Subject,
-              body AS Body,
               createdAt AS CreatedAt
             FROM Invoice
             WHERE orderID = @orderID
@@ -36,9 +34,64 @@ public sealed class InvoiceController(IDbConnectionFactory db) : ControllerBase
             """;
 
         using var conn = db.Create();
-        var row = await conn.QuerySingleOrDefaultAsync<dynamic>(sql, new { orderID, email, isAdmin = isAdmin ? 1 : 0 });
+        var row = await conn.QuerySingleOrDefaultAsync<InvoiceMetaRow>(sql, new { orderID, email, isAdmin = isAdmin ? 1 : 0 });
         if (row is null) return NotFound();
-        return Ok(row);
+
+        var data = await invoices.LoadDocumentData(orderID);
+        if (data is null) return NotFound();
+
+        return Ok(new InvoiceSummaryResponse(
+            row.InvoiceId,
+            data.OrderId,
+            row.Subject,
+            data.CustomerName,
+            data.CustomerEmail,
+            data.OrderDate,
+            data.TotalPrice,
+            data.PaymentMethod,
+            data.PaymentStatus,
+            data.OrderStatus,
+            data.TransactionReference,
+            data.ShippingCarrier,
+            data.ShippingService,
+            data.ShippingCost,
+            data.ShippingCostLabel,
+            data.ShippingEstimatedDelivery,
+            data.ShippingTrackingNumber,
+            data.Items,
+            row.CreatedAt));
+    }
+
+    [HttpGet("{orderID}/pdf")]
+    public async Task<IActionResult> DownloadPdf([FromRoute] string orderID)
+    {
+        var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
+
+        var isAdmin = User.IsInRole(Oms.Api.Models.UserRole.Admin);
+
+        const string sql = """
+            SELECT 1
+            FROM Invoice
+            WHERE orderID = @orderID
+              AND (@isAdmin = 1 OR email = @email)
+            LIMIT 1;
+            """;
+
+        using var conn = db.Create();
+        var allowed = await conn.QuerySingleOrDefaultAsync<int?>(sql, new { orderID, email, isAdmin = isAdmin ? 1 : 0 });
+        if (allowed is null) return NotFound();
+
+        var pdf = await invoices.GeneratePdf(orderID);
+        return File(pdf, "application/pdf", $"invoice-{orderID}.pdf");
+    }
+
+    private sealed class InvoiceMetaRow
+    {
+        public long InvoiceId { get; init; }
+        public required string OrderId { get; init; }
+        public required string Email { get; init; }
+        public required string Subject { get; init; }
+        public DateTime CreatedAt { get; init; }
     }
 }
-

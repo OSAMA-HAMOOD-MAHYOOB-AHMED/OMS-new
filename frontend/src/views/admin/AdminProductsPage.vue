@@ -20,6 +20,10 @@
         <input v-model.number="form.price" type="number" step="0.01" placeholder="Price" />
         <input v-model.number="form.stockLevel" type="number" step="1" placeholder="StockLevel" />
         <input v-model.trim="form.description" placeholder="Description (optional)" />
+        <input v-model.trim="form.imageUrl" placeholder="Image URL (e.g. /images/products/charger.jpg)" />
+      </div>
+      <div v-if="form.imageUrl" class="preview">
+        <img :src="productImageUrl(form)" alt="Product preview" />
       </div>
       <button class="btnPrimary" type="button" :disabled="saving" @click="save">
         {{ saving ? 'Saving...' : 'Save product' }}
@@ -50,7 +54,7 @@
           <tr v-for="p in filtered" :key="p.productID">
             <td>
               <div class="prodCell">
-                <div class="thumb" :style="{ backgroundImage: `url(${productImage(p)})` }" />
+                <div class="thumb" :style="{ backgroundImage: `url(${productImageUrl(p)})` }" />
                 <div>
                   <div class="pName">{{ p.name }}</div>
                   <div class="pId mono">{{ p.productID }}</div>
@@ -76,6 +80,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { api } from '../../api/client'
+import { productImageUrl } from '../../utils/images'
 
 const products = ref([])
 const loading = ref(false)
@@ -92,6 +97,7 @@ const form = reactive({
   price: 0,
   stockLevel: 0,
   description: '',
+  imageUrl: '',
 })
 
 const filtered = computed(() => {
@@ -102,18 +108,6 @@ const filtered = computed(() => {
 
 function focusPanel() {
   document.getElementById('admin-product-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
-function productImage(p) {
-  const c = String(p.category || '').toLowerCase()
-  if (c.includes('charge')) return '/mock/frame-03.png'
-  if (c.includes('ear')) return '/mock/frame-06.png'
-  if (c.includes('power')) return '/mock/frame-09.png'
-  if (c.includes('case')) return '/mock/frame-12.png'
-  const id = String(p.productID || 'x')
-  const n = (id.charCodeAt(id.length - 1) || 7) % 16
-  const idx = String(n + 1).padStart(2, '0')
-  return `/mock/frame-${idx}.png`
 }
 
 function stockClass(level) {
@@ -143,6 +137,7 @@ function edit(p) {
   form.price = Number(p.price)
   form.stockLevel = Number(p.stockLevel)
   form.description = p.description || ''
+  form.imageUrl = p.imageUrl || ''
 }
 
 async function save() {
@@ -157,6 +152,7 @@ async function save() {
       price: Number(form.price),
       stockLevel: Number(form.stockLevel),
       description: form.description || null,
+      imageUrl: form.imageUrl || null,
     })
     ok.value = 'Saved.'
     await load()
@@ -276,6 +272,16 @@ input {
   background: transparent;
 }
 
+.preview {
+  margin-top: 10px;
+}
+.preview img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
 .tableWrap {
   overflow: auto;
   border: 1px solid var(--border);

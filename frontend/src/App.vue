@@ -2,7 +2,7 @@
   <div class="layout" :class="{ admin: isAdminShell }">
     <header v-if="isAdminShell" class="adminTopbar">
       <div class="adminBrand" @click="$router.push({ name: 'adminDashboard' })">
-        <span class="adminLogo">AW</span>
+        <img class="adminLogo" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
         <div class="adminBrandText">
           <div class="adminBrandTitle">Admin Panel</div>
           <div class="adminBrandSub">Al-Wakeel Al-Shamel</div>
@@ -32,7 +32,7 @@
 
     <header v-else class="topbar">
       <div class="brand" @click="$router.push({ name: 'home' })">
-        <span class="logo">AW</span>
+        <img class="logo" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
         <div class="brandText">
           <div class="title">Al-Wakeel Al-Shamel</div>
           <div class="subtitle">Order Management</div>
@@ -91,6 +91,7 @@ import { computed, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
+import { siteLogoUrl } from './utils/images'
 
 const auth = useAuthStore()
 auth.hydrate()
@@ -189,13 +190,7 @@ async function logout() {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  color: white;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, var(--brand-teal), var(--brand-blue));
+  object-fit: cover;
   box-shadow: var(--shadow-sm);
 }
 .brandText {
@@ -339,11 +334,7 @@ async function logout() {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-weight: 900;
-  color: white;
-  background: linear-gradient(135deg, var(--brand-teal), var(--brand-blue));
+  object-fit: cover;
 }
 .adminBrandTitle {
   font-weight: 900;

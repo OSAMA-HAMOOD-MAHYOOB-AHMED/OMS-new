@@ -15,7 +15,8 @@ public sealed class ProductRepository(IDbConnectionFactory db)
               category AS Category,
               price AS Price,
               stockLevel AS StockLevel,
-              description AS Description
+              description AS Description,
+              imageUrl AS ImageUrl
             FROM Product
             ORDER BY name ASC;
             """;
@@ -34,7 +35,8 @@ public sealed class ProductRepository(IDbConnectionFactory db)
               category AS Category,
               price AS Price,
               stockLevel AS StockLevel,
-              description AS Description
+              description AS Description,
+              imageUrl AS ImageUrl
             FROM Product
             WHERE productID = @productID
             LIMIT 1;

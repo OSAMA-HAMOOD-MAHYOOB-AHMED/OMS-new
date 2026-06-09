@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <div class="card">
-      <div class="avatar" aria-hidden="true">AW</div>
+      <img class="avatar" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
       <h2 class="h2">Admin Login</h2>
       <p class="sub">Sign in with an Admin account</p>
 
@@ -40,6 +40,7 @@
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { siteLogoUrl } from '../../utils/images'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -78,14 +79,9 @@ async function submit() {
 .avatar {
   width: 64px;
   height: 64px;
-  border-radius: 999px;
+  border-radius: 16px;
   margin: 0 auto 10px;
-  display: grid;
-  place-items: center;
-  font-weight: 950;
-  letter-spacing: 0.6px;
-  color: #fff;
-  background: linear-gradient(135deg, #0f172a, var(--brand-blue));
+  object-fit: cover;
   box-shadow: var(--shadow-sm);
 }
 .h2 {

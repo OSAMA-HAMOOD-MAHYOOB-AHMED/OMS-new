@@ -1,16 +1,24 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Oms.Api.Auth;
 using Oms.Api.Catalog;
 using Oms.Api.Dashboards;
 using Oms.Api.Invoicing;
 using Oms.Api.Models;
+using Oms.Api.Payments;
 
 namespace Oms.Api.Orders;
 
 [ApiController]
 [Route("api/orders")]
-public sealed class OrdersController(ProductRepository products, OrderRepository orders, InvoiceService invoices) : ControllerBase
+public sealed class OrdersController(
+    ProductRepository products,
+    OrderRepository orders,
+    UserRepository users,
+    InvoiceService invoices,
+    NotificationService notifications,
+    PaymentService payments) : ControllerBase
 {
     [HttpPost("checkout")]
     [Authorize(Roles = "Customer")]
@@ -25,6 +33,13 @@ public sealed class OrdersController(ProductRepository products, OrderRepository
         if (string.IsNullOrWhiteSpace(email))
             return Unauthorized();
 
+        var user = await users.GetByEmail(email);
+        if (user is null)
+            return Unauthorized();
+
+        if (!user.EmailVerified)
+            return BadRequest("Please verify your email before placing an order. Check your inbox or resend the verification link from your profile.");
+
         var expanded = new List<(string ProductID, string ProductName, decimal Price, int Quantity)>();
         foreach (var i in req.Items)
         {
@@ -34,25 +49,66 @@ public sealed class OrdersController(ProductRepository products, OrderRepository
             expanded.Add((p.ProductID, p.Name, p.Price, i.Quantity));
         }
 
+        var total = expanded.Sum(i => i.Price * i.Quantity);
+
         try
         {
             string orderID;
+            string? transactionId = null;
 
             if (string.Equals(req.PaymentMethod, "Cash", StringComparison.OrdinalIgnoreCase))
+            {
                 orderID = await orders.CreateCashOrder(email, expanded);
-            else if (string.Equals(req.PaymentMethod, "Credit", StringComparison.OrdinalIgnoreCase))
-                orderID = await orders.CreateCreditOrder(email, expanded);
-            else
-                return BadRequest("Invalid payment method. Use Cash or Credit.");
+            }
+            else if (string.Equals(req.PaymentMethod, "CreditCard", StringComparison.OrdinalIgnoreCase))
+            {
+                var paymentResult = await payments.ProcessAsync(req.PaymentMethod, req.PaymentDetails ?? new PaymentDetails(null, null), total);
+                if (!paymentResult.Success)
+                    return BadRequest(paymentResult.ErrorMessage ?? "Payment failed.");
 
-            await invoices.GenerateAndSend(orderID, email);
-            return Ok(new CheckoutResponse(orderID));
+                transactionId = paymentResult.TransactionId;
+                orderID = await orders.CreateOnlineOrder(
+                    email,
+                    req.PaymentMethod,
+                    "Completed",
+                    paymentResult.TransactionId,
+                    expanded);
+
+                var (invoiceBody, invoicePdf) = await invoices.GenerateAndStore(orderID, email);
+                await notifications.SendOrderConfirmationWithInvoiceAsync(
+                    email, user.Name, orderID, total, req.PaymentMethod, paymentResult.TransactionId, invoiceBody, invoicePdf);
+
+                return Ok(BuildCheckoutResponse(orderID, total, req.PaymentMethod, transactionId));
+            }
+            else
+            {
+                return BadRequest("Invalid payment method. Use CreditCard or Cash.");
+            }
+
+            var (cashInvoiceBody, cashInvoicePdf) = await invoices.GenerateAndStore(orderID, email);
+            await notifications.SendOrderConfirmationWithInvoiceAsync(
+                email, user.Name, orderID, total, req.PaymentMethod, null, cashInvoiceBody, cashInvoicePdf);
+
+            return Ok(BuildCheckoutResponse(orderID, total, req.PaymentMethod, transactionId));
         }
         catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
         }
     }
+
+    private static CheckoutResponse BuildCheckoutResponse(string orderID, decimal total, string paymentMethod, string? transactionId) =>
+        new(
+            orderID,
+            total,
+            paymentMethod,
+            transactionId,
+            ShippingInfo.Carrier,
+            ShippingInfo.Service,
+            ShippingInfo.Cost,
+            ShippingInfo.CostLabel,
+            ShippingInfo.EstimatedDelivery,
+            ShippingInfo.TrackingNumber(orderID));
 
     [HttpGet("mine")]
     [Authorize(Roles = "Customer")]
@@ -74,44 +130,4 @@ public sealed class OrdersController(ProductRepository products, OrderRepository
         return Ok(rows);
     }
 
-    [HttpPost("status")]
-    [Authorize(Roles = $"{UserRole.RetailSalesperson},{UserRole.Admin}")]
-    public async Task<IActionResult> UpdateStatus([FromBody] UpdateOrderStatusRequest req)
-    {
-        if (string.IsNullOrWhiteSpace(req.OrderID) || string.IsNullOrWhiteSpace(req.OrderStatus))
-            return BadRequest("Missing fields.");
-
-        try
-        {
-            await orders.UpdateStatus(req.OrderID, req.OrderStatus);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
-
-    [HttpPost("credit/decision")]
-    [Authorize(Roles = $"{UserRole.RetailSalesperson},{UserRole.Admin}")]
-    public async Task<IActionResult> CreditDecision([FromBody] CreditDecisionRequest req)
-    {
-        if (string.IsNullOrWhiteSpace(req.OrderID))
-            return BadRequest("Missing orderID.");
-
-        try
-        {
-            if (req.Approve)
-                await orders.SetCreditStatus(req.OrderID, "Approved", "Placed");
-            else
-                await orders.SetCreditStatus(req.OrderID, "Rejected", "Credit Rejected");
-
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
 }
-

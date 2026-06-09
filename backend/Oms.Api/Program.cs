@@ -4,8 +4,16 @@ using Microsoft.IdentityModel.Tokens;
 using Oms.Api.Auth;
 using Oms.Api.Data;
 using Oms.Api.Invoicing;
+using Oms.Api.Payments;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -36,7 +44,11 @@ builder.Services.AddSingleton<Oms.Api.Dashboards.DashboardRepository>();
 builder.Services.AddSingleton<Oms.Api.Users.UserProfileRepository>();
 builder.Services.AddSingleton<Oms.Api.Admin.AdminRepository>();
 builder.Services.AddSingleton<InvoiceRepository>();
+builder.Services.AddSingleton<InvoicePdfGenerator>();
 builder.Services.AddSingleton<InvoiceService>();
+builder.Services.AddSingleton<NotificationService>();
+builder.Services.AddSingleton<PaymentService>();
+builder.Services.AddSingleton<EmailVerificationService>();
 builder.Services.AddSingleton<ConsoleEmailSender>();
 builder.Services.AddSingleton<SmtpEmailSender>();
 builder.Services.AddSingleton<IEmailSender>(sp =>
@@ -79,9 +91,8 @@ await DemoUserSeeder.SeedAsync(app, demoSeedEnabled);
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 
 app.UseCors("frontend");
 
@@ -89,6 +100,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.Run();
 

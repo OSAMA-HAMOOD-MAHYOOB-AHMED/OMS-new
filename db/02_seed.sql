@@ -1,10 +1,10 @@
 -- Demo seed data (password hashes will be inserted by app init in Phase 1)
 
-INSERT INTO Product (productID, name, category, price, stockLevel, description) VALUES
-('P-CHARGER-01', 'Fast Charger 20W', 'Chargers', 9.99, 50, 'USB-C fast charger 20W'),
-('P-EARPH-01', 'Wireless Earphones', 'Earphones', 19.99, 30, 'Bluetooth earphones'),
-('P-PBANK-01', 'Power Bank 10000mAh', 'Power Banks', 24.99, 20, 'Compact 10,000mAh power bank'),
-('P-CASE-01', 'Phone Case (Clear)', 'Phone Cases', 7.49, 100, 'Clear protective phone case');
+INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl) VALUES
+('P-CHARGER-01', 'Fast Charger 20W', 'Chargers', 9.99, 50, 'USB-C fast charger 20W', '/images/products/charger.jpg'),
+('P-EARPH-01', 'Wireless Earphones', 'Earphones', 19.99, 30, 'Bluetooth earphones', '/images/products/earphones.jpg'),
+('P-PBANK-01', 'Power Bank 10000mAh', 'Power Banks', 24.99, 20, 'Compact 10,000mAh power bank', '/images/products/powerbank.jpg'),
+('P-CASE-01', 'Phone Case (Clear)', 'Phone Cases', 7.49, 100, 'Clear protective phone case', '/images/products/case.jpg');
 
 INSERT INTO Inventory (inventoryID, productID, location, quantityAvailable, quantityReserved, lastCheckupDate) VALUES
 ('INV-CHARGER-01', 'P-CHARGER-01', 'Main Warehouse', 50, 0, NOW()),

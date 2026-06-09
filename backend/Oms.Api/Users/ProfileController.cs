@@ -24,7 +24,8 @@ public sealed class ProfileController(UserProfileRepository profiles) : Controll
             Name = u.Name,
             PhoneNumber = u.PhoneNumber,
             Address = u.Address,
-            Role = u.Role
+            Role = u.Role,
+            EmailVerified = u.EmailVerified
         });
     }
 

@@ -11,5 +11,6 @@ public sealed class ProfileResponse
     public required string PhoneNumber { get; init; }
     public required string Address { get; init; }
     public required string Role { get; init; }
+    public bool EmailVerified { get; init; }
 }
 

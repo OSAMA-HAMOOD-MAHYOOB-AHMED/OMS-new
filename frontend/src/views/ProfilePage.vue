@@ -2,10 +2,28 @@
   <section class="page">
     <h1 class="h1">My Profile</h1>
 
+    <div class="brandBar">
+      <img class="storeLogo" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
+      <div>
+        <div class="storeName">Al-Wakeel Al-Shamel</div>
+        <div class="storeTag">Premium phone accessories</div>
+      </div>
+    </div>
+
     <div v-if="loading" class="muted">Loading...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
 
     <div v-else class="stack">
+      <div v-if="!auth.emailVerified" class="verifyBanner">
+        <p>Your email is not verified yet. Check your inbox or resend the verification link.</p>
+        <p v-if="showDevInbox" class="devInbox">
+          Local testing: open <a href="http://localhost:8025" target="_blank" rel="noopener">Mailpit inbox</a> to read verification emails.
+        </p>
+        <button class="btnVerify" type="button" :disabled="resending" @click="resend">
+          {{ resending ? 'Sending...' : 'Resend verification email' }}
+        </button>
+      </div>
+
       <div class="card topCard">
         <div class="profileRow">
           <div class="avatar" aria-hidden="true">{{ initials }}</div>
@@ -117,6 +135,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
+import { siteLogoUrl } from '../utils/images'
 
 const auth = useAuthStore()
 auth.hydrate()
@@ -125,11 +144,17 @@ const loading = ref(false)
 const saving = ref(false)
 const error = ref(null)
 const ok = ref(null)
+const resending = ref(false)
 
 const form = reactive({ name: '', phoneNumber: '', address: '' })
 const pw = reactive({ currentPassword: '', newPassword: '' })
 
 const email = computed(() => auth.email || '')
+
+const showDevInbox = computed(() => {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL ?? ''
+  return !apiUrl || apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')
+})
 
 const initials = computed(() => {
   const n = String(form.name || email.value || 'C').trim()
@@ -142,6 +167,15 @@ const memberSince = 'November 2024'
 
 const stats = reactive({ totalOrders: 0, totalSpent: 0, completed: 0, pending: 0 })
 
+async function resend() {
+  resending.value = true
+  ok.value = null
+  error.value = null
+  const sent = await auth.resendVerification()
+  resending.value = false
+  if (sent) ok.value = showDevInbox.value ? 'Verification email sent. Open Mailpit at http://localhost:8025' : 'Verification email sent. Check your inbox.'
+}
+
 async function loadStats() {
   try {
     const res = await api.get('/api/orders/mine')
@@ -153,8 +187,7 @@ async function loadStats() {
       const s = String(o.orderStatus || '').toLowerCase()
       if (s.includes('deliver')) return false
       if (s.includes('cancel')) return false
-      if (s.includes('reject')) return false
-      return s.includes('pending') || s.includes('credit')
+      return true
     }).length
   } catch {
     // stats are cosmetic-only; ignore failures
@@ -170,6 +203,7 @@ async function load() {
     form.name = res.data.name
     form.phoneNumber = res.data.phoneNumber
     form.address = res.data.address
+    if (res.data.emailVerified) auth.markEmailVerified()
     await loadStats()
   } catch (e) {
     error.value = e?.response?.data || 'Failed to load profile'
@@ -222,6 +256,33 @@ onMounted(load)
 .page {
   display: grid;
   gap: 14px;
+}
+.brandBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.storeLogo {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+.storeName {
+  font-weight: 950;
+  color: var(--text-h);
+  letter-spacing: -0.2px;
+}
+.storeTag {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
 }
 .h1 {
   margin: 0;
@@ -456,6 +517,40 @@ input {
   border: 1px solid rgba(180, 35, 24, 0.2);
   padding: 8px 10px;
   border-radius: 12px;
+}
+.verifyBanner {
+  border: 1px solid rgba(23, 92, 211, 0.25);
+  background: rgba(23, 92, 211, 0.06);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+}
+.verifyBanner p {
+  margin: 0;
+  color: #175cd3;
+  font-weight: 700;
+  font-size: 14px;
+}
+.devInbox {
+  margin: 0;
+  color: #334155 !important;
+  font-weight: 650 !important;
+  font-size: 13px !important;
+}
+.devInbox a {
+  color: #175cd3;
+  font-weight: 900;
+}
+.btnVerify {
+  border: 0;
+  cursor: pointer;
+  background: var(--brand-blue);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  justify-self: start;
 }
 .success {
   margin-top: 12px;

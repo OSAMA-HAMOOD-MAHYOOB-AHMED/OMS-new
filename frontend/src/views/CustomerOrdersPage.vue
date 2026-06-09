@@ -10,8 +10,6 @@
           <option>Shipped</option>
           <option>Delivered</option>
           <option>Cancelled</option>
-          <option>Pending Credit</option>
-          <option>Credit Rejected</option>
         </select>
         <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
       </div>
@@ -44,17 +42,22 @@
         </div>
 
         <div class="metaRow">
-          <div class="pay">Payment: <span class="strong">{{ o.paymentMethod }}</span></div>
+          <div class="pay">Payment: <span class="strong">{{ paymentLabel(o.paymentMethod) }}</span></div>
+          <div class="pay">
+            Shipping: <span class="strong">{{ o.shippingService || 'FedEx Express' }}</span>
+            <span class="mutedInline"> · {{ o.shippingEstimatedDelivery || '3–5 business days' }}</span>
+          </div>
+          <div v-if="o.shippingTrackingNumber" class="pay tracking">
+            FedEx tracking: <span class="strong mono">{{ o.shippingTrackingNumber }}</span>
+          </div>
         </div>
 
         <div class="actions">
-          <button class="btnPrimary small" type="button" @click="viewInvoice(o.orderID)">View invoice</button>
+          <RouterLink class="btnPrimary small" :to="{ name: 'checkoutInvoice', params: { orderId: o.orderID } }">
+            View invoice
+          </RouterLink>
+          <button class="btnGhost small" type="button" @click="downloadPdf(o.orderID)">Download PDF</button>
           <button class="btnGhost small" type="button" @click="reorder(o)">Reorder</button>
-        </div>
-
-        <div v-if="invoiceByOrder[o.orderID]" class="invoice">
-          <div class="mono">{{ invoiceByOrder[o.orderID].subject }}</div>
-          <pre class="pre">{{ invoiceByOrder[o.orderID].body }}</pre>
         </div>
       </article>
     </div>
@@ -64,6 +67,7 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { api } from '../api/client'
+import { downloadInvoicePdf, paymentMethodLabel } from '../utils/invoice'
 import { useCartStore } from '../stores/cart'
 import { useRouter } from 'vue-router'
 
@@ -71,7 +75,6 @@ const allOrders = ref([])
 const loading = ref(false)
 const error = ref(null)
 const statusFilter = ref('')
-const invoiceByOrder = ref({})
 
 const cart = useCartStore()
 cart.hydrate()
@@ -89,6 +92,10 @@ function formatDate(iso) {
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}`
+}
+
+function paymentLabel(method) {
+  return paymentMethodLabel(method)
 }
 
 function badgeClass(status) {
@@ -113,12 +120,11 @@ async function load() {
   }
 }
 
-async function viewInvoice(orderID) {
+async function downloadPdf(orderID) {
   try {
-    const res = await api.get(`/api/invoices/${orderID}`)
-    invoiceByOrder.value = { ...invoiceByOrder.value, [orderID]: res.data }
+    await downloadInvoicePdf(api, orderID)
   } catch (e) {
-    error.value = e?.response?.data || 'Invoice not found'
+    error.value = e?.response?.data || 'Unable to download PDF invoice'
   }
 }
 
@@ -286,6 +292,16 @@ onMounted(load)
   color: var(--text-h);
   font-weight: 900;
 }
+.mutedInline {
+  color: var(--muted);
+  font-weight: 650;
+}
+.tracking {
+  margin-top: 4px;
+}
+.mono {
+  font-family: ui-monospace, Consolas, monospace;
+}
 
 .actions {
   margin-top: 12px;
@@ -308,23 +324,6 @@ onMounted(load)
   border-radius: 14px;
 }
 
-.invoice {
-  margin-top: 12px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
-  background: #f8fafc;
-}
-.mono {
-  font-family: ui-monospace, Consolas, monospace;
-  font-weight: 950;
-  color: var(--text-h);
-}
-.pre {
-  margin: 8px 0 0;
-  white-space: pre-wrap;
-  color: var(--text-h);
-}
 .error {
   margin-top: 12px;
   color: #b42318;

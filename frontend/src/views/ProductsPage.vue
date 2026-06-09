@@ -24,7 +24,7 @@
 
     <div v-else class="grid">
       <article v-for="p in filtered" :key="p.productID" class="product" @click="open(p.productID)">
-        <div class="img" :style="{ backgroundImage: `url(${productImage(p)})` }" />
+        <div class="img" :style="{ backgroundImage: `url(${productImageUrl(p)})` }" />
 
         <div class="body">
           <div class="cat">{{ p.category }}</div>
@@ -50,6 +50,7 @@ import { computed, onMounted, ref } from 'vue'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
+import { productImageUrl } from '../utils/images'
 import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
@@ -101,19 +102,6 @@ function add(p) {
 
 function open(productID) {
   router.push({ name: 'productDetails', params: { id: productID } })
-}
-
-function productImage(p) {
-  const c = String(p.category || '').toLowerCase()
-  if (c.includes('charge')) return '/mock/frame-03.png'
-  if (c.includes('ear')) return '/mock/frame-06.png'
-  if (c.includes('power')) return '/mock/frame-09.png'
-  if (c.includes('case')) return '/mock/frame-12.png'
-  // deterministic fallback by id
-  const id = String(p.productID || 'x')
-  const n = (id.charCodeAt(id.length - 1) || 7) % 16
-  const idx = String(n + 1).padStart(2, '0')
-  return `/mock/frame-${idx}.png`
 }
 
 onMounted(load)

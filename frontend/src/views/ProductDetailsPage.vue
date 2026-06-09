@@ -7,7 +7,7 @@
 
     <div v-else-if="product" class="heroCard">
       <div class="media">
-        <div class="img" :style="{ backgroundImage: `url(${productImage(product)})` }" />
+        <div class="img" :style="{ backgroundImage: `url(${productImageUrl(product)})` }" />
       </div>
 
       <div class="info">
@@ -44,7 +44,7 @@
       <h2 class="h2">Related Products</h2>
       <div class="grid">
         <article v-for="p in related" :key="p.productID" class="product" @click="open(p.productID)">
-          <div class="mini" :style="{ backgroundImage: `url(${productImage(p)})` }" />
+          <div class="mini" :style="{ backgroundImage: `url(${productImageUrl(p)})` }" />
           <div class="name">{{ p.name }}</div>
           <div class="muted">{{ p.category }}</div>
         </article>
@@ -58,6 +58,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import { useCartStore } from '../stores/cart'
+import { productImageUrl } from '../utils/images'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,18 +98,6 @@ function addToCart() {
 
 function open(productID) {
   router.push({ name: 'productDetails', params: { id: productID } })
-}
-
-function productImage(p) {
-  const c = String(p.category || '').toLowerCase()
-  if (c.includes('charge')) return '/mock/frame-04.png'
-  if (c.includes('ear')) return '/mock/frame-07.png'
-  if (c.includes('power')) return '/mock/frame-10.png'
-  if (c.includes('case')) return '/mock/frame-13.png'
-  const id = String(p.productID || 'x')
-  const n = (id.charCodeAt(id.length - 1) || 7) % 16
-  const idx = String(n + 1).padStart(2, '0')
-  return `/mock/frame-${idx}.png`
 }
 
 watch(id, load)

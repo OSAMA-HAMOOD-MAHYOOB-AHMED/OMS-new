@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <section class="hero">
+    <section class="hero" :style="{ backgroundImage: `linear-gradient(90deg, rgba(29, 78, 216, 0.82), rgba(16, 185, 129, 0.72)), url(${siteHeroUrl})` }">
       <div class="heroInner">
         <h1 class="h1">Premium Phone Accessories</h1>
         <p class="sub">Chargers, Earphones, Power Banks &amp; Phone Cases</p>
@@ -40,19 +40,19 @@
     <section class="section">
       <h2 class="sectionTitle">Popular Categories</h2>
       <div class="cats">
-        <RouterLink class="cat" :to="catLink" :style="{ backgroundImage: `url(${catImg('chargers')})` }">
+        <RouterLink class="cat" :to="catLink" :style="{ backgroundImage: `url(${categoryImageUrl('chargers')})` }">
           <div class="catOverlay" />
           <div class="catLabel">Chargers</div>
         </RouterLink>
-        <RouterLink class="cat" :to="catLink" :style="{ backgroundImage: `url(${catImg('earphones')})` }">
+        <RouterLink class="cat" :to="catLink" :style="{ backgroundImage: `url(${categoryImageUrl('earphones')})` }">
           <div class="catOverlay" />
           <div class="catLabel">Earphones</div>
         </RouterLink>
-        <RouterLink class="cat" :to="catLink" :style="{ backgroundImage: `url(${catImg('powerbanks')})` }">
+        <RouterLink class="cat" :to="catLink" :style="{ backgroundImage: `url(${categoryImageUrl('powerbanks')})` }">
           <div class="catOverlay" />
           <div class="catLabel">Power Banks</div>
         </RouterLink>
-        <RouterLink class="cat broken" :to="catLink" :style="{ backgroundImage: `url(${catImg('cases')})` }">
+        <RouterLink class="cat" :to="catLink" :style="{ backgroundImage: `url(${categoryImageUrl('cases')})` }">
           <div class="catOverlay" />
           <div class="catLabel">Phone Cases</div>
         </RouterLink>
@@ -76,6 +76,7 @@
 import { computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { categoryImageUrl, siteHeroUrl } from '../utils/images'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -99,17 +100,6 @@ function goPrimary() {
 function goSecondary() {
   router.push({ name: 'register' })
 }
-
-function catImg(key) {
-  // Static mock imagery bundled under /public/mock (visual-only).
-  const map = {
-    chargers: '/mock/frame-02.png',
-    earphones: '/mock/frame-05.png',
-    powerbanks: '/mock/frame-08.png',
-    cases: '/mock/frame-11.png',
-  }
-  return map[key] || '/mock/frame-01.png'
-}
 </script>
 
 <style scoped>
@@ -122,7 +112,8 @@ function catImg(key) {
   border-radius: 18px;
   overflow: hidden;
   box-shadow: var(--shadow-md);
-  background: linear-gradient(90deg, #1d4ed8 0%, #10b981 100%);
+  background-size: cover;
+  background-position: center;
 }
 .heroInner {
   padding: 54px 22px;
@@ -255,11 +246,6 @@ function catImg(key) {
   background-position: center;
   text-decoration: none;
   box-shadow: var(--shadow-sm);
-}
-.cat.broken {
-  /* Intentionally “missing image” vibe like the mock: rely on gradient + label */
-  background-image: none !important;
-  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
 }
 .catOverlay {
   position: absolute;

@@ -8,5 +8,6 @@ public sealed class ProductRow
     public decimal Price { get; init; }
     public int StockLevel { get; init; }
     public string? Description { get; init; }
+    public string? ImageUrl { get; init; }
 }
 

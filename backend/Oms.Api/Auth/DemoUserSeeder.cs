@@ -10,7 +10,7 @@ public static class DemoUserSeeder
     {
         if (!enabled) return;
 
-        // MySQL may still be initializing on first docker-compose boot; retry briefly.
+        // Database may still be initializing on first boot; retry briefly.
         const int maxAttempts = 30;
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -30,6 +30,7 @@ public static class DemoUserSeeder
                     Address = "Riyadh, Saudi Arabia",
                     Role = UserRole.Admin,
                     Password = BCrypt.Net.BCrypt.HashPassword(demoPassword),
+                    EmailVerified = true
                 });
 
                 await EnsureUser(users, new UserRow
@@ -40,6 +41,7 @@ public static class DemoUserSeeder
                     Address = "Riyadh, Saudi Arabia",
                     Role = UserRole.Customer,
                     Password = BCrypt.Net.BCrypt.HashPassword(demoPassword),
+                    EmailVerified = true
                 });
 
                 await EnsureUser(users, new UserRow
@@ -50,6 +52,7 @@ public static class DemoUserSeeder
                     Address = "Riyadh, Saudi Arabia",
                     Role = UserRole.RetailSalesperson,
                     Password = BCrypt.Net.BCrypt.HashPassword(demoPassword),
+                    EmailVerified = true
                 });
 
                 await EnsureUser(users, new UserRow
@@ -60,7 +63,10 @@ public static class DemoUserSeeder
                     Address = "Riyadh, Saudi Arabia",
                     Role = UserRole.WarehouseManager,
                     Password = BCrypt.Net.BCrypt.HashPassword(demoPassword),
+                    EmailVerified = true
                 });
+
+                await users.MarkDemoUsersVerified();
 
                 app.Logger.LogInformation("Demo users are present (seeded if missing).");
                 return;

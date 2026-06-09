@@ -7,7 +7,10 @@ CREATE TABLE IF NOT EXISTS `User` (
   phoneNumber VARCHAR(20) NOT NULL,
   password VARCHAR(255) NOT NULL,
   address VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL
+  role VARCHAR(50) NOT NULL,
+  emailVerified TINYINT(1) NOT NULL DEFAULT 0,
+  verificationToken VARCHAR(64) NULL,
+  verificationTokenExpires DATETIME NULL
 );
 
 CREATE TABLE IF NOT EXISTS Product (
@@ -16,7 +19,8 @@ CREATE TABLE IF NOT EXISTS Product (
   category VARCHAR(100) NOT NULL,
   price DECIMAL(10,2) NOT NULL,
   stockLevel INT NOT NULL DEFAULT 0,
-  description TEXT NULL
+  description TEXT NULL,
+  imageUrl VARCHAR(512) NULL
 );
 
 CREATE TABLE IF NOT EXISTS `Order` (
@@ -26,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `Order` (
   totalPrice DECIMAL(10,2) NOT NULL,
   orderStatus VARCHAR(50) NOT NULL,
   paymentMethod VARCHAR(50) NOT NULL,
+  paymentStatus VARCHAR(50) NULL,
   creditStatus VARCHAR(50) NULL,
   CONSTRAINT fk_order_user FOREIGN KEY (email) REFERENCES `User`(email)
 );

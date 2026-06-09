@@ -146,10 +146,13 @@ async function load() {
   error.value = null
   try {
     const res = await api.get('/api/admin/reports/sales', { params: { dailyLimit: 60 } })
-    daily.value = res.data?.daily || []
-    breakdown.value = res.data?.statusBreakdown || []
+    daily.value = res.data?.daily ?? res.data?.Daily ?? []
+    breakdown.value = res.data?.statusBreakdown ?? res.data?.StatusBreakdown ?? []
   } catch (e) {
-    error.value = e?.response?.data || 'Failed to load report'
+    const data = e?.response?.data
+    if (typeof data === 'string') error.value = data
+    else if (data?.title) error.value = data.title
+    else error.value = 'Failed to load report'
   } finally {
     loading.value = false
   }

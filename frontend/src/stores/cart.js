@@ -23,7 +23,13 @@ export const useCartStore = defineStore('cart', {
     add(product, qty = 1) {
       const existing = this.items.find((x) => x.productID === product.productID)
       if (existing) existing.quantity += qty
-      else this.items.push({ productID: product.productID, name: product.name, price: product.price, quantity: qty })
+      else this.items.push({
+        productID: product.productID,
+        name: product.name,
+        price: product.price,
+        quantity: qty,
+        imageUrl: product.imageUrl || null,
+      })
       this.persist()
     },
     remove(productID) {

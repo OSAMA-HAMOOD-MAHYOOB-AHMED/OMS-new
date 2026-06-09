@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <div class="card">
-      <div class="avatar" aria-hidden="true">AW</div>
+      <img class="avatar" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
       <h2 class="h2">Welcome Back</h2>
       <p class="sub">Sign in to your account</p>
 
@@ -34,6 +34,12 @@
       </form>
 
       <p v-if="auth.error" class="error">{{ auth.error }}</p>
+      <p v-if="unverifiedEmail" class="notice">
+        Your account is not verified yet.
+        <RouterLink class="link" :to="{ name: 'verifyEmailPending', query: { email: unverifiedEmail } }">
+          Resend verification email
+        </RouterLink>
+      </p>
 
       <p class="muted center">
         Don't have an account?
@@ -51,6 +57,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { siteLogoUrl } from '../utils/images'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -58,6 +65,7 @@ const route = useRoute()
 
 const email = ref('')
 const password = ref('')
+const unverifiedEmail = ref('')
 
 function roleHome(role) {
   if (role === 'Customer') return { name: 'products' }
@@ -67,8 +75,13 @@ function roleHome(role) {
 }
 
 async function submit() {
-  const ok = await auth.login({ email: email.value, password: password.value })
-  if (!ok) return
+  unverifiedEmail.value = ''
+  const result = await auth.login({ email: email.value, password: password.value })
+  if (result === 'unverified') {
+    unverifiedEmail.value = email.value.trim().toLowerCase()
+    return
+  }
+  if (result !== 'ok') return
 
   const next = route.query.next
   if (typeof next === 'string' && next.startsWith('/')) return router.push(next)
@@ -95,14 +108,9 @@ async function submit() {
 .avatar {
   width: 64px;
   height: 64px;
-  border-radius: 999px;
+  border-radius: 16px;
   margin: 0 auto 10px;
-  display: grid;
-  place-items: center;
-  font-weight: 950;
-  letter-spacing: 0.6px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--brand-teal), var(--brand-blue));
+  object-fit: cover;
   box-shadow: var(--shadow-sm);
 }
 .h2 {
@@ -185,6 +193,16 @@ input {
   padding: 8px 10px;
   border-radius: 12px;
   text-align: left;
+}
+.notice {
+  margin-top: 10px;
+  color: #175cd3;
+  background: rgba(23, 92, 211, 0.08);
+  border: 1px solid rgba(23, 92, 211, 0.2);
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 14px;
 }
 .divider {
   height: 1px;

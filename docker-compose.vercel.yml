@@ -1,0 +1,6 @@
+# Use with: docker compose -f docker-compose.yml -f docker-compose.vercel.yml up -d
+# Set App__FrontendUrl in .env to your Vercel URL, e.g. https://your-app.vercel.app
+services:
+  backend:
+    environment:
+      App__FrontendUrl: ${App__FrontendUrl:-https://your-app.vercel.app}

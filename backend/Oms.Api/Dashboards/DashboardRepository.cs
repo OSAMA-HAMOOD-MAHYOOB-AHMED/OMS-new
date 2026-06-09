@@ -14,7 +14,7 @@ public sealed class DashboardRepository(IDbConnectionFactory db)
               COUNT(*) AS TotalOrders,
               SUM(CASE WHEN paymentMethod = 'Cash' THEN totalPrice ELSE 0 END) AS CashRevenue,
               SUM(CASE WHEN paymentMethod = 'Cash' THEN 1 ELSE 0 END) AS CashOrders
-            FROM `Order`;
+            FROM "Order";
             """;
 
         const string recent = """
@@ -25,7 +25,7 @@ public sealed class DashboardRepository(IDbConnectionFactory db)
               orderStatus AS OrderStatus,
               paymentMethod AS PaymentMethod,
               email AS Email
-            FROM `Order`
+            FROM "Order"
             ORDER BY orderDate DESC
             LIMIT 10;
             """;

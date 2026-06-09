@@ -8,5 +8,8 @@ public sealed class UserRow
     public required string Password { get; init; }
     public required string Address { get; init; }
     public required string Role { get; init; }
+    public bool EmailVerified { get; init; }
+    public string? VerificationToken { get; init; }
+    public DateTime? VerificationTokenExpires { get; init; }
 }
 

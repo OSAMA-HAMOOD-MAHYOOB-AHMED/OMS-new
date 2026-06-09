@@ -13,7 +13,7 @@ public sealed class UserProfileRepository(IDbConnectionFactory db, UserRepositor
     public async Task UpdateProfile(string email, UpdateProfileRequest req)
     {
         const string sql = """
-            UPDATE `User`
+            UPDATE "User"
             SET name = @name,
                 phoneNumber = @phoneNumber,
                 address = @address
@@ -42,7 +42,7 @@ public sealed class UserProfileRepository(IDbConnectionFactory db, UserRepositor
         var hashed = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
 
         const string sql = """
-            UPDATE `User`
+            UPDATE "User"
             SET password = @password
             WHERE email = @email;
             """;

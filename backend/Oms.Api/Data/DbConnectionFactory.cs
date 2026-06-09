@@ -1,5 +1,5 @@
 using System.Data;
-using MySqlConnector;
+using Npgsql;
 
 namespace Oms.Api.Data;
 
@@ -14,6 +14,5 @@ public sealed class DbConnectionFactory(IConfiguration configuration) : IDbConne
         configuration.GetConnectionString("OmsDb")
         ?? throw new InvalidOperationException("Missing connection string: ConnectionStrings:OmsDb");
 
-    public IDbConnection Create() => new MySqlConnection(_connectionString);
+    public IDbConnection Create() => new NpgsqlConnection(_connectionString);
 }
-

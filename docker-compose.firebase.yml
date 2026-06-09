@@ -1,0 +1,5 @@
+# Use with: docker compose -f docker-compose.yml -f docker-compose.firebase.yml up -d
+services:
+  backend:
+    environment:
+      App__FrontendUrl: https://alwakeel-alshamel.web.app

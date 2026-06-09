@@ -4,8 +4,13 @@ import { useAuthStore } from '../stores/auth'
 import HomePage from '../views/HomePage.vue'
 import LoginPage from '../views/LoginPage.vue'
 import RegisterPage from '../views/RegisterPage.vue'
+import VerifyEmailPage from '../views/VerifyEmailPage.vue'
+import VerifyEmailPendingPage from '../views/VerifyEmailPendingPage.vue'
 import ProductsPage from '../views/ProductsPage.vue'
 import CartPage from '../views/CartPage.vue'
+import PaymentVerificationPage from '../views/checkout/PaymentVerificationPage.vue'
+import OrderConfirmationPage from '../views/checkout/OrderConfirmationPage.vue'
+import OrderInvoicePage from '../views/checkout/OrderInvoicePage.vue'
 import CustomerOrdersPage from '../views/CustomerOrdersPage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
 import ProductDetailsPage from '../views/ProductDetailsPage.vue'
@@ -49,10 +54,30 @@ const router = createRouter({
     { path: '/login', name: 'login', component: LoginPage, meta: { guestOnly: true } },
     { path: '/admin/login', name: 'adminLogin', component: AdminLoginPage, meta: { guestOnly: true } },
     { path: '/register', name: 'register', component: RegisterPage, meta: { guestOnly: true } },
+    { path: '/verify-email', name: 'verifyEmail', component: VerifyEmailPage },
+    { path: '/verify-email/pending', name: 'verifyEmailPending', component: VerifyEmailPendingPage },
     { path: '/products', name: 'products', component: ProductsPage, meta: { auth: true, roles: ['Customer', 'Warehouse Manager'] } },
     { path: '/products/:id', name: 'productDetails', component: ProductDetailsPage, meta: { auth: true, roles: ['Customer', 'Warehouse Manager'] } },
-    { path: '/cart', name: 'cart', component: CartPage, meta: { auth: true, roles: ['Customer'] } },
-    { path: '/customer/orders', name: 'customerOrders', component: CustomerOrdersPage, meta: { auth: true, roles: ['Customer'] } },
+    { path: '/cart', name: 'cart', component: CartPage, meta: { auth: true, roles: ['Customer'], requiresEmailVerified: true } },
+    {
+      path: '/checkout/verify',
+      name: 'checkoutVerify',
+      component: PaymentVerificationPage,
+      meta: { auth: true, roles: ['Customer'], requiresEmailVerified: true },
+    },
+    {
+      path: '/checkout/confirmation/:orderId',
+      name: 'checkoutConfirmation',
+      component: OrderConfirmationPage,
+      meta: { auth: true, roles: ['Customer'], requiresEmailVerified: true },
+    },
+    {
+      path: '/checkout/invoice/:orderId',
+      name: 'checkoutInvoice',
+      component: OrderInvoicePage,
+      meta: { auth: true, roles: ['Customer'], requiresEmailVerified: true },
+    },
+    { path: '/customer/orders', name: 'customerOrders', component: CustomerOrdersPage, meta: { auth: true, roles: ['Customer'], requiresEmailVerified: true } },
     { path: '/profile', name: 'profile', component: ProfilePage, meta: { auth: true } },
     { path: '/warehouse/inventory', name: 'warehouseInventory', component: WarehouseInventoryPage, meta: { auth: true, roles: ['Warehouse Manager'] } },
     { path: '/dashboard/sales', name: 'salesDashboard', component: SalesDashboardPage, meta: { auth: true, roles: ['Retail Salesperson'] } },
@@ -81,6 +106,13 @@ router.beforeEach((to) => {
   if (to.meta.auth) {
     if (!auth.token) return { name: 'login', query: { next: to.fullPath } }
     if (to.meta.roles && !to.meta.roles.includes(auth.role)) return roleHome(auth.role)
+
+    if (to.meta.requiresEmailVerified && auth.role === 'Customer' && !auth.emailVerified) {
+      return {
+        name: 'verifyEmailPending',
+        query: { email: auth.email || undefined },
+      }
+    }
   }
 })
 

@@ -3,7 +3,7 @@
     <div class="head">
       <div>
         <h1 class="h1">Order Management</h1>
-        <p class="sub">Approve/reject credit and update order statuses</p>
+        <p class="sub">View customer orders — FedEx Express ships automatically after checkout</p>
       </div>
       <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
     </div>
@@ -19,9 +19,8 @@
             <th>Customer</th>
             <th>Date</th>
             <th>Total</th>
-            <th>Status</th>
             <th>Payment</th>
-            <th class="right">Actions</th>
+            <th>Shipping</th>
           </tr>
         </thead>
         <tbody>
@@ -33,60 +32,27 @@
             </td>
             <td class="mutedTd">{{ formatDate(o.orderDate) }}</td>
             <td class="strong">${{ Number(o.totalPrice).toFixed(2) }}</td>
+            <td class="mutedTd">{{ paymentLabel(o.paymentMethod) }}</td>
             <td>
-              <span class="badge" :class="badgeClass(o.orderStatus)">{{ o.orderStatus }}</span>
-            </td>
-            <td class="mutedTd">{{ o.paymentMethod }}</td>
-            <td class="actions right">
-              <div class="stack">
-                <div v-if="o.paymentMethod === 'Credit' && o.orderStatus === 'Pending Credit'" class="credit">
-                  <button class="btnMini" type="button" :disabled="saving" @click="creditDecision(o.orderID, true)">
-                    Approve
-                  </button>
-                  <button class="btnMini danger" type="button" :disabled="saving" @click="creditDecision(o.orderID, false)">
-                    Reject
-                  </button>
-                </div>
-
-                <div class="rowAct">
-                  <select v-model="statusEdits[o.orderID]" class="statusSel">
-                    <option v-for="s in statusChoices(o.orderStatus)" :key="s" :value="s">{{ s }}</option>
-                  </select>
-                  <button class="btnMini primary" type="button" :disabled="saving" @click="setStatus(o.orderID)">Apply</button>
-                </div>
-              </div>
+              <div class="shipLine">{{ SHIPPING.service }}</div>
+              <div class="track mono">{{ trackingNumber(o.orderID) }}</div>
+              <div class="shipEta">{{ SHIPPING.estimatedDelivery }}</div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <p v-if="ok" class="success">{{ ok }}</p>
   </section>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { api } from '../api/client'
+import { SHIPPING, trackingNumber } from '../utils/shipping'
 
 const orders = ref([])
 const loading = ref(false)
-const saving = ref(false)
 const error = ref(null)
-const ok = ref(null)
-const statusEdits = reactive({})
-
-const settableStatuses = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
-
-function statusChoices(current) {
-  const cur = String(current || '')
-  const out = []
-  if (cur) out.push(cur)
-  for (const s of settableStatuses) {
-    if (!out.includes(s)) out.push(s)
-  }
-  return out
-}
 
 function formatDate(iso) {
   const d = new Date(iso)
@@ -115,59 +81,22 @@ function customerId(email) {
   return `C${n}`
 }
 
-function badgeClass(status) {
-  const s = String(status || '').toLowerCase()
-  if (s.includes('complete') || s.includes('deliver')) return 'bGreen'
-  if (s.includes('confirm') || s.includes('placed') || s.includes('process') || s.includes('ship')) return 'bBlue'
-  if (s.includes('pending') || s.includes('credit')) return 'bAmber'
-  if (s.includes('cancel') || s.includes('reject')) return 'bRed'
-  return 'bGray'
+function paymentLabel(method) {
+  if (method === 'CreditCard') return 'Credit Card'
+  if (method === 'Cash') return 'Cash on Delivery'
+  return method || '—'
 }
 
 async function load() {
   loading.value = true
   error.value = null
-  ok.value = null
   try {
     const res = await api.get('/api/orders?limit=100')
     orders.value = res.data
-    for (const o of orders.value) {
-      if (!statusEdits[o.orderID]) statusEdits[o.orderID] = o.orderStatus
-    }
   } catch (e) {
     error.value = e?.response?.data || 'Failed to load orders'
   } finally {
     loading.value = false
-  }
-}
-
-async function setStatus(orderID) {
-  saving.value = true
-  error.value = null
-  ok.value = null
-  try {
-    await api.post('/api/orders/status', { orderID, orderStatus: statusEdits[orderID] })
-    ok.value = `Updated ${orderID}`
-    await load()
-  } catch (e) {
-    error.value = e?.response?.data || 'Update failed'
-  } finally {
-    saving.value = false
-  }
-}
-
-async function creditDecision(orderID, approve) {
-  saving.value = true
-  error.value = null
-  ok.value = null
-  try {
-    await api.post('/api/orders/credit/decision', { orderID, approve })
-    ok.value = approve ? `Approved ${orderID}` : `Rejected ${orderID}`
-    await load()
-  } catch (e) {
-    error.value = e?.response?.data || 'Decision failed'
-  } finally {
-    saving.value = false
   }
 }
 
@@ -240,9 +169,6 @@ tbody td {
   border-bottom: 1px solid #eef2f7;
   vertical-align: top;
 }
-.right {
-  text-align: right;
-}
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
@@ -265,88 +191,21 @@ tbody td {
   font-weight: 650;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 950;
-  border: 1px solid transparent;
-}
-.bGreen {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
-  border-color: rgba(16, 185, 129, 0.22);
-}
-.bBlue {
-  background: rgba(37, 99, 235, 0.12);
-  color: #1d4ed8;
-  border-color: rgba(37, 99, 235, 0.22);
-}
-.bAmber {
-  background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
-  border-color: rgba(245, 158, 11, 0.22);
-}
-.bRed {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
-  border-color: rgba(239, 68, 68, 0.18);
-}
-.bGray {
-  background: rgba(148, 163, 184, 0.14);
-  color: #334155;
-  border-color: rgba(148, 163, 184, 0.22);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-}
-.stack {
-  display: grid;
-  gap: 10px;
-  justify-items: end;
-}
-.credit {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-.rowAct {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-}
-.statusSel {
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #fff;
+.shipLine {
   font-weight: 850;
   color: var(--text-h);
 }
-.btnMini {
-  border: 1px solid var(--border);
-  background: #fff;
-  padding: 8px 10px;
-  border-radius: 12px;
-  font-weight: 950;
-  cursor: pointer;
-}
-.btnMini.primary {
-  border-color: rgba(37, 99, 235, 0.28);
-  background: rgba(37, 99, 235, 0.10);
+.track {
+  margin-top: 4px;
+  font-size: 12px;
   color: #1d4ed8;
+  font-weight: 800;
 }
-.btnMini.danger {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.08);
-  color: #b91c1c;
+.shipEta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 650;
 }
 
 .error {
@@ -357,13 +216,4 @@ tbody td {
   padding: 8px 10px;
   border-radius: 12px;
 }
-.success {
-  margin-top: 12px;
-  color: #05603a;
-  background: rgba(5, 96, 58, 0.08);
-  border: 1px solid rgba(5, 96, 58, 0.18);
-  padding: 8px 10px;
-  border-radius: 12px;
-}
 </style>
-
