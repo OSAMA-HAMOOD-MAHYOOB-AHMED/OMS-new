@@ -20,3 +20,13 @@ public sealed record AdminSalesReportResponse(
     IReadOnlyList<AdminSalesDailyRow> Daily,
     IReadOnlyList<AdminOrderStatusBreakdownRow> StatusBreakdown);
 
+public sealed record UpdateOrderStatusRequest(string Status);
+
+public static class OrderStatus
+{
+    public static readonly IReadOnlySet<string> Valid = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Placed", "Processing", "Shipped", "Delivered", "Cancelled"
+    };
+}
+

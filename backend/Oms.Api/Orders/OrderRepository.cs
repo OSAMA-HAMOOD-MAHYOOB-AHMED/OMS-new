@@ -78,7 +78,7 @@ public sealed class OrderRepository(IDbConnectionFactory db)
 
         const string insertOrder = """
             INSERT INTO "Order" (orderID, email, orderDate, totalPrice, orderStatus, paymentMethod, creditStatus)
-            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Shipped', 'Cash', NULL);
+            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Placed', 'Cash', NULL);
             """;
         await conn.ExecuteAsync(insertOrder, new
         {
@@ -180,7 +180,7 @@ public sealed class OrderRepository(IDbConnectionFactory db)
 
         const string insertOrder = """
             INSERT INTO "Order" (orderID, email, orderDate, totalPrice, orderStatus, paymentMethod, paymentStatus, creditStatus)
-            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Shipped', @paymentMethod, @paymentStatus, NULL);
+            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Placed', @paymentMethod, @paymentStatus, NULL);
             """;
         await conn.ExecuteAsync(insertOrder, new
         {

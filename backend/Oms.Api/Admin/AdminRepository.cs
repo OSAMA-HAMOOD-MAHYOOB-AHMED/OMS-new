@@ -90,6 +90,17 @@ public sealed class AdminRepository(IDbConnectionFactory db)
         return (await conn.QueryAsync<AdminCustomerRow>(sql, new { q = string.IsNullOrWhiteSpace(q) ? null : q })).ToList();
     }
 
+    public async Task<bool> UpdateOrderStatus(string orderID, string status)
+    {
+        const string sql = """
+            UPDATE "Order" SET orderStatus = @status WHERE orderID = @orderID;
+            """;
+        using var conn = db.Create();
+        await OpenAsync(conn);
+        var rows = await conn.ExecuteAsync(sql, new { orderID, status });
+        return rows > 0;
+    }
+
     public async Task<AdminSalesReportResponse> SalesReport(int dailyLimit = 60)
     {
         dailyLimit = Math.Clamp(dailyLimit, 7, 120);

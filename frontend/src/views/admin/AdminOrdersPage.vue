@@ -3,7 +3,7 @@
     <div class="head">
       <div>
         <h1 class="h1">Order Management</h1>
-        <p class="sub">View customer orders — FedEx Express ships automatically after checkout</p>
+        <p class="sub">View and manage customer orders</p>
       </div>
       <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
     </div>
@@ -27,6 +27,7 @@
             <th>Date</th>
             <th>Total</th>
             <th>Payment</th>
+            <th>Status</th>
             <th>Shipping</th>
           </tr>
         </thead>
@@ -41,6 +42,17 @@
             <td class="strong">${{ Number(o.totalPrice).toFixed(2) }}</td>
             <td class="mutedTd">{{ paymentLabel(o.paymentMethod) }}</td>
             <td>
+              <select
+                :value="o.orderStatus"
+                class="statusSelect"
+                :class="statusClass(o.orderStatus)"
+                :disabled="updatingStatus[o.orderID]"
+                @change="(e) => updateStatus(o, e.target.value)"
+              >
+                <option v-for="s in ORDER_STATUSES" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </td>
+            <td>
               <div class="shipLine">{{ SHIPPING.service }}</div>
               <div class="track mono">{{ trackingNumber(o.orderID) }}</div>
               <div class="shipEta">{{ SHIPPING.estimatedDelivery }}</div>
@@ -53,13 +65,16 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, reactive } from 'vue'
 import { api } from '../../api/client'
 import { SHIPPING, trackingNumber } from '../../utils/shipping'
+
+const ORDER_STATUSES = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
 
 const orders = ref([])
 const loading = ref(false)
 const error = ref(null)
+const updatingStatus = reactive({})
 
 const q = ref('')
 
@@ -103,6 +118,28 @@ function paymentLabel(method) {
   if (method === 'CreditCard') return 'Credit Card'
   if (method === 'Cash') return 'Cash on Delivery'
   return method || '—'
+}
+
+function statusClass(status) {
+  if (status === 'Placed') return 'statusPlaced'
+  if (status === 'Processing') return 'statusProcessing'
+  if (status === 'Shipped') return 'statusShipped'
+  if (status === 'Delivered') return 'statusDelivered'
+  if (status === 'Cancelled') return 'statusCancelled'
+  return ''
+}
+
+async function updateStatus(order, newStatus) {
+  if (newStatus === order.orderStatus) return
+  updatingStatus[order.orderID] = true
+  try {
+    await api.patch(`/api/admin/orders/${order.orderID}/status`, { status: newStatus })
+    order.orderStatus = newStatus
+  } catch (e) {
+    alert(e?.response?.data || 'Failed to update status')
+  } finally {
+    updatingStatus[order.orderID] = false
+  }
 }
 
 async function load() {
@@ -243,6 +280,21 @@ tbody td {
   color: var(--muted);
   font-weight: 650;
 }
+
+.statusSelect {
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: #f8fafc;
+}
+.statusPlaced    { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+.statusProcessing{ color: #92400e; background: #fffbeb; border-color: #fde68a; }
+.statusShipped   { color: #5b21b6; background: #f5f3ff; border-color: #ddd6fe; }
+.statusDelivered { color: #065f46; background: #ecfdf5; border-color: #a7f3d0; }
+.statusCancelled { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
 
 .btnGhost {
   border: 1px solid var(--border);

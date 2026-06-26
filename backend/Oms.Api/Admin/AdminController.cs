@@ -51,6 +51,18 @@ public sealed class AdminController(AdminRepository admin, DashboardRepository d
         return Ok(rows);
     }
 
+    [HttpPatch("orders/{orderID}/status")]
+    [Authorize(Roles = $"{UserRole.Admin},{UserRole.RetailSalesperson},{UserRole.WarehouseManager}")]
+    public async Task<IActionResult> UpdateOrderStatus([FromRoute] string orderID, [FromBody] UpdateOrderStatusRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Status) || !OrderStatus.Valid.Contains(req.Status))
+            return BadRequest($"Invalid status. Valid values: {string.Join(", ", OrderStatus.Valid)}");
+
+        var found = await admin.UpdateOrderStatus(orderID, req.Status);
+        if (!found) return NotFound("Order not found.");
+        return NoContent();
+    }
+
     [HttpGet("reports/sales")]
     public async Task<ActionResult<AdminSalesReportResponse>> SalesReport([FromQuery] int dailyLimit = 60)
     {
