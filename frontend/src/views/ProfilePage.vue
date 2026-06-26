@@ -26,7 +26,15 @@
 
       <div class="card topCard">
         <div class="profileRow">
-          <div class="avatar" aria-hidden="true">{{ initials }}</div>
+          <div class="avatarWrap">
+            <img v-if="avatarUrl" :src="avatarUrl" class="avatarImg" alt="Profile photo" />
+            <div v-else class="avatar" aria-hidden="true">{{ initials }}</div>
+            <button class="avatarEditBtn" type="button" :disabled="uploadingAvatar" title="Change photo" @click="avatarFileInput.click()">
+              {{ uploadingAvatar ? '…' : '📷' }}
+            </button>
+            <button v-if="avatarUrl" class="avatarDelBtn" type="button" title="Remove photo" @click="removeAvatar">✕</button>
+          </div>
+          <input ref="avatarFileInput" type="file" accept="image/*" class="hiddenInput" @change="onAvatarFile" />
           <div>
             <div class="name">{{ form.name || 'Customer' }}</div>
             <div class="roleLine">{{ roleLabel }}</div>
@@ -170,9 +178,12 @@ cart.hydrate()
 const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+const uploadingAvatar = ref(false)
 const error = ref(null)
 const ok = ref(null)
 const resending = ref(false)
+const avatarUrl = ref(null)
+const avatarFileInput = ref(null)
 
 const form = reactive({ name: '', phoneNumber: '', address: '' })
 const pw = reactive({ currentPassword: '', newPassword: '' })
@@ -245,6 +256,7 @@ async function load() {
     form.phoneNumber = res.data.phoneNumber
     form.address = res.data.address
     profileRole.value = res.data.role || auth.role || ''
+    avatarUrl.value = res.data.avatarUrl || null
     if (res.data.emailVerified) auth.markEmailVerified()
     await loadStats()
   } catch (e) {
@@ -318,6 +330,65 @@ async function deleteAccount() {
   }
 }
 
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) return reject(new Error('Please select an image file.'))
+    if (file.size > 5 * 1024 * 1024) return reject(new Error('Image must be under 5MB.'))
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Failed to read file.'))
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onerror = () => reject(new Error('Failed to load image.'))
+      img.onload = () => {
+        const MAX = 256
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.82))
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+async function onAvatarFile(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  e.target.value = ''
+  uploadingAvatar.value = true
+  error.value = null
+  ok.value = null
+  try {
+    const dataUrl = await compressImage(file)
+    await api.put('/api/profile/avatar', { avatarUrl: dataUrl })
+    avatarUrl.value = dataUrl
+    ok.value = 'Profile photo updated.'
+  } catch (e) {
+    error.value = e?.response?.data || e?.message || 'Failed to upload photo.'
+  } finally {
+    uploadingAvatar.value = false
+  }
+}
+
+async function removeAvatar() {
+  if (!confirm('Remove your profile photo?')) return
+  uploadingAvatar.value = true
+  error.value = null
+  ok.value = null
+  try {
+    await api.delete('/api/profile/avatar')
+    avatarUrl.value = null
+    ok.value = 'Profile photo removed.'
+  } catch (e) {
+    error.value = e?.response?.data || 'Failed to remove photo.'
+  } finally {
+    uploadingAvatar.value = false
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -380,6 +451,56 @@ onMounted(load)
   display: flex;
   gap: 14px;
   align-items: center;
+}
+.avatarWrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+.avatarImg {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+  display: block;
+}
+.avatarEditBtn {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: var(--brand-blue);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.avatarDelBtn {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: #b42318;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 950;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.hiddenInput {
+  display: none;
 }
 .avatar {
   width: 72px;

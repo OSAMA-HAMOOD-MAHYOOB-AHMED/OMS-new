@@ -25,7 +25,8 @@ public sealed class ProfileController(UserProfileRepository profiles) : Controll
             PhoneNumber = u.PhoneNumber,
             Address = u.Address,
             Role = u.Role,
-            EmailVerified = u.EmailVerified
+            EmailVerified = u.EmailVerified,
+            AvatarUrl = u.AvatarUrl
         });
     }
 
@@ -71,6 +72,38 @@ public sealed class ProfileController(UserProfileRepository profiles) : Controll
         {
             return BadRequest(ex.Message);
         }
+    }
+
+    [HttpPut("avatar")]
+    public async Task<IActionResult> UpdateAvatar([FromBody] UpdateAvatarRequest req)
+    {
+        var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(req.AvatarUrl) || !req.AvatarUrl.StartsWith("data:image/"))
+            return BadRequest("Invalid image.");
+
+        if (req.AvatarUrl.Length > 2_000_000)
+            return BadRequest("Image too large. Please use an image under 1MB.");
+
+        try
+        {
+            await profiles.UpdateAvatar(email, req.AvatarUrl);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpDelete("avatar")]
+    public async Task<IActionResult> DeleteAvatar()
+    {
+        var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
+        await profiles.DeleteAvatar(email);
+        return NoContent();
     }
 
     [HttpPost("delete")]

@@ -60,6 +60,21 @@ public sealed class UserProfileRepository(IDbConnectionFactory db, UserRepositor
         if (rows != 1) throw new InvalidOperationException("User not found.");
     }
 
+    public async Task UpdateAvatar(string email, string avatarUrl)
+    {
+        const string sql = """UPDATE "User" SET avatarurl = @avatarUrl WHERE email = @email;""";
+        using var conn = db.Create();
+        var rows = await conn.ExecuteAsync(sql, new { email, avatarUrl });
+        if (rows != 1) throw new InvalidOperationException("User not found.");
+    }
+
+    public async Task DeleteAvatar(string email)
+    {
+        const string sql = """UPDATE "User" SET avatarurl = NULL WHERE email = @email;""";
+        using var conn = db.Create();
+        await conn.ExecuteAsync(sql, new { email });
+    }
+
     public async Task DeleteAccount(string email, DeleteAccountRequest req)
     {
         if (AuthValidator.IsDemoEmail(email))

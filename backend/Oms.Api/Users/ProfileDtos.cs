@@ -6,6 +6,8 @@ public sealed record ChangePasswordRequest(string CurrentPassword, string NewPas
 
 public sealed record DeleteAccountRequest(string Password);
 
+public sealed record UpdateAvatarRequest(string AvatarUrl);
+
 public sealed class ProfileResponse
 {
     public required string Email { get; init; }
@@ -14,5 +16,6 @@ public sealed class ProfileResponse
     public required string Address { get; init; }
     public required string Role { get; init; }
     public bool EmailVerified { get; init; }
+    public string? AvatarUrl { get; init; }
 }
 

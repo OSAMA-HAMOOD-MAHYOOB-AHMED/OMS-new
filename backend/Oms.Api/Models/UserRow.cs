@@ -11,5 +11,6 @@ public sealed class UserRow
     public bool EmailVerified { get; init; }
     public string? VerificationToken { get; init; }
     public DateTime? VerificationTokenExpires { get; init; }
+    public string? AvatarUrl { get; init; }
 }
 
