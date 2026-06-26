@@ -710,4 +710,41 @@ applyValidation()
   font-size: 12px;
   font-weight: 750;
 }
+
+@media (max-width: 520px) {
+  .h1 {
+    font-size: 28px;
+  }
+  .item {
+    grid-template-columns: 72px 1fr;
+    grid-template-areas:
+      'thumb mid'
+      'actions actions';
+    align-items: start;
+  }
+  .thumb {
+    grid-area: thumb;
+    width: 72px;
+    height: 72px;
+  }
+  .mid {
+    grid-area: mid;
+  }
+  .right {
+    grid-area: actions;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    justify-self: stretch;
+    display: flex;
+  }
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+  .summary {
+    position: sticky;
+    bottom: 8px;
+  }
+}
 </style>

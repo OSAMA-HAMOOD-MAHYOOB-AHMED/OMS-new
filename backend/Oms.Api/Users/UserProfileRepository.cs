@@ -1,3 +1,4 @@
+using System.Data.Common;
 using BCrypt.Net;
 using Dapper;
 using Oms.Api.Auth;
@@ -8,6 +9,13 @@ namespace Oms.Api.Users;
 
 public sealed class UserProfileRepository(IDbConnectionFactory db, UserRepository users)
 {
+    private static async Task OpenAsync(System.Data.IDbConnection conn)
+    {
+        if (conn is DbConnection dbc)
+            await dbc.OpenAsync();
+        else
+            conn.Open();
+    }
     public async Task<UserRow?> Get(string email) => await users.GetByEmail(email);
 
     public async Task UpdateProfile(string email, UpdateProfileRequest req)
@@ -50,6 +58,54 @@ public sealed class UserProfileRepository(IDbConnectionFactory db, UserRepositor
         using var conn = db.Create();
         var rows = await conn.ExecuteAsync(sql, new { email, password = hashed });
         if (rows != 1) throw new InvalidOperationException("User not found.");
+    }
+
+    public async Task DeleteAccount(string email, DeleteAccountRequest req)
+    {
+        if (AuthValidator.IsDemoEmail(email))
+            throw new InvalidOperationException("Demo accounts cannot be deleted.");
+
+        var u = await users.GetByEmail(email);
+        if (u is null) throw new InvalidOperationException("User not found.");
+        if (!BCrypt.Net.BCrypt.Verify(req.Password ?? "", u.Password))
+            throw new InvalidOperationException("Password is incorrect.");
+
+        using var conn = db.Create();
+        await OpenAsync(conn);
+        using var tx = conn.BeginTransaction();
+
+        await conn.ExecuteAsync("""
+            DELETE FROM Invoice
+            WHERE orderID IN (SELECT orderID FROM "Order" WHERE email = @email);
+            """, new { email }, tx);
+
+        await conn.ExecuteAsync("""
+            DELETE FROM Invoice
+            WHERE email = @email;
+            """, new { email }, tx);
+
+        await conn.ExecuteAsync("""
+            DELETE FROM Order_Item
+            WHERE orderID IN (SELECT orderID FROM "Order" WHERE email = @email);
+            """, new { email }, tx);
+
+        await conn.ExecuteAsync("""
+            DELETE FROM "Order"
+            WHERE email = @email;
+            """, new { email }, tx);
+
+        var rows = await conn.ExecuteAsync("""
+            DELETE FROM "User"
+            WHERE email = @email;
+            """, new { email }, tx);
+
+        if (rows != 1)
+        {
+            tx.Rollback();
+            throw new InvalidOperationException("User not found.");
+        }
+
+        tx.Commit();
     }
 }
 

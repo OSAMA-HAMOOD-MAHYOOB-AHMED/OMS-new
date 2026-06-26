@@ -72,5 +72,25 @@ public sealed class ProfileController(UserProfileRepository profiles) : Controll
             return BadRequest(ex.Message);
         }
     }
+
+    [HttpPost("delete")]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest req)
+    {
+        var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(req.Password))
+            return BadRequest("Password is required.");
+
+        try
+        {
+            await profiles.DeleteAccount(email, req);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }
 

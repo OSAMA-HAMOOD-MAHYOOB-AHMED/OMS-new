@@ -332,5 +332,43 @@ onMounted(load)
   padding: 8px 10px;
   border-radius: 12px;
 }
+
+@media (max-width: 520px) {
+  .h1 {
+    font-size: 28px;
+  }
+  .head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filters {
+    width: 100%;
+  }
+  .select {
+    flex: 1;
+    min-width: 0;
+  }
+  .top {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .rightTop {
+    justify-items: start;
+  }
+  .line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .actions {
+    flex-direction: column;
+  }
+  .actions .btnPrimary,
+  .actions .btnGhost {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
 </style>
 

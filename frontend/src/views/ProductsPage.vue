@@ -19,8 +19,11 @@
       </select>
     </div>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ loadingMessage }}</div>
+    <div v-else-if="error" class="errorBox">
+      <p class="error">{{ error }}</p>
+      <button class="btn small retry" type="button" @click="load()">Try again</button>
+    </div>
 
     <div v-else class="grid">
       <article v-for="p in filtered" :key="p.productID" class="product" @click="open(p.productID)">
@@ -50,6 +53,7 @@ import { computed, onMounted, ref } from 'vue'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
+import { formatApiError, isRetryableApiError, sleep } from '../utils/apiError'
 import { productImageUrl } from '../utils/images'
 import { useRouter } from 'vue-router'
 
@@ -63,6 +67,7 @@ const router = useRouter()
 
 const products = ref([])
 const loading = ref(false)
+const loadingMessage = ref('Loading...')
 const error = ref(null)
 
 const q = ref('')
@@ -83,14 +88,23 @@ const filtered = computed(() => {
   })
 })
 
-async function load() {
+async function load(attempt = 0) {
   loading.value = true
+  loadingMessage.value = attempt > 0 ? 'Connecting to API...' : 'Loading...'
   error.value = null
   try {
     const res = await api.get('/api/products')
+    if (!Array.isArray(res.data)) {
+      throw new Error('Unexpected API response while loading products.')
+    }
     products.value = res.data
   } catch (e) {
-    error.value = e?.response?.data || 'Failed to load products'
+    if (attempt < 2 && isRetryableApiError(e)) {
+      loadingMessage.value = 'API is waking up, retrying...'
+      await sleep(4000)
+      return load(attempt + 1)
+    }
+    error.value = formatApiError(e) || 'Failed to load products'
   } finally {
     loading.value = false
   }
@@ -202,6 +216,19 @@ onMounted(load)
   .grid {
     grid-template-columns: 1fr;
   }
+  .h1 {
+    font-size: 28px;
+  }
+  .search {
+    flex: 1 1 100%;
+  }
+  .select {
+    flex: 1;
+    min-width: 0;
+  }
+  .filterIcon {
+    display: none;
+  }
 }
 .product {
   border: 1px solid var(--border);
@@ -277,13 +304,21 @@ onMounted(load)
   justify-content: flex-end;
   margin-top: 6px;
 }
-.error {
+.errorBox {
+  display: grid;
+  gap: 10px;
   margin-top: 12px;
+}
+.error {
+  margin: 0;
   color: #b42318;
   background: rgba(180, 35, 24, 0.08);
   border: 1px solid rgba(180, 35, 24, 0.2);
   padding: 8px 10px;
   border-radius: 12px;
+}
+.retry {
+  justify-self: start;
 }
 </style>
 

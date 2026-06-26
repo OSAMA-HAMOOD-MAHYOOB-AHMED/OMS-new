@@ -1,29 +1,8 @@
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
+import { formatApiError } from '../utils/apiError'
 
 const STORAGE_KEY = 'oms_auth'
-
-function formatApiError(err) {
-  if (!err?.response) {
-    if (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error') {
-      return 'Cannot reach the API server. Start the backend locally, or deploy it and rebuild the frontend for Firebase.'
-    }
-    return err?.message || 'Request failed'
-  }
-  const data = err.response.data
-  if (!data) return 'Request failed'
-  if (typeof data === 'string') return data
-  if (typeof data === 'object') {
-    if (typeof data.message === 'string') return data.message
-    if (typeof data.detail === 'string') return data.detail
-    if (typeof data.title === 'string' && typeof data.status === 'number') return `${data.title} (${data.status})`
-  }
-  try {
-    return JSON.stringify(data)
-  } catch {
-    return 'Request failed'
-  }
-}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({

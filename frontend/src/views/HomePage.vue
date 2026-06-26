@@ -231,11 +231,21 @@ function goSecondary() {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
-@media (max-width: 980px) {
+@media (max-width: 520px) {
   .cats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+  }
+  .heroInner {
+    padding: 36px 16px;
+  }
+  .ctaBand {
+    padding: 22px 14px;
+  }
+  .ctaTitle {
+    font-size: 22px;
   }
 }
+
 .cat {
   position: relative;
   height: 170px;

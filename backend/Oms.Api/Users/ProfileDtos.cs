@@ -4,6 +4,8 @@ public sealed record UpdateProfileRequest(string Name, string PhoneNumber, strin
 
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 
+public sealed record DeleteAccountRequest(string Password);
+
 public sealed class ProfileResponse
 {
     public required string Email { get; init; }

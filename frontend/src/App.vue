@@ -9,18 +9,28 @@
         </div>
       </div>
 
-      <nav class="adminNav">
-        <RouterLink class="adminLink" :class="{ active: isActive('adminDashboard') }" to="/admin/dashboard">
+      <button
+        class="menuBtn adminMenuBtn"
+        type="button"
+        :aria-expanded="adminNavOpen ? 'true' : 'false'"
+        aria-label="Toggle admin menu"
+        @click="adminNavOpen = !adminNavOpen"
+      >
+        {{ adminNavOpen ? '✕' : '☰' }}
+      </button>
+
+      <nav class="adminNav" :class="{ open: adminNavOpen }">
+        <RouterLink class="adminLink" :class="{ active: isActive('adminDashboard') }" to="/admin/dashboard" @click="closeNav">
           Dashboard
         </RouterLink>
-        <RouterLink class="adminLink" :class="{ active: isActive('adminProducts') }" to="/admin/products">
+        <RouterLink class="adminLink" :class="{ active: isActive('adminProducts') }" to="/admin/products" @click="closeNav">
           Products
         </RouterLink>
-        <RouterLink class="adminLink" :class="{ active: isActive('adminOrders') }" to="/admin/orders"> Orders </RouterLink>
-        <RouterLink class="adminLink" :class="{ active: isActive('adminCustomers') }" to="/admin/customers">
+        <RouterLink class="adminLink" :class="{ active: isActive('adminOrders') }" to="/admin/orders" @click="closeNav"> Orders </RouterLink>
+        <RouterLink class="adminLink" :class="{ active: isActive('adminCustomers') }" to="/admin/customers" @click="closeNav">
           Customers
         </RouterLink>
-        <RouterLink class="adminLink" :class="{ active: isActive('adminReports') }" to="/admin/reports"> Reports </RouterLink>
+        <RouterLink class="adminLink" :class="{ active: isActive('adminReports') }" to="/admin/reports" @click="closeNav"> Reports </RouterLink>
       </nav>
 
       <div class="adminActions">
@@ -39,24 +49,34 @@
         </div>
       </div>
 
-      <nav class="nav">
-        <RouterLink class="link" to="/">Home</RouterLink>
+      <button
+        class="menuBtn"
+        type="button"
+        :aria-expanded="navOpen ? 'true' : 'false'"
+        aria-label="Toggle menu"
+        @click="navOpen = !navOpen"
+      >
+        {{ navOpen ? '✕' : '☰' }}
+      </button>
+
+      <nav class="nav" :class="{ open: navOpen }">
+        <RouterLink class="link" to="/" @click="closeNav">Home</RouterLink>
 
         <template v-if="isAuthed && role === 'Customer'">
-          <RouterLink class="link" to="/products">Products</RouterLink>
-          <RouterLink class="link" to="/customer/orders">Orders</RouterLink>
-          <RouterLink class="link" to="/profile">Profile</RouterLink>
+          <RouterLink class="link" to="/products" @click="closeNav">Products</RouterLink>
+          <RouterLink class="link" to="/customer/orders" @click="closeNav">Orders</RouterLink>
+          <RouterLink class="link" to="/profile" @click="closeNav">Profile</RouterLink>
         </template>
 
         <template v-else-if="isAuthed && role === 'Retail Salesperson'">
-          <RouterLink class="link" to="/dashboard/sales">Sales</RouterLink>
-          <RouterLink class="link" to="/sales/orders">Orders</RouterLink>
+          <RouterLink class="link" to="/dashboard/sales" @click="closeNav">Sales</RouterLink>
+          <RouterLink class="link" to="/sales/orders" @click="closeNav">Orders</RouterLink>
         </template>
 
         <template v-else-if="isAuthed && role === 'Warehouse Manager'">
-          <RouterLink class="link" to="/products">Products</RouterLink>
-          <RouterLink class="link" to="/warehouse/inventory">Inventory</RouterLink>
-          <RouterLink class="link" to="/dashboard/warehouse">Dashboard</RouterLink>
+          <RouterLink class="link" to="/products" @click="closeNav">Products</RouterLink>
+          <RouterLink class="link" to="/warehouse/inventory" @click="closeNav">Inventory</RouterLink>
+          <RouterLink class="link" to="/dashboard/warehouse" @click="closeNav">Dashboard</RouterLink>
         </template>
       </nav>
 
@@ -87,7 +107,7 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
@@ -114,9 +134,22 @@ const isAdminShell = computed(() => {
 
 const cartCount = computed(() => cart.items.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0))
 
+const navOpen = ref(false)
+const adminNavOpen = ref(false)
+
+function closeNav() {
+  navOpen.value = false
+  adminNavOpen.value = false
+}
+
 function isActive(name) {
   return route.name === name
 }
+
+watch(
+  () => route.fullPath,
+  () => closeNav(),
+)
 
 watch(
   () => auth.token,
@@ -394,5 +427,110 @@ async function logout() {
   border-radius: 12px;
   font-weight: 900;
   border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.menuBtn {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-h);
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.adminMenuBtn {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .topbar,
+  .adminTopbar {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .brand,
+  .adminBrand {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .subtitle,
+  .adminBrandSub {
+    display: none;
+  }
+
+  .title,
+  .adminBrandTitle {
+    font-size: 15px;
+  }
+
+  .actions,
+  .adminActions {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .adminEmail {
+    display: none;
+  }
+
+  .menuBtn {
+    display: inline-flex;
+  }
+
+  .nav,
+  .adminNav {
+    display: none;
+    flex-basis: 100%;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+
+  .adminNav {
+    border-top-color: rgba(148, 163, 184, 0.2);
+  }
+
+  .nav.open,
+  .adminNav.open {
+    display: flex;
+  }
+
+  .link,
+  .adminLink {
+    text-align: center;
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .btn {
+    padding: 9px 11px;
+    font-size: 14px;
+  }
+
+  .content,
+  .content.wide {
+    width: calc(100% - 24px);
+    padding: 16px 0 32px;
+  }
+}
+
+@media (max-width: 420px) {
+  .actions .btnGhost:not(.iconBtn) {
+    padding: 9px 10px;
+  }
 }
 </style>

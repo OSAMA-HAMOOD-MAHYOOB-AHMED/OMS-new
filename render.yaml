@@ -22,7 +22,7 @@ services:
       - key: DemoSeed__Enabled
         value: "true"
       - key: App__FrontendUrl
-        value: https://frontend-three-omega-20.vercel.app
+        value: https://alwakeel-alshamel.vercel.app
       - key: Jwt__Issuer
         value: oms
       - key: Jwt__Audience

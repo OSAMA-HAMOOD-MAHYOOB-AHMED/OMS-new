@@ -33,6 +33,7 @@
         </button>
       </form>
 
+      <p v-if="sessionExpired" class="notice">Your session expired. Sign in again to continue.</p>
       <p v-if="auth.error" class="error">{{ auth.error }}</p>
       <p v-if="unverifiedEmail" class="notice">
         Your account is not verified yet.
@@ -54,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { siteLogoUrl } from '../utils/images'
@@ -66,6 +67,7 @@ const route = useRoute()
 const email = ref('')
 const password = ref('')
 const unverifiedEmail = ref('')
+const sessionExpired = computed(() => route.query.reason === 'session-expired')
 
 function roleHome(role) {
   if (role === 'Customer') return { name: 'products' }

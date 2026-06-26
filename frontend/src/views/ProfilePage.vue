@@ -29,7 +29,7 @@
           <div class="avatar" aria-hidden="true">{{ initials }}</div>
           <div>
             <div class="name">{{ form.name || 'Customer' }}</div>
-            <div class="roleLine">Customer Account</div>
+            <div class="roleLine">{{ roleLabel }}</div>
           </div>
         </div>
 
@@ -125,6 +125,27 @@
           </div>
         </div>
       </div>
+
+      <div v-if="!isDemoAccount" class="card danger">
+        <h3 class="h3 dangerTitle">Delete account</h3>
+        <p class="muted">
+          Permanently remove your account, profile details, and order history. This action cannot be undone.
+        </p>
+        <div class="form">
+          <label class="field">
+            <span class="lbl">Confirm with your password</span>
+            <input
+              v-model="deletePassword"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Enter your password"
+            />
+          </label>
+          <button class="btnDanger" type="button" :disabled="deleting" @click="deleteAccount">
+            {{ deleting ? 'Deleting...' : 'Delete my account' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <p v-if="ok" class="success">{{ ok }}</p>
@@ -133,23 +154,43 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
+import { useCartStore } from '../stores/cart'
+import { formatApiError } from '../utils/apiError'
 import { siteLogoUrl } from '../utils/images'
 
 const auth = useAuthStore()
+const cart = useCartStore()
+const router = useRouter()
 auth.hydrate()
+cart.hydrate()
 
 const loading = ref(false)
 const saving = ref(false)
+const deleting = ref(false)
 const error = ref(null)
 const ok = ref(null)
 const resending = ref(false)
 
 const form = reactive({ name: '', phoneNumber: '', address: '' })
 const pw = reactive({ currentPassword: '', newPassword: '' })
+const deletePassword = ref('')
+const profileRole = ref('')
 
 const email = computed(() => auth.email || '')
+
+const isDemoAccount = computed(() => String(email.value).toLowerCase().endsWith('@demo.local'))
+
+const roleLabel = computed(() => {
+  const role = profileRole.value || auth.role || 'Customer'
+  if (role === 'Customer') return 'Customer Account'
+  if (role === 'Admin') return 'Administrator Account'
+  if (role === 'Warehouse Manager') return 'Warehouse Manager Account'
+  if (role === 'Retail Salesperson') return 'Sales Account'
+  return `${role} Account`
+})
 
 const showDevInbox = computed(() => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -203,6 +244,7 @@ async function load() {
     form.name = res.data.name
     form.phoneNumber = res.data.phoneNumber
     form.address = res.data.address
+    profileRole.value = res.data.role || auth.role || ''
     if (res.data.emailVerified) auth.markEmailVerified()
     await loadStats()
   } catch (e) {
@@ -246,6 +288,33 @@ async function changePassword() {
     error.value = e?.response?.data || 'Failed to change password'
   } finally {
     saving.value = false
+  }
+}
+
+async function deleteAccount() {
+  if (!deletePassword.value) {
+    error.value = 'Enter your password to confirm account deletion.'
+    ok.value = null
+    return
+  }
+
+  const confirmed = window.confirm(
+    'This permanently deletes your account and all associated order history. This cannot be undone. Continue?',
+  )
+  if (!confirmed) return
+
+  deleting.value = true
+  error.value = null
+  ok.value = null
+  try {
+    await api.post('/api/profile/delete', { password: deletePassword.value })
+    cart.clear()
+    auth.logout()
+    await router.push({ name: 'home' })
+  } catch (e) {
+    error.value = formatApiError(e) || 'Failed to delete account'
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -559,6 +628,27 @@ input {
   border: 1px solid rgba(5, 96, 58, 0.18);
   padding: 8px 10px;
   border-radius: 12px;
+}
+.danger {
+  border-color: rgba(180, 35, 24, 0.25);
+  background: rgba(180, 35, 24, 0.04);
+}
+.dangerTitle {
+  color: #b42318;
+}
+.btnDanger {
+  border: 0;
+  cursor: pointer;
+  background: #b42318;
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 950;
+  box-shadow: var(--shadow-sm);
+}
+.btnDanger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 </style>
 
