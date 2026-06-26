@@ -6,7 +6,6 @@
         <select v-model="statusFilter" class="select">
           <option value="">All statuses</option>
           <option>Placed</option>
-          <option>Processing</option>
           <option>Shipped</option>
           <option>Delivered</option>
           <option>Cancelled</option>
