@@ -45,7 +45,6 @@
         <img class="logo" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
         <div class="brandText">
           <div class="title">Al-Wakeel Al-Shamel</div>
-          <div class="subtitle">Order Management</div>
         </div>
       </div>
 
