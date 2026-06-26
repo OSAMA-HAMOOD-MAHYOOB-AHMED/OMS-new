@@ -31,6 +31,8 @@ services:
         generateValue: true
       - key: ConnectionStrings__OmsDb
         sync: false
+      - key: Brevo__ApiKey
+        sync: false
       - key: Smtp__Enabled
         value: "true"
       - key: Smtp__Host

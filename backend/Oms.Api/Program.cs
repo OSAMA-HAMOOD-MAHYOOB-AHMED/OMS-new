@@ -49,12 +49,15 @@ builder.Services.AddSingleton<InvoiceService>();
 builder.Services.AddSingleton<NotificationService>();
 builder.Services.AddSingleton<PaymentService>();
 builder.Services.AddSingleton<EmailVerificationService>();
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<BrevoEmailSender>();
 builder.Services.AddSingleton<ConsoleEmailSender>();
 builder.Services.AddSingleton<SmtpEmailSender>();
 builder.Services.AddSingleton<IEmailSender>(sp =>
 {
-    // Prefer SMTP if enabled, otherwise log invoice to console.
     var cfg = sp.GetRequiredService<IConfiguration>();
+    if (!string.IsNullOrWhiteSpace(cfg["Brevo:ApiKey"]))
+        return sp.GetRequiredService<BrevoEmailSender>();
     return string.Equals(cfg["Smtp:Enabled"], "true", StringComparison.OrdinalIgnoreCase)
         ? sp.GetRequiredService<SmtpEmailSender>()
         : sp.GetRequiredService<ConsoleEmailSender>();
