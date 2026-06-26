@@ -9,8 +9,8 @@ public sealed class InvoiceRepository(IDbConnectionFactory db)
     {
         const string sql = """
             INSERT INTO Invoice (orderID, email, subject, body, createdAt)
-            VALUES (@orderID, @email, @subject, @body, @createdAt);
-            SELECT LAST_INSERT_ID();
+            VALUES (@orderID, @email, @subject, @body, @createdAt)
+            RETURNING invoiceid;
             """;
 
         using var conn = db.Create();
