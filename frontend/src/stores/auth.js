@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
 import { formatApiError } from '../utils/apiError'
+import { useCartStore } from './cart'
 
 const STORAGE_KEY = 'oms_auth'
 
@@ -58,11 +59,15 @@ export const useAuthStore = defineStore('auth', {
           email: String(email ?? '').trim().toLowerCase(),
           password: String(password ?? '').trim(),
         })
+        const previousEmail = this.email
         this.token = res.data.token
         this.email = res.data.email
         this.role = res.data.role
         this.emailVerified = res.data.emailVerified ?? false
         this.persist()
+        if (previousEmail !== res.data.email) {
+          useCartStore().clear()
+        }
         return 'ok'
       } catch (e) {
         if (e?.response?.status === 403) {
