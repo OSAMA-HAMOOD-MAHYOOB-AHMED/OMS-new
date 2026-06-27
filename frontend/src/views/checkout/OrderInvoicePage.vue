@@ -79,11 +79,12 @@
           <button class="btnGhost" type="button" :disabled="downloading" @click="download">Download PDF</button>
         </div>
         <iframe v-if="pdfUrl && !isMobile" class="pdfFrame" :src="pdfUrl" title="Invoice PDF preview" />
-        <div v-else-if="pdfUrl && isMobile" class="mobilePdf">
+        <div v-else-if="isMobile && invoice" class="mobilePdf">
           <div class="pdfFileIcon">📄</div>
-          <p class="mobilePdfMsg">PDF preview is not supported on mobile browsers.</p>
-          <button class="btnPrimary mobilePdfBtn" type="button" @click="openPdf">Open PDF</button>
-          <button class="btnGhost mobilePdfBtn" type="button" :disabled="downloading" @click="download">Download PDF</button>
+          <p class="mobilePdfMsg">Tap the button below to download your PDF invoice.</p>
+          <button class="btnPrimary mobilePdfBtn" type="button" :disabled="downloading" @click="download">
+            {{ downloading ? 'Preparing…' : 'Download PDF Invoice' }}
+          </button>
         </div>
         <div v-else class="pdfLoading">Generating PDF preview…</div>
       </div>
@@ -142,7 +143,9 @@ async function load() {
   try {
     const res = await api.get(`/api/invoices/${orderId}`)
     invoice.value = res.data
-    pdfUrl.value = await loadInvoicePdfUrl(api, orderId)
+    if (!isMobile.value) {
+      pdfUrl.value = await loadInvoicePdfUrl(api, orderId)
+    }
     startReturnTimer()
   } catch (e) {
     error.value = e?.response?.data || 'Invoice not found for this order.'
@@ -162,9 +165,6 @@ async function download() {
   }
 }
 
-function openPdf() {
-  if (pdfUrl.value) window.open(pdfUrl.value, '_blank')
-}
 
 onMounted(() => {
   window.addEventListener('resize', onResize)
