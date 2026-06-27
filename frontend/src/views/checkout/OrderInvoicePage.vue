@@ -78,7 +78,13 @@
           <div class="previewTitle">PDF Preview</div>
           <button class="btnGhost" type="button" :disabled="downloading" @click="download">Download PDF</button>
         </div>
-        <iframe v-if="pdfUrl" class="pdfFrame" :src="pdfUrl" title="Invoice PDF preview" />
+        <iframe v-if="pdfUrl && !isMobile" class="pdfFrame" :src="pdfUrl" title="Invoice PDF preview" />
+        <div v-else-if="pdfUrl && isMobile" class="mobilePdf">
+          <div class="pdfFileIcon">📄</div>
+          <p class="mobilePdfMsg">PDF preview is not supported on mobile browsers.</p>
+          <button class="btnPrimary mobilePdfBtn" type="button" @click="openPdf">Open PDF</button>
+          <button class="btnGhost mobilePdfBtn" type="button" :disabled="downloading" @click="download">Download PDF</button>
+        </div>
         <div v-else class="pdfLoading">Generating PDF preview…</div>
       </div>
 
@@ -96,6 +102,9 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+const isMobile = ref(window.innerWidth < 768)
+function onResize() { isMobile.value = window.innerWidth < 768 }
 import { useRoute, useRouter } from 'vue-router'
 import CheckoutSteps from '../../components/CheckoutSteps.vue'
 import CheckoutReturnPanel from '../../components/CheckoutReturnPanel.vue'
@@ -153,13 +162,19 @@ async function download() {
   }
 }
 
+function openPdf() {
+  if (pdfUrl.value) window.open(pdfUrl.value, '_blank')
+}
+
 onMounted(() => {
+  window.addEventListener('resize', onResize)
   loadCompletedOrder(orderId)
   load()
   clearCompletedOrder()
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
   if (pdfUrl.value) URL.revokeObjectURL(pdfUrl.value)
 })
 </script>
@@ -377,6 +392,31 @@ onUnmounted(() => {
   min-height: 560px;
   color: var(--muted);
   font-weight: 700;
+}
+.mobilePdf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 320px;
+  padding: 32px 24px;
+  text-align: center;
+}
+.pdfFileIcon {
+  font-size: 52px;
+}
+.mobilePdfMsg {
+  margin: 0;
+  color: var(--text);
+  font-weight: 650;
+  line-height: 1.5;
+}
+.mobilePdfBtn {
+  width: 100%;
+  max-width: 280px;
+  padding: 14px;
+  font-size: 15px;
 }
 .returnPanel {
   width: 100%;
