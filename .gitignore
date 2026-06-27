@@ -16,4 +16,5 @@ backend/**/appsettings.*.json.user
 *.key
 *.pem
 *.env
+.claude/
 docker-compose.override.yml

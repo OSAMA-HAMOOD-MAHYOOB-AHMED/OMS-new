@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -c \"import docx; print\\('ok'\\)\")",
-      "Bash(python scripts/build_manual_docx.py)"
-    ]
-  }
-}
