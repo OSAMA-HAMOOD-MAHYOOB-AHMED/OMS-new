@@ -12,11 +12,56 @@
         <span class="searchIcon" aria-hidden="true">⌕</span>
         <input v-model.trim="q" class="searchInput" type="search" placeholder="Search products..." />
       </div>
-      <div class="filterIcon" aria-hidden="true">⏚</div>
-      <select v-model="category" class="select">
-        <option value="All">All</option>
-        <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-      </select>
+      <button class="filterBtn" :class="{ active: filterCount > 0 }" type="button" @click="showFilter = !showFilter">
+        <span aria-hidden="true">⏚</span>
+        Filters
+        <span v-if="filterCount > 0" class="filterBadge">{{ filterCount }}</span>
+      </button>
+    </div>
+
+    <div v-if="showFilter" class="filterPanel">
+      <div class="filterGrid">
+        <div class="filterSection">
+          <div class="filterLabel">Category</div>
+          <div class="chips">
+            <button :class="['chip', { active: category === 'All' }]" type="button" @click="category = 'All'">All</button>
+            <button v-for="c in categories" :key="c" :class="['chip', { active: category === c }]" type="button" @click="category = c">{{ c }}</button>
+          </div>
+        </div>
+
+        <div class="filterSection">
+          <div class="filterLabel">Price range</div>
+          <div class="priceRow">
+            <input v-model.number="minPrice" class="priceInput" type="number" placeholder="Min $" min="0" />
+            <span class="priceSep">—</span>
+            <input v-model.number="maxPrice" class="priceInput" type="number" placeholder="Max $" min="0" />
+          </div>
+        </div>
+
+        <div class="filterSection">
+          <div class="filterLabel">Sort by</div>
+          <div class="chips">
+            <button :class="['chip', { active: sortBy === '' }]" type="button" @click="sortBy = ''">Default</button>
+            <button :class="['chip', { active: sortBy === 'price-asc' }]" type="button" @click="sortBy = 'price-asc'">Price ↑</button>
+            <button :class="['chip', { active: sortBy === 'price-desc' }]" type="button" @click="sortBy = 'price-desc'">Price ↓</button>
+            <button :class="['chip', { active: sortBy === 'name-asc' }]" type="button" @click="sortBy = 'name-asc'">Name A–Z</button>
+          </div>
+        </div>
+
+        <div class="filterSection">
+          <div class="filterLabel">Availability</div>
+          <label class="toggleRow">
+            <input v-model="inStockOnly" type="checkbox" class="toggleCheck" />
+            <span class="toggleTrack" :class="{ on: inStockOnly }"><span class="toggleThumb" /></span>
+            In stock only
+          </label>
+        </div>
+      </div>
+
+      <div v-if="filterCount > 0" class="filterFooter">
+        <button class="clearBtn" type="button" @click="clearFilters">Clear all filters</button>
+        <span class="filterResult">{{ filtered.length }} product{{ filtered.length !== 1 ? 's' : '' }} found</span>
+      </div>
     </div>
 
     <div v-if="loading" class="muted">{{ loadingMessage }}</div>
@@ -72,20 +117,53 @@ const error = ref(null)
 
 const q = ref('')
 const category = ref('All')
+const showFilter = ref(false)
+const minPrice = ref(null)
+const maxPrice = ref(null)
+const sortBy = ref('')
+const inStockOnly = ref(false)
 
 const categories = computed(() => {
   const s = new Set(products.value.map((p) => p.category).filter(Boolean))
   return Array.from(s).sort((a, b) => a.localeCompare(b))
 })
 
+const filterCount = computed(() => {
+  let n = 0
+  if (category.value !== 'All') n++
+  if (minPrice.value !== null && minPrice.value !== '') n++
+  if (maxPrice.value !== null && maxPrice.value !== '') n++
+  if (sortBy.value) n++
+  if (inStockOnly.value) n++
+  return n
+})
+
+function clearFilters() {
+  category.value = 'All'
+  minPrice.value = null
+  maxPrice.value = null
+  sortBy.value = ''
+  inStockOnly.value = false
+}
+
 const filtered = computed(() => {
   const needle = q.value.toLowerCase()
-  return products.value.filter((p) => {
+  let result = products.value.filter((p) => {
     if (category.value !== 'All' && p.category !== category.value) return false
-    if (!needle) return true
-    const hay = `${p.name} ${p.category} ${p.productID}`.toLowerCase()
-    return hay.includes(needle)
+    if (needle) {
+      const hay = `${p.name} ${p.category} ${p.productID}`.toLowerCase()
+      if (!hay.includes(needle)) return false
+    }
+    if (inStockOnly.value && p.stockLevel <= 0) return false
+    const price = Number(p.price)
+    if (minPrice.value !== null && minPrice.value !== '' && price < minPrice.value) return false
+    if (maxPrice.value !== null && maxPrice.value !== '' && price > maxPrice.value) return false
+    return true
   })
+  if (sortBy.value === 'price-asc') result = [...result].sort((a, b) => Number(a.price) - Number(b.price))
+  else if (sortBy.value === 'price-desc') result = [...result].sort((a, b) => Number(b.price) - Number(a.price))
+  else if (sortBy.value === 'name-asc') result = [...result].sort((a, b) => String(a.name).localeCompare(String(b.name)))
+  return result
 })
 
 async function load(attempt = 0) {
@@ -178,24 +256,160 @@ onMounted(load)
   color: var(--text-h);
   background: transparent;
 }
-.filterIcon {
-  width: 44px;
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   height: 44px;
+  padding: 0 14px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-  font-weight: 950;
   background: #fff;
-}
-.select {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 10px 12px;
-  background: #fff;
-  font-weight: 900;
   color: var(--text-h);
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.filterBtn.active {
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
+  background: rgba(37, 99, 235, 0.06);
+}
+.filterBadge {
+  background: var(--brand-blue);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  padding: 1px 6px;
+}
+.filterPanel {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 14px;
+}
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+}
+.filterSection {
+  display: grid;
+  gap: 8px;
+}
+.filterLabel {
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-h);
+  cursor: pointer;
+}
+.chip.active {
+  background: var(--brand-blue);
+  border-color: var(--brand-blue);
+  color: #fff;
+}
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.priceInput {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 700;
+  color: var(--text-h);
+  width: 0;
+}
+.priceSep {
+  color: var(--muted);
+  font-weight: 900;
+}
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--text-h);
+  user-select: none;
+}
+.toggleCheck {
+  display: none;
+}
+.toggleTrack {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggleTrack.on {
+  background: var(--brand-blue);
+}
+.toggleThumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+.toggleTrack.on .toggleThumb {
+  transform: translateX(18px);
+}
+.filterFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.clearBtn {
+  border: 1px solid rgba(180, 35, 24, 0.3);
+  background: rgba(180, 35, 24, 0.06);
+  color: #b42318;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+}
+.filterResult {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 700;
 }
 
 .muted {
@@ -225,9 +439,6 @@ onMounted(load)
   .select {
     flex: 1;
     min-width: 0;
-  }
-  .filterIcon {
-    display: none;
   }
 }
 .product {
