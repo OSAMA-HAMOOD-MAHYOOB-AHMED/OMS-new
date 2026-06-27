@@ -18,7 +18,8 @@ public sealed class OrdersController(
     UserRepository users,
     InvoiceService invoices,
     NotificationService notifications,
-    PaymentService payments) : ControllerBase
+    PaymentService payments,
+    ILogger<OrdersController> logger) : ControllerBase
 {
     [HttpPost("checkout")]
     [Authorize(Roles = "Customer")]
@@ -75,8 +76,15 @@ public sealed class OrdersController(
                     expanded);
 
                 var (invoiceBody, invoicePdf) = await invoices.GenerateAndStore(orderID, email);
-                await notifications.SendOrderConfirmationWithInvoiceAsync(
-                    email, user.Name, orderID, total, req.PaymentMethod, paymentResult.TransactionId, invoiceBody, invoicePdf);
+                try
+                {
+                    await notifications.SendOrderConfirmationWithInvoiceAsync(
+                        email, user.Name, orderID, total, req.PaymentMethod, paymentResult.TransactionId, invoiceBody, invoicePdf);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Order {OrderID} placed but confirmation email failed to send.", orderID);
+                }
 
                 return Ok(BuildCheckoutResponse(orderID, total, req.PaymentMethod, transactionId));
             }
@@ -86,8 +94,15 @@ public sealed class OrdersController(
             }
 
             var (cashInvoiceBody, cashInvoicePdf) = await invoices.GenerateAndStore(orderID, email);
-            await notifications.SendOrderConfirmationWithInvoiceAsync(
-                email, user.Name, orderID, total, req.PaymentMethod, null, cashInvoiceBody, cashInvoicePdf);
+            try
+            {
+                await notifications.SendOrderConfirmationWithInvoiceAsync(
+                    email, user.Name, orderID, total, req.PaymentMethod, null, cashInvoiceBody, cashInvoicePdf);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Order {OrderID} placed but confirmation email failed to send.", orderID);
+            }
 
             return Ok(BuildCheckoutResponse(orderID, total, req.PaymentMethod, transactionId));
         }
