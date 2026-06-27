@@ -6,7 +6,7 @@
         <p class="sub">Chargers, Earphones, Power Banks &amp; Phone Cases</p>
         <div class="cta">
           <button class="btnPrimary" type="button" @click="goPrimary">Browse Products</button>
-          <button class="btnGhost" type="button" @click="goSecondary">Sign Up</button>
+          <button v-if="!auth.token" class="btnGhost" type="button" @click="goSecondary">Sign Up</button>
         </div>
       </div>
     </section>
@@ -62,7 +62,7 @@
     <section class="ctaBand">
       <div class="ctaTitle">Ready to Start Shopping?</div>
       <div class="ctaSub">Join thousands of satisfied customers and find the perfect accessories for your device</div>
-      <RouterLink class="ctaBtn" :to="{ name: 'register' }">Create Account</RouterLink>
+      <RouterLink v-if="!auth.token" class="ctaBtn" :to="{ name: 'register' }">Create Account</RouterLink>
     </section>
 
     <footer class="footer">
