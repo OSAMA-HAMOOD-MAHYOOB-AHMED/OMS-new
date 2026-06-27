@@ -77,6 +77,8 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api/client'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const loading = ref(false)
 const error = ref(null)
@@ -159,8 +161,131 @@ async function load() {
 }
 
 function exportReport() {
-  // Cosmetic-only export for the prototype UI (no file generation).
-  window.print()
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pageW = doc.internal.pageSize.getWidth()
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+
+  // ── Header bar ──────────────────────────────────────────────────
+  doc.setFillColor(15, 23, 42)
+  doc.rect(0, 0, pageW, 28, 'F')
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(255, 255, 255)
+  doc.text('Al-Wakeel Al-Shamel', 14, 12)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(148, 163, 184)
+  doc.text('Sales Report', 14, 19)
+  doc.text(`Generated: ${dateStr} at ${timeStr}`, pageW - 14, 19, { align: 'right' })
+
+  // ── KPI summary boxes ────────────────────────────────────────────
+  const kpis = [
+    { label: 'Total Orders', value: String(totals.value.orders) },
+    { label: 'Gross Revenue', value: `$${totals.value.revenue.toFixed(2)}` },
+    { label: 'Avg Order Value', value: `$${totals.value.avg.toFixed(2)}` },
+    { label: 'Completed Revenue', value: `$${bucket.value.Completed.revenue.toFixed(2)}` },
+  ]
+  const boxW = (pageW - 28 - 9) / 4
+  kpis.forEach((k, i) => {
+    const x = 14 + i * (boxW + 3)
+    const y = 34
+    doc.setFillColor(248, 250, 252)
+    doc.setDrawColor(226, 232, 240)
+    doc.roundedRect(x, y, boxW, 22, 3, 3, 'FD')
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(100, 116, 139)
+    doc.text(k.label.toUpperCase(), x + boxW / 2, y + 8, { align: 'center' })
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(13)
+    doc.setTextColor(15, 23, 42)
+    doc.text(k.value, x + boxW / 2, y + 17, { align: 'center' })
+  })
+
+  // ── Daily Sales table ────────────────────────────────────────────
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(15, 23, 42)
+  doc.text('Daily Sales Summary', 14, 68)
+
+  autoTable(doc, {
+    startY: 72,
+    head: [['Date', 'Orders', 'Revenue', 'Avg Value']],
+    body: dailySorted.value.map((r) => [
+      formatDay(r.day),
+      String(r.orders),
+      `$${Number(r.revenue).toFixed(2)}`,
+      `$${Number(r.avgValue).toFixed(2)}`,
+    ]),
+    styles: { fontSize: 9, cellPadding: 4, textColor: [30, 41, 59] },
+    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: {
+      0: { halign: 'left', font: 'courier' },
+      1: { halign: 'center', fontStyle: 'bold' },
+      2: { halign: 'center', fontStyle: 'bold' },
+      3: { halign: 'center', textColor: [100, 116, 139] },
+    },
+    margin: { left: 14, right: 14 },
+  })
+
+  // ── Status Breakdown table ───────────────────────────────────────
+  const afterDaily = doc.lastAutoTable.finalY + 10
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(15, 23, 42)
+  doc.text('Order Status Breakdown', 14, afterDaily)
+
+  const statusColors = {
+    Pending: [245, 158, 11],
+    Confirmed: [37, 99, 235],
+    Completed: [4, 120, 87],
+    Cancelled: [180, 35, 24],
+  }
+  autoTable(doc, {
+    startY: afterDaily + 4,
+    head: [['Status', 'Orders', 'Revenue']],
+    body: ['Pending', 'Confirmed', 'Completed', 'Cancelled'].map((label) => [
+      label,
+      String(bucket.value[label].orders),
+      `$${bucket.value[label].revenue.toFixed(2)}`,
+    ]),
+    styles: { fontSize: 9, cellPadding: 4, textColor: [30, 41, 59] },
+    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: {
+      0: { halign: 'left', fontStyle: 'bold' },
+      1: { halign: 'center' },
+      2: { halign: 'center' },
+    },
+    didDrawCell(data) {
+      if (data.section === 'body' && data.column.index === 0) {
+        const label = data.cell.text[0]
+        const [r, g, b] = statusColors[label] ?? [100, 116, 139]
+        doc.setFillColor(r, g, b)
+        doc.circle(data.cell.x + 3.5, data.cell.y + data.cell.height / 2, 1.5, 'F')
+      }
+    },
+    margin: { left: 14, right: 14 },
+  })
+
+  // ── Footer ───────────────────────────────────────────────────────
+  const pageH = doc.internal.pageSize.getHeight()
+  doc.setDrawColor(226, 232, 240)
+  doc.line(14, pageH - 12, pageW - 14, pageH - 12)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7.5)
+  doc.setTextColor(148, 163, 184)
+  doc.text('Al-Wakeel Al-Shamel — Confidential', 14, pageH - 7)
+  doc.text(`Page 1`, pageW - 14, pageH - 7, { align: 'right' })
+
+  doc.save(`sales-report-${now.toISOString().slice(0, 10)}.pdf`)
 }
 
 onMounted(load)
