@@ -17,7 +17,8 @@ public sealed class UserRepository(IDbConnectionFactory db)
         emailVerified AS EmailVerified,
         verificationToken AS VerificationToken,
         verificationTokenExpires AS VerificationTokenExpires,
-        avatarurl AS AvatarUrl
+        avatarurl AS AvatarUrl,
+        createdat AS CreatedAt
         """;
 
     public async Task<UserRow?> GetByEmail(string email)

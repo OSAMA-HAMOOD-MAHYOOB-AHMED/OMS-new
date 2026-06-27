@@ -26,7 +26,8 @@ public sealed class ProfileController(UserProfileRepository profiles) : Controll
             Address = u.Address,
             Role = u.Role,
             EmailVerified = u.EmailVerified,
-            AvatarUrl = u.AvatarUrl
+            AvatarUrl = u.AvatarUrl,
+            CreatedAt = u.CreatedAt
         });
     }
 

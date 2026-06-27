@@ -230,7 +230,7 @@ const initials = computed(() => {
   return n.slice(0, 1).toUpperCase() || 'C'
 })
 
-const memberSince = 'November 2024'
+const memberSince = ref('')
 
 const stats = reactive({ totalOrders: 0, totalSpent: 0, completed: 0, pending: 0 })
 
@@ -272,6 +272,9 @@ async function load() {
     form.address = res.data.address
     profileRole.value = res.data.role || auth.role || ''
     avatarUrl.value = res.data.avatarUrl || null
+    if (res.data.createdAt) {
+      memberSince.value = new Date(res.data.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    }
     if (res.data.emailVerified) auth.markEmailVerified()
     await loadStats()
   } catch (e) {

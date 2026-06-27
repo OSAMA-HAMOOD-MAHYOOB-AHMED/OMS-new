@@ -17,5 +17,6 @@ public sealed class ProfileResponse
     public required string Role { get; init; }
     public bool EmailVerified { get; init; }
     public string? AvatarUrl { get; init; }
+    public DateTime CreatedAt { get; init; }
 }
 

@@ -12,5 +12,6 @@ public sealed class UserRow
     public string? VerificationToken { get; init; }
     public DateTime? VerificationTokenExpires { get; init; }
     public string? AvatarUrl { get; init; }
+    public DateTime CreatedAt { get; init; }
 }
 
