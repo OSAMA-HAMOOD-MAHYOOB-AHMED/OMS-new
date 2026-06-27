@@ -273,7 +273,8 @@ async function load() {
     profileRole.value = res.data.role || auth.role || ''
     avatarUrl.value = res.data.avatarUrl || null
     if (res.data.createdAt) {
-      memberSince.value = new Date(res.data.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      const d = new Date(res.data.createdAt)
+      memberSince.value = `${d.getDate()} ${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`
     }
     if (res.data.emailVerified) auth.markEmailVerified()
     await loadStats()
