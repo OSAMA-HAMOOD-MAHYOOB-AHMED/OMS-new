@@ -94,9 +94,19 @@
 
       <div class="grid">
         <div class="card">
-          <h3 class="h3">Personal info</h3>
-          <p class="muted">Update your account information.</p>
-          <div class="form">
+          <div class="cardHeader">
+            <div>
+              <h3 class="h3">Personal info</h3>
+              <p class="muted">{{ editingProfile ? 'Update your account information.' : 'Your account information.' }}</p>
+            </div>
+            <button v-if="!editingProfile" class="btnEdit" type="button" @click="startEditProfile">Edit</button>
+          </div>
+          <div v-if="!editingProfile" class="infoList">
+            <div class="infoRow"><span class="infoLbl">Name</span><span class="infoVal">{{ form.name || '—' }}</span></div>
+            <div class="infoRow"><span class="infoLbl">Phone</span><span class="infoVal">{{ form.phoneNumber || '—' }}</span></div>
+            <div class="infoRow"><span class="infoLbl">Address</span><span class="infoVal">{{ form.address || '—' }}</span></div>
+          </div>
+          <div v-else class="form">
             <label class="field">
               <span class="lbl">Name</span>
               <input v-model.trim="form.name" />
@@ -109,9 +119,12 @@
               <span class="lbl">Address</span>
               <input v-model.trim="form.address" />
             </label>
-            <button class="btnPrimary" type="button" :disabled="saving" @click="saveProfile">
-              {{ saving ? 'Saving...' : 'Save profile' }}
-            </button>
+            <div class="btnRow">
+              <button class="btnPrimary" type="button" :disabled="saving" @click="saveProfile">
+                {{ saving ? 'Saving...' : 'Save profile' }}
+              </button>
+              <button class="btnGhost" type="button" :disabled="saving" @click="cancelEditProfile">Cancel</button>
+            </div>
           </div>
         </div>
 
@@ -186,6 +199,8 @@ const avatarUrl = ref(null)
 const avatarFileInput = ref(null)
 
 const form = reactive({ name: '', phoneNumber: '', address: '' })
+const formSnapshot = reactive({ name: '', phoneNumber: '', address: '' })
+const editingProfile = ref(false)
 const pw = reactive({ currentPassword: '', newPassword: '' })
 const deletePassword = ref('')
 const profileRole = ref('')
@@ -266,6 +281,21 @@ async function load() {
   }
 }
 
+function startEditProfile() {
+  formSnapshot.name = form.name
+  formSnapshot.phoneNumber = form.phoneNumber
+  formSnapshot.address = form.address
+  editingProfile.value = true
+}
+
+function cancelEditProfile() {
+  form.name = formSnapshot.name
+  form.phoneNumber = formSnapshot.phoneNumber
+  form.address = formSnapshot.address
+  editingProfile.value = false
+  error.value = null
+}
+
 async function saveProfile() {
   saving.value = true
   error.value = null
@@ -276,6 +306,7 @@ async function saveProfile() {
       phoneNumber: form.phoneNumber,
       address: form.address,
     })
+    editingProfile.value = false
     ok.value = 'Profile updated.'
   } catch (e) {
     error.value = e?.response?.data || 'Failed to update profile'
@@ -637,6 +668,50 @@ onMounted(load)
   color: #334155;
 }
 
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.btnEdit {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: #fff;
+  color: var(--brand-blue);
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 13px;
+}
+.infoList {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+}
+.infoLbl {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--muted);
+}
+.infoVal {
+  font-weight: 750;
+  color: var(--text-h);
+}
+.btnRow {
+  display: flex;
+  gap: 8px;
+}
 .muted {
   margin: 6px 0 0;
   color: var(--text);
