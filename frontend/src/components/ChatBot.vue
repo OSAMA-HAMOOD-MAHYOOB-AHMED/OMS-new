@@ -98,8 +98,14 @@ async function send() {
     if (history.value.length > 20) history.value = history.value.slice(-20)
     messages.value.push({ role: 'assistant', content: reply })
     if (!isOpen.value) unread.value++
-  } catch {
-    messages.value.push({ role: 'assistant', content: 'Sorry, I\'m having trouble connecting right now. Please try again in a moment.' })
+  } catch (e) {
+    const status = e?.response?.status
+    const serverError = e?.response?.data?.error
+    let msg = 'Sorry, I\'m having trouble connecting right now. Please try again in a moment.'
+    if (status === 503) msg = 'The chat feature is not configured yet. Please try again later.'
+    else if (status === 502) msg = 'AI service error. Please try again in a moment.'
+    else if (serverError) msg = serverError
+    messages.value.push({ role: 'assistant', content: msg })
   } finally {
     loading.value = false
     await nextTick()
