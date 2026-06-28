@@ -102,6 +102,8 @@
     <main class="content" :class="{ wide: isAdminShell }">
       <RouterView />
     </main>
+
+    <ChatBot v-if="!isAdminShell" />
   </div>
 </template>
 
@@ -111,6 +113,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
 import { siteLogoUrl } from './utils/images'
+import ChatBot from './components/ChatBot.vue'
 
 const auth = useAuthStore()
 auth.hydrate()
