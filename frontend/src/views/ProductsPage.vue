@@ -32,9 +32,9 @@
         <div class="filterSection">
           <div class="filterLabel">Price range</div>
           <div class="priceRow">
-            <input v-model.number="minPrice" class="priceInput" type="number" placeholder="Min $" min="0" />
+            <input v-model.number="minPrice" class="priceInput" type="number" :placeholder="`Min ${currencyCode}`" min="0" />
             <span class="priceSep">—</span>
-            <input v-model.number="maxPrice" class="priceInput" type="number" placeholder="Max $" min="0" />
+            <input v-model.number="maxPrice" class="priceInput" type="number" :placeholder="`Max ${currencyCode}`" min="0" />
           </div>
         </div>
 
@@ -105,7 +105,7 @@ import { useCurrency } from '../composables/useCurrency'
 
 const auth = useAuthStore()
 auth.hydrate()
-const { format } = useCurrency()
+const { format, currencyCode, rate } = useCurrency()
 const role = computed(() => auth.role)
 
 const cart = useCartStore()
@@ -158,8 +158,9 @@ const filtered = computed(() => {
     }
     if (inStockOnly.value && p.stockLevel <= 0) return false
     const price = Number(p.price)
-    if (minPrice.value !== null && minPrice.value !== '' && price < minPrice.value) return false
-    if (maxPrice.value !== null && maxPrice.value !== '' && price > maxPrice.value) return false
+    const r = rate.value || 1
+    if (minPrice.value !== null && minPrice.value !== '' && price < Number(minPrice.value) / r) return false
+    if (maxPrice.value !== null && maxPrice.value !== '' && price > Number(maxPrice.value) / r) return false
     return true
   })
   if (sortBy.value === 'price-asc') result = [...result].sort((a, b) => Number(a.price) - Number(b.price))
