@@ -27,7 +27,7 @@
 
           <div class="rightTop">
             <span class="badge" :class="badgeClass(o.orderStatus)">{{ o.orderStatus }}</span>
-            <div class="total">${{ Number(o.totalPrice).toFixed(2) }}</div>
+            <div class="total">{{ format(o.totalPrice) }}</div>
           </div>
         </div>
 
@@ -36,7 +36,7 @@
         <div class="lines">
           <div v-for="it in o.items" :key="it.productID" class="line">
             <div class="lineLeft">{{ it.name }} × {{ it.quantity }}</div>
-            <div class="lineRight">${{ Number(it.subtotal).toFixed(2) }}</div>
+            <div class="lineRight">{{ format(it.subtotal) }}</div>
           </div>
         </div>
 
@@ -69,6 +69,7 @@ import { api } from '../api/client'
 import { downloadInvoicePdf, paymentMethodLabel } from '../utils/invoice'
 import { useCartStore } from '../stores/cart'
 import { useRouter } from 'vue-router'
+import { useCurrency } from '../composables/useCurrency'
 
 const allOrders = ref([])
 const loading = ref(false)
@@ -78,6 +79,7 @@ const statusFilter = ref('')
 const cart = useCartStore()
 cart.hydrate()
 const router = useRouter()
+const { format } = useCurrency()
 
 const orders = computed(() => {
   if (!statusFilter.value) return allOrders.value

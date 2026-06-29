@@ -79,7 +79,7 @@
           <div class="sLbl">Total Orders</div>
         </div>
         <div class="stat b">
-          <div class="sNum">${{ stats.totalSpent.toFixed(0) }}</div>
+          <div class="sNum">{{ format(stats.totalSpent) }}</div>
           <div class="sLbl">Total Spent</div>
         </div>
         <div class="stat c">
@@ -181,12 +181,14 @@ import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
 import { formatApiError } from '../utils/apiError'
 import { siteLogoUrl } from '../utils/images'
+import { useCurrency } from '../composables/useCurrency'
 
 const auth = useAuthStore()
 const cart = useCartStore()
 const router = useRouter()
 auth.hydrate()
 cart.hydrate()
+const { format } = useCurrency()
 
 const loading = ref(false)
 const saving = ref(false)

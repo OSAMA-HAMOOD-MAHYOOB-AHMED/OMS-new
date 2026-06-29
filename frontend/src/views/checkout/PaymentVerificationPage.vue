@@ -28,7 +28,7 @@
         </div>
       </div>
 
-      <div class="amount">${{ Number(pending?.total || 0).toFixed(2) }}</div>
+      <div class="amount">{{ format(pending?.total || 0) }}</div>
 
       <CheckoutReturnPanel
         v-if="phase === 'verified'"
@@ -62,8 +62,10 @@ import {
   loadPendingCheckout,
   saveCompletedOrder,
 } from '../../stores/checkout'
+import { useCurrency } from '../../composables/useCurrency'
 
 const router = useRouter()
+const { format } = useCurrency()
 const cart = useCartStore()
 cart.hydrate()
 

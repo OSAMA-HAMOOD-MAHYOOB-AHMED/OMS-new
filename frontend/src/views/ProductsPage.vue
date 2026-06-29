@@ -80,7 +80,7 @@
           <div class="desc">{{ p.description || 'Premium accessory built for everyday use.' }}</div>
 
           <div class="bottom">
-            <div class="price">${{ Number(p.price).toFixed(2) }}</div>
+            <div class="price">{{ format(p.price) }}</div>
             <div class="stock">{{ p.stockLevel }} in stock</div>
           </div>
 
@@ -101,9 +101,11 @@ import { useCartStore } from '../stores/cart'
 import { formatApiError, isRetryableApiError, sleep } from '../utils/apiError'
 import { productImageUrl } from '../utils/images'
 import { useRouter } from 'vue-router'
+import { useCurrency } from '../composables/useCurrency'
 
 const auth = useAuthStore()
 auth.hydrate()
+const { format } = useCurrency()
 const role = computed(() => auth.role)
 
 const cart = useCartStore()

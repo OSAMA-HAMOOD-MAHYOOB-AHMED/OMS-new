@@ -15,7 +15,7 @@
         <h1 class="title">{{ product.name }}</h1>
 
         <div class="priceRow">
-          <div class="price">${{ Number(product.price).toFixed(2) }}</div>
+          <div class="price">{{ format(product.price) }}</div>
           <div class="stock">{{ product.stockLevel }} in stock</div>
         </div>
 
@@ -62,6 +62,7 @@ import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
 import { productImageUrl } from '../utils/images'
+import { useCurrency } from '../composables/useCurrency'
 
 const route = useRoute()
 const router = useRouter()
@@ -69,6 +70,7 @@ const auth = useAuthStore()
 auth.hydrate()
 const cart = useCartStore()
 cart.hydrate()
+const { format } = useCurrency()
 
 const id = computed(() => route.params.id)
 const product = ref(null)

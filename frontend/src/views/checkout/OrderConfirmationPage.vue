@@ -16,7 +16,7 @@
         </div>
         <div class="row">
           <span class="k">Amount paid</span>
-          <span class="v">${{ Number(order?.total || 0).toFixed(2) }}</span>
+          <span class="v">{{ format(order?.total || 0) }}</span>
         </div>
         <div class="row">
           <span class="k">Payment method</span>
@@ -63,9 +63,11 @@ import CheckoutReturnPanel from '../../components/CheckoutReturnPanel.vue'
 import { useReturnTimer } from '../../composables/useReturnTimer'
 import { loadCompletedOrder, paymentMethodLabel } from '../../stores/checkout'
 import { SHIPPING, trackingNumber as buildTracking } from '../../utils/shipping'
+import { useCurrency } from '../../composables/useCurrency'
 
 const route = useRoute()
 const router = useRouter()
+const { format } = useCurrency()
 
 const order = ref(null)
 

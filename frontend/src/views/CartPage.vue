@@ -17,7 +17,7 @@
           <div class="mid">
             <div class="name">{{ it.name }}</div>
             <div class="meta">Accessory</div>
-            <div class="unit">${{ Number(it.price).toFixed(2) }}</div>
+            <div class="unit">{{ format(it.price) }}</div>
           </div>
 
           <div class="right">
@@ -37,7 +37,7 @@
 
         <div class="row">
           <div class="k">Subtotal</div>
-          <div class="v">${{ cart.total.toFixed(2) }}</div>
+          <div class="v">{{ format(cart.total) }}</div>
         </div>
         <div class="row">
           <div class="k">Shipping</div>
@@ -57,7 +57,7 @@
 
         <div class="row total">
           <div class="k">Total</div>
-          <div class="v big">${{ cart.total.toFixed(2) }}</div>
+          <div class="v big">{{ format(cart.total) }}</div>
         </div>
 
         <form class="checkoutForm" novalidate @submit.prevent="checkout">
@@ -186,10 +186,12 @@ import {
   validatePaymentForm,
 } from '../utils/payment'
 import { SHIPPING, shippingSummary } from '../utils/shipping'
+import { useCurrency } from '../composables/useCurrency'
 
 const cart = useCartStore()
 const router = useRouter()
 cart.hydrate()
+const { format } = useCurrency()
 
 const submitting = ref(false)
 const formError = ref(null)
