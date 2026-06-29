@@ -131,15 +131,24 @@ public static class ProductSeeder
                 var db = scope.ServiceProvider.GetRequiredService<IDbConnectionFactory>();
                 using var conn = db.Create();
 
-                const string sql = """
+                const string productSql = """
                     INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl)
                     VALUES (@ProductID, @Name, @Category, @Price, @StockLevel, @Description, @ImageUrl)
                     ON CONFLICT (productID) DO UPDATE SET
                       imageUrl = EXCLUDED.imageUrl;
                     """;
 
+                const string inventorySql = """
+                    INSERT INTO Inventory (inventoryID, productID, location, quantityAvailable, quantityReserved, lastCheckupDate)
+                    VALUES (@InventoryID, @ProductID, 'Warehouse A', @StockLevel, 0, NOW())
+                    ON CONFLICT (inventoryID) DO NOTHING;
+                    """;
+
                 foreach (var p in Products)
-                    await conn.ExecuteAsync(sql, p);
+                {
+                    await conn.ExecuteAsync(productSql, p);
+                    await conn.ExecuteAsync(inventorySql, new { InventoryID = $"INV-{p.ProductID}", p.ProductID, p.StockLevel });
+                }
 
                 app.Logger.LogInformation("Products seeded ({Count} catalog items).", Products.Length);
                 return;
