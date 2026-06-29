@@ -90,43 +90,38 @@ public sealed class ChatController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Chat([FromBody] ChatRequest req, CancellationToken ct)
     {
-        var apiKey = _cfg["Gemini:ApiKey"];
+        var apiKey = _cfg["Groq:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
             return StatusCode(503, new { error = "Chat is not configured." });
 
-        var contents = new List<object>();
+        var messages = new List<object> { new { role = "system", content = SystemPrompt } };
         foreach (var m in req.History.TakeLast(10))
-        {
-            var geminiRole = m.Role == "assistant" ? "model" : "user";
-            contents.Add(new { role = geminiRole, parts = new[] { new { text = m.Content } } });
-        }
-        contents.Add(new { role = "user", parts = new[] { new { text = req.Message } } });
+            messages.Add(new { role = m.Role, content = m.Content });
+        messages.Add(new { role = "user", content = req.Message });
 
         var body = new
         {
-            system_instruction = new { parts = new[] { new { text = SystemPrompt } } },
-            contents,
-            generationConfig = new { maxOutputTokens = 512 }
+            model = "llama-3.1-8b-instant",
+            messages,
+            max_tokens = 512
         };
 
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
-
         using var client = _http.CreateClient();
-        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
+        request.Headers.Add("Authorization", $"Bearer {apiKey}");
         request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
         using var response = await client.SendAsync(request, ct);
         var json = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)
-            return StatusCode(502, new { error = $"Gemini error {(int)response.StatusCode}: {json}" });
+            return StatusCode(502, new { error = $"Groq error {(int)response.StatusCode}: {json}" });
 
         using var doc = JsonDocument.Parse(json);
         var reply = doc.RootElement
-            .GetProperty("candidates")[0]
+            .GetProperty("choices")[0]
+            .GetProperty("message")
             .GetProperty("content")
-            .GetProperty("parts")[0]
-            .GetProperty("text")
             .GetString() ?? "Sorry, I couldn't generate a response.";
 
         return Ok(new ChatResponse(reply));
