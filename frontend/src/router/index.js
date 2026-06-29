@@ -56,8 +56,8 @@ const router = createRouter({
     { path: '/register', name: 'register', component: RegisterPage, meta: { guestOnly: true } },
     { path: '/verify-email', name: 'verifyEmail', component: VerifyEmailPage },
     { path: '/verify-email/pending', name: 'verifyEmailPending', component: VerifyEmailPendingPage },
-    { path: '/products', name: 'products', component: ProductsPage, meta: { auth: true, roles: ['Customer', 'Warehouse Manager'] } },
-    { path: '/products/:id', name: 'productDetails', component: ProductDetailsPage, meta: { auth: true, roles: ['Customer', 'Warehouse Manager'] } },
+    { path: '/products', name: 'products', component: ProductsPage, meta: { roles: ['Customer', 'Warehouse Manager'] } },
+    { path: '/products/:id', name: 'productDetails', component: ProductDetailsPage, meta: { roles: ['Customer', 'Warehouse Manager'] } },
     { path: '/cart', name: 'cart', component: CartPage, meta: { auth: true, roles: ['Customer'], requiresEmailVerified: true } },
     {
       path: '/checkout/verify',
@@ -113,6 +113,11 @@ router.beforeEach((to) => {
         query: { email: auth.email || undefined },
       }
     }
+  }
+
+  // Public routes with role restrictions: allow guests, but redirect wrong-role logged-in users
+  if (!to.meta.auth && to.meta.roles && auth.token && !to.meta.roles.includes(auth.role)) {
+    return roleHome(auth.role)
   }
 })
 

@@ -9,7 +9,7 @@ namespace Oms.Api.Catalog;
 public sealed class ProductsController(ProductRepository products) : ControllerBase
 {
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<ProductRow>>> List()
     {
         var rows = await products.List();
@@ -17,7 +17,7 @@ public sealed class ProductsController(ProductRepository products) : ControllerB
     }
 
     [HttpGet("{productID}")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<ProductRow>> Get([FromRoute] string productID)
     {
         var row = await products.Get(productID);

@@ -83,13 +83,13 @@ const auth = useAuthStore()
 auth.hydrate()
 
 const catLink = computed(() => {
-  if (!auth.token) return { name: 'login' }
+  if (!auth.token) return { name: 'products' }
   if (auth.role === 'Customer' || auth.role === 'Warehouse Manager') return { name: 'products' }
   return { name: 'home' }
 })
 
 function goPrimary() {
-  if (!auth.token) return router.push({ name: 'login' })
+  if (!auth.token) return router.push({ name: 'products' })
   if (auth.role === 'Customer') return router.push({ name: 'products' })
   if (auth.role === 'Warehouse Manager') return router.push({ name: 'warehouseDashboard' })
   if (auth.role === 'Retail Salesperson') return router.push({ name: 'salesDashboard' })

@@ -26,7 +26,9 @@
             <span class="lbl">Quantity</span>
             <input v-model.number="qty" type="number" min="1" />
           </div>
-          <button class="btn" type="button" :disabled="product.stockLevel <= 0" @click="addToCart">🛒 Add to Cart</button>
+          <button class="btn" type="button" :disabled="product.stockLevel <= 0" @click="addToCart">
+            {{ auth.token ? '🛒 Add to Cart' : '🔑 Login to Buy' }}
+          </button>
         </div>
 
         <div class="divider" />
@@ -57,11 +59,14 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
+import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
 import { productImageUrl } from '../utils/images'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
+auth.hydrate()
 const cart = useCartStore()
 cart.hydrate()
 
@@ -92,6 +97,10 @@ async function load() {
 }
 
 function addToCart() {
+  if (!auth.token) {
+    router.push({ name: 'login', query: { next: route.fullPath } })
+    return
+  }
   cart.add(product.value, Math.max(1, Number(qty.value) || 1))
   router.push({ name: 'cart' })
 }
