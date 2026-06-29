@@ -1,5 +1,8 @@
-export async function downloadInvoicePdf(api, orderID) {
-  const res = await api.get(`/api/invoices/${orderID}/pdf`, { responseType: 'blob' })
+export async function downloadInvoicePdf(api, orderID, currencyCode = 'USD', rate = 1) {
+  const res = await api.get(`/api/invoices/${orderID}/pdf`, {
+    responseType: 'blob',
+    params: { currencyCode, rate },
+  })
   const blob = new Blob([res.data], { type: 'application/pdf' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -11,8 +14,11 @@ export async function downloadInvoicePdf(api, orderID) {
   URL.revokeObjectURL(url)
 }
 
-export async function loadInvoicePdfUrl(api, orderID) {
-  const res = await api.get(`/api/invoices/${orderID}/pdf`, { responseType: 'blob' })
+export async function loadInvoicePdfUrl(api, orderID, currencyCode = 'USD', rate = 1) {
+  const res = await api.get(`/api/invoices/${orderID}/pdf`, {
+    responseType: 'blob',
+    params: { currencyCode, rate },
+  })
   const blob = new Blob([res.data], { type: 'application/pdf' })
   return URL.createObjectURL(blob)
 }

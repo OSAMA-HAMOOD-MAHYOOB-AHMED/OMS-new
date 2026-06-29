@@ -132,7 +132,7 @@ const downloading = ref(false)
 const error = ref(null)
 
 const paymentLabel = computed(() => paymentMethodLabel(invoice.value?.paymentMethod))
-const { format } = useCurrency()
+const { format, currencyCode, rate } = useCurrency()
 
 const { secondsLeft, start: startReturnTimer, proceedNow: proceedToStore } = useReturnTimer(() => {
   router.push({ name: 'products' })
@@ -145,7 +145,7 @@ async function load() {
     const res = await api.get(`/api/invoices/${orderId}`)
     invoice.value = res.data
     if (!isMobile.value) {
-      pdfUrl.value = await loadInvoicePdfUrl(api, orderId)
+      pdfUrl.value = await loadInvoicePdfUrl(api, orderId, currencyCode.value, rate.value)
     }
     startReturnTimer()
   } catch (e) {
@@ -158,7 +158,7 @@ async function load() {
 async function download() {
   downloading.value = true
   try {
-    await downloadInvoicePdf(api, orderId)
+    await downloadInvoicePdf(api, orderId, currencyCode.value, rate.value)
   } catch (e) {
     error.value = e?.response?.data || 'Unable to download PDF invoice.'
   } finally {

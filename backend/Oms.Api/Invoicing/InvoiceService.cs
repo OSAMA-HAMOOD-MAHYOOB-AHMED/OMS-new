@@ -35,11 +35,11 @@ public sealed class InvoiceService(
         return (body, pdf);
     }
 
-    public async Task<byte[]> GeneratePdf(string orderID)
+    public async Task<byte[]> GeneratePdf(string orderID, string currencyCode = "USD", decimal exchangeRate = 1m)
     {
         var data = await LoadDocumentData(orderID)
                    ?? throw new InvalidOperationException($"Order {orderID} not found.");
-        return pdfGenerator.Generate(data);
+        return pdfGenerator.Generate(data, currencyCode, exchangeRate);
     }
 
     public async Task<InvoiceDocumentData?> LoadDocumentData(string orderID)

@@ -63,7 +63,10 @@ public sealed class InvoiceController(IDbConnectionFactory db, InvoiceService in
     }
 
     [HttpGet("{orderID}/pdf")]
-    public async Task<IActionResult> DownloadPdf([FromRoute] string orderID)
+    public async Task<IActionResult> DownloadPdf(
+        [FromRoute] string orderID,
+        [FromQuery] string? currencyCode = null,
+        [FromQuery] decimal? rate = null)
     {
         var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
@@ -82,7 +85,7 @@ public sealed class InvoiceController(IDbConnectionFactory db, InvoiceService in
         var allowed = await conn.QuerySingleOrDefaultAsync<int?>(sql, new { orderID, email, isAdmin = isAdmin ? 1 : 0 });
         if (allowed is null) return NotFound();
 
-        var pdf = await invoices.GeneratePdf(orderID);
+        var pdf = await invoices.GeneratePdf(orderID, currencyCode ?? "USD", rate ?? 1m);
         return File(pdf, "application/pdf", $"invoice-{orderID}.pdf");
     }
 

@@ -14,9 +14,12 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
     private static readonly Color Success = Color.FromHex("#047857");
     private static readonly Color HeaderSubtext = Color.FromHex("#DBEAFE");
 
-    public byte[] Generate(InvoiceDocumentData data)
+    public byte[] Generate(InvoiceDocumentData data, string currencyCode = "USD", decimal exchangeRate = 1m)
     {
         var logoBytes = TryLoadLogo();
+        string Fmt(decimal usd) => currencyCode == "USD"
+            ? $"${usd:F2}"
+            : $"{currencyCode} {usd * exchangeRate:N2}";
 
         return Document.Create(document =>
         {
@@ -27,7 +30,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
                 page.DefaultTextStyle(x => x.FontSize(10).FontColor(BrandDark));
 
                 page.Header().Element(c => ComposeHeader(c, data, logoBytes));
-                page.Content().PaddingTop(18).Element(c => ComposeContent(c, data));
+                page.Content().PaddingTop(18).Element(c => ComposeContent(c, data, Fmt));
                 page.Footer().PaddingTop(8).Element(ComposeFooter);
             });
         }).GeneratePdf();
@@ -92,7 +95,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
         });
     }
 
-    private static void ComposeContent(IContainer container, InvoiceDocumentData data)
+    private static void ComposeContent(IContainer container, InvoiceDocumentData data, Func<decimal, string> fmt)
     {
         container.Column(column =>
         {
@@ -176,8 +179,8 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
                             col.Item().Text(item.ProductId).FontSize(8).FontColor(Muted);
                         });
                         table.Cell().Element(BodyCell).AlignCenter().Text(item.Quantity.ToString());
-                        table.Cell().Element(BodyCell).AlignRight().Text($"${item.UnitPrice:F2}");
-                        table.Cell().Element(BodyCell).AlignRight().Text($"${item.Subtotal:F2}").SemiBold();
+                        table.Cell().Element(BodyCell).AlignRight().Text(fmt(item.UnitPrice));
+                        table.Cell().Element(BodyCell).AlignRight().Text(fmt(item.Subtotal)).SemiBold();
                         index++;
                     }
                 });
@@ -190,7 +193,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
                     col.Item().Row(r =>
                     {
                         r.RelativeItem().Text("Subtotal").FontColor(Muted);
-                        r.ConstantItem(90).AlignRight().Text($"${data.TotalPrice:F2}");
+                        r.ConstantItem(90).AlignRight().Text(fmt(data.TotalPrice));
                     });
                     col.Item().PaddingTop(6).Row(r =>
                     {
@@ -201,7 +204,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
                     col.Item().PaddingTop(8).Row(r =>
                     {
                         r.RelativeItem().Text("Total Paid").FontSize(12).Bold();
-                        r.ConstantItem(90).AlignRight().Text($"${data.TotalPrice:F2}").FontSize(14).Bold().FontColor(BrandBlue);
+                        r.ConstantItem(90).AlignRight().Text(fmt(data.TotalPrice)).FontSize(14).Bold().FontColor(BrandBlue);
                     });
                 });
             });
