@@ -103,7 +103,7 @@
       <RouterView />
     </main>
 
-    <ChatBot v-if="!isAdminShell" />
+    <ChatBot v-if="!isAdminShell && route.name !== 'login' && route.name !== 'register'" />
   </div>
 </template>
 
