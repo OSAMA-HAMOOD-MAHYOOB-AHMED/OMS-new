@@ -89,6 +89,7 @@ var app = builder.Build();
 
 var demoSeedEnabled = builder.Configuration.GetValue("DemoSeed:Enabled", true);
 await DemoUserSeeder.SeedAsync(app, demoSeedEnabled);
+await Oms.Api.Catalog.ProductSeeder.SeedAsync(app);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
