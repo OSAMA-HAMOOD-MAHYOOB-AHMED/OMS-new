@@ -109,7 +109,7 @@ public sealed class ChatController : ControllerBase
             generationConfig = new { maxOutputTokens = 512 }
         };
 
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
 
         using var client = _http.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -119,7 +119,7 @@ public sealed class ChatController : ControllerBase
         var json = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)
-            return StatusCode(502, new { error = "AI service error." });
+            return StatusCode(502, new { error = $"Gemini error {(int)response.StatusCode}: {json}" });
 
         using var doc = JsonDocument.Parse(json);
         var reply = doc.RootElement
