@@ -37,7 +37,7 @@
         <ul class="features">
           <li><span class="ficon blue" aria-hidden="true">▣</span> High quality materials and construction.</li>
           <li><span class="ficon green" aria-hidden="true">🛡</span> 1 year warranty included.</li>
-          <li><span class="ficon purple" aria-hidden="true">🚚</span> Free shipping on orders over $50.</li>
+          <li><span class="ficon purple" aria-hidden="true">🚚</span> Free shipping on orders over {{ format(50) }}.</li>
         </ul>
       </div>
     </div>
