@@ -314,14 +314,19 @@ onUnmounted(() => {
 .detail span {
   color: var(--muted);
   font-weight: 700;
+  flex-shrink: 0;
 }
 .detail strong {
   color: var(--text-h);
   font-weight: 900;
   text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .mono {
   font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  word-break: break-all;
 }
 .small {
   font-size: 11px;
