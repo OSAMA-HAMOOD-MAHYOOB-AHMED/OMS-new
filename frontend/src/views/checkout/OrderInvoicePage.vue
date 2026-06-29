@@ -62,14 +62,14 @@
           <div class="blockTitle">Items</div>
           <div v-for="it in invoice.items" :key="it.productId" class="itemRow">
             <div class="itemName">{{ it.name }}</div>
-            <div class="itemMeta">{{ it.productId }} · Qty {{ it.quantity }} × {{ formatMoney(it.unitPrice) }}</div>
-            <div class="itemTotal">{{ formatMoney(it.subtotal) }}</div>
+            <div class="itemMeta">{{ it.productId }} · Qty {{ it.quantity }} × {{ format(it.unitPrice) }}</div>
+            <div class="itemTotal">{{ format(it.subtotal) }}</div>
           </div>
         </div>
 
         <div class="totalRow">
           <span>Total paid</span>
-          <strong>{{ formatMoney(invoice.totalPrice) }}</strong>
+          <strong>{{ format(invoice.totalPrice) }}</strong>
         </div>
       </aside>
 
@@ -114,11 +114,11 @@ import { api } from '../../api/client'
 import {
   downloadInvoicePdf,
   formatDate,
-  formatMoney,
   loadInvoicePdfUrl,
   paymentMethodLabel,
 } from '../../utils/invoice'
 import { siteLogoUrl } from '../../utils/images'
+import { useCurrency } from '../../composables/useCurrency'
 import { clearCompletedOrder, loadCompletedOrder } from '../../stores/checkout'
 
 const route = useRoute()
@@ -132,6 +132,7 @@ const downloading = ref(false)
 const error = ref(null)
 
 const paymentLabel = computed(() => paymentMethodLabel(invoice.value?.paymentMethod))
+const { format } = useCurrency()
 
 const { secondsLeft, start: startReturnTimer, proceedNow: proceedToStore } = useReturnTimer(() => {
   router.push({ name: 'products' })

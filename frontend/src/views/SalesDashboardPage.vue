@@ -17,7 +17,7 @@
       </div>
       <div class="kpi">
         <div class="label">Cash Revenue</div>
-        <div class="value">${{ Number(data.cashRevenue).toFixed(2) }}</div>
+        <div class="value">{{ format(data.cashRevenue) }}</div>
       </div>
     </div>
 
@@ -38,7 +38,7 @@
             <td class="mono">{{ o.orderID }}</td>
             <td>{{ o.email }}</td>
             <td>{{ o.orderStatus }}</td>
-            <td>${{ Number(o.totalPrice).toFixed(2) }}</td>
+            <td>{{ format(o.totalPrice) }}</td>
             <td>{{ new Date(o.orderDate).toLocaleString() }}</td>
           </tr>
         </tbody>
@@ -50,7 +50,9 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { api } from '../api/client'
+import { useCurrency } from '../composables/useCurrency'
 
+const { format } = useCurrency()
 const data = ref({ totalOrders: 0, cashRevenue: 0, cashOrders: 0, recentOrders: [] })
 const loading = ref(false)
 const error = ref(null)

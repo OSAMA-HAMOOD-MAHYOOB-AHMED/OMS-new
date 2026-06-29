@@ -39,7 +39,7 @@
               <div class="custId">{{ customerId(o.email) }}</div>
             </td>
             <td class="mutedTd">{{ formatDate(o.orderDate) }}</td>
-            <td class="strong">${{ Number(o.totalPrice).toFixed(2) }}</td>
+            <td class="strong">{{ format(o.totalPrice) }}</td>
             <td class="mutedTd">{{ paymentLabel(o.paymentMethod) }}</td>
             <td>
               <select
@@ -68,9 +68,11 @@
 import { computed, onMounted, ref, reactive } from 'vue'
 import { api } from '../../api/client'
 import { SHIPPING, trackingNumber } from '../../utils/shipping'
+import { useCurrency } from '../../composables/useCurrency'
 
 const ORDER_STATUSES = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
 
+const { format } = useCurrency()
 const orders = ref([])
 const loading = ref(false)
 const error = ref(null)

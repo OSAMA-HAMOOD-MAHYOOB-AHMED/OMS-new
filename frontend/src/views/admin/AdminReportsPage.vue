@@ -21,15 +21,15 @@
       </div>
       <div class="kpi">
         <div class="kpiLabel">Gross revenue</div>
-        <div class="kpiValue">${{ totals.revenue.toFixed(2) }}</div>
+        <div class="kpiValue">{{ format(totals.revenue) }}</div>
       </div>
       <div class="kpi">
         <div class="kpiLabel">Avg order value</div>
-        <div class="kpiValue">${{ totals.avg.toFixed(2) }}</div>
+        <div class="kpiValue">{{ format(totals.avg) }}</div>
       </div>
       <div class="kpi">
         <div class="kpiLabel">Completed revenue</div>
-        <div class="kpiValue green">${{ bucket.Completed.revenue.toFixed(2) }}</div>
+        <div class="kpiValue green">{{ format(bucket.Completed.revenue) }}</div>
       </div>
     </div>
 
@@ -53,8 +53,8 @@
             <tr v-for="r in dailySorted" :key="r.day">
               <td class="mono">{{ formatDay(r.day) }}</td>
               <td class="c strong">{{ r.orders }}</td>
-              <td class="c strong">${{ Number(r.revenue).toFixed(2) }}</td>
-              <td class="c mutedTd">${{ Number(r.avgValue).toFixed(2) }}</td>
+              <td class="c strong">{{ format(r.revenue) }}</td>
+              <td class="c mutedTd">{{ format(r.avgValue) }}</td>
             </tr>
           </tbody>
         </table>
@@ -67,7 +67,7 @@
         <div v-for="label in ['Pending', 'Confirmed', 'Completed', 'Cancelled']" :key="label" class="breakCard">
           <div class="breakLabel">{{ label }}</div>
           <div class="breakCount">{{ bucket[label].orders }} orders</div>
-          <div class="breakRev">${{ bucket[label].revenue.toFixed(2) }}</div>
+          <div class="breakRev">{{ format(bucket[label].revenue) }}</div>
         </div>
       </div>
     </div>
@@ -79,7 +79,9 @@ import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api/client'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { useCurrency } from '../../composables/useCurrency'
 
+const { format } = useCurrency()
 const loading = ref(false)
 const error = ref(null)
 const daily = ref([])
@@ -185,9 +187,9 @@ function exportReport() {
   // ── KPI summary boxes ────────────────────────────────────────────
   const kpis = [
     { label: 'Total Orders', value: String(totals.value.orders) },
-    { label: 'Gross Revenue', value: `$${totals.value.revenue.toFixed(2)}` },
-    { label: 'Avg Order Value', value: `$${totals.value.avg.toFixed(2)}` },
-    { label: 'Completed Revenue', value: `$${bucket.value.Completed.revenue.toFixed(2)}` },
+    { label: 'Gross Revenue', value: format(totals.value.revenue) },
+    { label: 'Avg Order Value', value: format(totals.value.avg) },
+    { label: 'Completed Revenue', value: format(bucket.value.Completed.revenue) },
   ]
   const boxW = (pageW - 28 - 9) / 4
   kpis.forEach((k, i) => {
@@ -220,8 +222,8 @@ function exportReport() {
     body: dailySorted.value.map((r) => [
       formatDay(r.day),
       String(r.orders),
-      `$${Number(r.revenue).toFixed(2)}`,
-      `$${Number(r.avgValue).toFixed(2)}`,
+      format(r.revenue),
+      format(r.avgValue),
     ]),
     styles: { fontSize: 9, cellPadding: 4, textColor: [30, 41, 59] },
     headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
@@ -254,7 +256,7 @@ function exportReport() {
     body: ['Pending', 'Confirmed', 'Completed', 'Cancelled'].map((label) => [
       label,
       String(bucket.value[label].orders),
-      `$${bucket.value[label].revenue.toFixed(2)}`,
+      format(bucket.value[label].revenue),
     ]),
     styles: { fontSize: 9, cellPadding: 4, textColor: [30, 41, 59] },
     headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },

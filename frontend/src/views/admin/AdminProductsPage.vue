@@ -62,7 +62,7 @@
               </div>
             </td>
             <td>{{ p.category }}</td>
-            <td class="strong">${{ Number(p.price).toFixed(2) }}</td>
+            <td class="strong">{{ format(p.price) }}</td>
             <td>
               <span class="stock" :class="stockClass(p.stockLevel)">{{ p.stockLevel }}</span>
             </td>
@@ -81,7 +81,9 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { api } from '../../api/client'
 import { productImageUrl } from '../../utils/images'
+import { useCurrency } from '../../composables/useCurrency'
 
+const { format } = useCurrency()
 const products = ref([])
 const loading = ref(false)
 const saving = ref(false)

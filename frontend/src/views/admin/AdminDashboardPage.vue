@@ -48,7 +48,7 @@
             <div class="icon orange">$</div>
             <div class="trend" aria-hidden="true">↗</div>
           </div>
-          <div class="value">${{ Number(data.cashRevenue).toFixed(2) }}</div>
+          <div class="value">{{ format(data.cashRevenue) }}</div>
           <div class="label">Cash Revenue</div>
         </div>
       </div>
@@ -63,7 +63,7 @@
                 <div class="muted">{{ o.email }}</div>
               </div>
               <div class="right">
-                <div class="strong">${{ Number(o.totalPrice).toFixed(2) }}</div>
+                <div class="strong">{{ format(o.totalPrice) }}</div>
                 <span class="badge" :class="badgeClass(o.orderStatus)">{{ o.orderStatus }}</span>
               </div>
             </div>
@@ -99,7 +99,9 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api/client'
+import { useCurrency } from '../../composables/useCurrency'
 
+const { format } = useCurrency()
 const data = ref({ totalOrders: 0, cashRevenue: 0, cashOrders: 0, recentOrders: [] })
 const products = ref([])
 const customers = ref([])
