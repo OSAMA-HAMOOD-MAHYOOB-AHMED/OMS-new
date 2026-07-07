@@ -60,7 +60,7 @@
 
       <nav class="nav" :class="{ open: navOpen }">
         <RouterLink class="link" to="/" @click="closeNav">Home</RouterLink>
-        <RouterLink v-if="!isAuthed || role === 'Customer' || role === 'Warehouse Manager'" class="link" to="/products" @click="closeNav">Products</RouterLink>
+        <RouterLink v-if="!isAuthed || role === 'Customer'" class="link" to="/products" @click="closeNav">Products</RouterLink>
 
         <template v-if="isAuthed && role === 'Customer'">
           <RouterLink class="link" to="/customer/orders" @click="closeNav">Orders</RouterLink>
