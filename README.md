@@ -1,5 +1,17 @@
 # Al-Wakeel Al-Shamel OMS
 
+## Overview
+Order Management System with four user roles, credit approval, inventory, and invoicing. Vue + ASP.NET Core Web API + MySQL, with CI via GitHub Actions.
+
+**Live demo:** https://alwakeel-alshamel.vercel.app  
+**My role:** Designed and built the full stack (frontend, API, database schema).
+
+### Key features
+- Role-based access control for four roles: Admin, Customer, Retail Salesperson, Warehouse Manager
+- Separate admin login and role-specific dashboards
+- Credit approval workflow, inventory management, and invoicing
+- Continuous integration with GitHub Actions
+
 Order Management System (OMS) implemented as:
 - **Frontend**: Vue (Vite)
 - **Backend**: ASP.NET Core Web API
