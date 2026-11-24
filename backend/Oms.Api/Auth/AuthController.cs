@@ -16,7 +16,15 @@ public sealed class AuthController(UserRepository users, TokenService tokens, Em
         var name = (req.Name ?? "").Trim();
         var phone = (req.Phone ?? "").Trim();
         var address = (req.Address ?? "").Trim();
-        var role = (req.Role ?? "").Trim();
+        var requestedRole = (req.Role ?? "").Trim();
+
+        // Public sign-up only ever creates customers. Staff and admin accounts must
+        // never be self-assigned, whatever the client sends.
+        if (requestedRole.Length > 0 &&
+            !string.Equals(requestedRole, UserRole.Customer, StringComparison.OrdinalIgnoreCase))
+            return BadRequest("Only customer accounts can be created through sign-up.");
+
+        const string role = UserRole.Customer;
 
         var emailError = AuthValidator.ValidateRegistrationEmail(email);
         if (emailError is not null) return BadRequest(emailError);
@@ -32,12 +40,6 @@ public sealed class AuthController(UserRepository users, TokenService tokens, Em
 
         var addressError = AuthValidator.ValidateAddress(address);
         if (addressError is not null) return BadRequest(addressError);
-
-        if (string.IsNullOrWhiteSpace(role))
-            return BadRequest("Missing required fields.");
-
-        if (!UserRole.All.Contains(role))
-            return BadRequest("Invalid role.");
 
         var existing = await users.GetByEmail(email);
         if (existing is not null)

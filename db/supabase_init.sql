@@ -10,8 +10,14 @@ CREATE TABLE IF NOT EXISTS "User" (
   role VARCHAR(50) NOT NULL,
   emailverified BOOLEAN NOT NULL DEFAULT FALSE,
   verificationtoken VARCHAR(64) NULL,
-  verificationtokenexpires TIMESTAMPTZ NULL
+  verificationtokenexpires TIMESTAMPTZ NULL,
+  avatarurl TEXT NULL,
+  createdat TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Databases created from an older version of this script lack these columns.
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS avatarurl TEXT NULL;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS createdat TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
 CREATE TABLE IF NOT EXISTS product (
   productid VARCHAR(50) PRIMARY KEY,

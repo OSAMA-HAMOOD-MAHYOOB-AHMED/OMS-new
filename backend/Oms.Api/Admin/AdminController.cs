@@ -33,6 +33,12 @@ public sealed class AdminController(AdminRepository admin, DashboardRepository d
             string.IsNullOrWhiteSpace(req.Category))
             return BadRequest("Missing fields.");
 
+        if (req.Price < 0)
+            return BadRequest("Price can't be negative.");
+
+        if (req.StockLevel < 0)
+            return BadRequest("Stock level can't be negative.");
+
         await admin.UpsertProduct(req);
         return NoContent();
     }
@@ -40,8 +46,14 @@ public sealed class AdminController(AdminRepository admin, DashboardRepository d
     [HttpDelete("products/{productID}")]
     public async Task<IActionResult> DeleteProduct([FromRoute] string productID)
     {
-        await admin.DeleteProduct(productID);
-        return NoContent();
+        var result = await admin.DeleteProduct(productID);
+        return result switch
+        {
+            AdminRepository.DeleteProductResult.NotFound => NotFound("Product not found."),
+            AdminRepository.DeleteProductResult.HasOrders => Conflict(
+                "This product appears in existing orders, so it can't be deleted. Set its stock to 0 to stop selling it."),
+            _ => NoContent()
+        };
     }
 
     [HttpGet("customers")]

@@ -34,9 +34,12 @@ public sealed class AdminRepository(IDbConnectionFactory db)
         return (await conn.QueryAsync<ProductRow>(sql)).ToList();
     }
 
+    // Saves the product and keeps its Inventory row in step with stockLevel, the
+    // same way stock receipts and orders update both tables. A new product gets
+    // an Inventory row so it can be ordered and appears in the warehouse screens.
     public async Task UpsertProduct(ProductUpsertRequest req)
     {
-        const string sql = """
+        const string upsertProduct = """
             INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl)
             VALUES (@productID, @name, @category, @price, @stockLevel, @description, @imageUrl)
             ON CONFLICT (productID) DO UPDATE SET
@@ -47,9 +50,35 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               description = EXCLUDED.description,
               imageUrl = EXCLUDED.imageUrl;
             """;
+
+        const string lockInventory = """
+            SELECT inventoryID AS InventoryID, quantityAvailable AS QuantityAvailable
+            FROM Inventory
+            WHERE productID = @productID
+            ORDER BY inventoryID
+            LIMIT 1
+            FOR UPDATE;
+            """;
+
+        const string insertInventory = """
+            INSERT INTO Inventory (inventoryID, productID, location, quantityAvailable, quantityReserved, lastCheckupDate)
+            VALUES (@inventoryID, @productID, 'Warehouse A', @qty, 0, NOW());
+            """;
+
+        const string updateInventory = """
+            UPDATE Inventory SET quantityAvailable = @qty WHERE inventoryID = @inventoryID;
+            """;
+
+        const string audit = """
+            INSERT INTO Inventory_Audit (inventoryID, action, deltaQuantity, note, createdAt)
+            VALUES (@inventoryID, @action, @delta, @note, @createdAt);
+            """;
+
         using var conn = db.Create();
         await OpenAsync(conn);
-        await conn.ExecuteAsync(sql, new
+        using var tx = conn.BeginTransaction();
+
+        await conn.ExecuteAsync(upsertProduct, new
         {
             productID = req.ProductID,
             name = req.Name,
@@ -58,15 +87,76 @@ public sealed class AdminRepository(IDbConnectionFactory db)
             stockLevel = req.StockLevel,
             description = req.Description,
             imageUrl = req.ImageUrl
-        });
+        }, tx);
+
+        var inv = await conn.QuerySingleOrDefaultAsync<(string InventoryID, int QuantityAvailable)>(
+            lockInventory, new { productID = req.ProductID }, tx);
+
+        if (inv.InventoryID is null)
+        {
+            var inventoryID = $"INV-{req.ProductID}";
+            await conn.ExecuteAsync(insertInventory, new { inventoryID, productID = req.ProductID, qty = req.StockLevel }, tx);
+            await conn.ExecuteAsync(audit, new
+            {
+                inventoryID,
+                action = "CREATE",
+                delta = req.StockLevel,
+                note = "Product added by admin",
+                createdAt = DateTime.UtcNow
+            }, tx);
+        }
+        else if (inv.QuantityAvailable != req.StockLevel)
+        {
+            await conn.ExecuteAsync(updateInventory, new { inventoryID = inv.InventoryID, qty = req.StockLevel }, tx);
+            await conn.ExecuteAsync(audit, new
+            {
+                inventoryID = inv.InventoryID,
+                action = "ADJUST",
+                delta = req.StockLevel - inv.QuantityAvailable,
+                note = "Stock level set by admin",
+                createdAt = DateTime.UtcNow
+            }, tx);
+        }
+
+        tx.Commit();
     }
 
-    public async Task DeleteProduct(string productID)
+    public enum DeleteProductResult { Deleted, NotFound, HasOrders }
+
+    // Removes a product together with its inventory rows and their history.
+    // Products that appear in any order are kept, because invoices and order
+    // history still reference them.
+    public async Task<DeleteProductResult> DeleteProduct(string productID)
     {
         using var conn = db.Create();
         await OpenAsync(conn);
-        const string sql = "DELETE FROM Product WHERE productID = @productID;";
-        await conn.ExecuteAsync(sql, new { productID });
+        using var tx = conn.BeginTransaction();
+
+        var exists = await conn.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM Product WHERE productID = @productID;", new { productID }, tx);
+        if (exists == 0)
+        {
+            tx.Rollback();
+            return DeleteProductResult.NotFound;
+        }
+
+        var orderLines = await conn.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM Order_Item WHERE productID = @productID;", new { productID }, tx);
+        if (orderLines > 0)
+        {
+            tx.Rollback();
+            return DeleteProductResult.HasOrders;
+        }
+
+        await conn.ExecuteAsync("""
+            DELETE FROM Inventory_Audit
+            WHERE inventoryID IN (SELECT inventoryID FROM Inventory WHERE productID = @productID);
+            """, new { productID }, tx);
+        await conn.ExecuteAsync("DELETE FROM Inventory WHERE productID = @productID;", new { productID }, tx);
+        await conn.ExecuteAsync("DELETE FROM Product WHERE productID = @productID;", new { productID }, tx);
+
+        tx.Commit();
+        return DeleteProductResult.Deleted;
     }
 
     public async Task<IReadOnlyList<AdminCustomerRow>> ListCustomers(string? q)
