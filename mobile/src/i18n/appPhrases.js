@@ -122,4 +122,8 @@ export const appPhrases = {
   'Keep order': 'إبقاء الطلب',
   'Cancel order': 'إلغاء الطلب',
   'Or type a new category': 'أو اكتب قسمًا جديدًا',
+  INVOICE: 'فاتورة',
+  'Sharing is not available on this device.': 'المشاركة غير متاحة على هذا الجهاز.',
+  'Could not download the PDF.': 'تعذّر تحميل ملف PDF.',
+  'Loading...': 'جاري التحميل...',
 }

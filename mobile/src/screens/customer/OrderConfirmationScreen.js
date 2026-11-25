@@ -41,7 +41,7 @@ export default function OrderConfirmationScreen({ navigation, route }) {
       <Card>
         <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 6 }}>{tp('Shipping')}</Text>
         <Row label={tp('Carrier')} value={order.shippingService || order.shippingCarrier} />
-        <Row label={tp('Cost')} value={order.shippingCostLabel} />
+        <Row label={tp('Cost')} value={tp(order.shippingCostLabel)} />
         <Row label={tp('Estimated delivery')} value={order.shippingEstimatedDelivery} />
         <Row label={tp('Tracking number')} value={order.shippingTrackingNumber} />
       </Card>

@@ -6,153 +6,213 @@
         <p class="sub">{{ tp('Overview of sales and revenue') }}</p>
       </div>
       <div class="headActions">
-        <button class="btnGhost" type="button" :disabled="loading" @click="load">{{ tp('Refresh') }}</button>
-        <button class="btnPrimary" type="button" @click="exportReport">{{ tp('Export Report') }}</button>
+        <div class="ranges" role="group" :aria-label="tp('Period')">
+          <button
+            v-for="d in rangeOptions"
+            :key="d"
+            type="button"
+            :class="['chip', { active: days === d }]"
+            :aria-pressed="days === d ? 'true' : 'false'"
+            @click="days = d"
+          >
+            {{ tp('Last {n} days').replace('{n}', d) }}
+          </button>
+        </div>
+        <button class="btnGhost" type="button" :disabled="loading" @click="load">
+          <AppIcon name="refresh" :size="18" />{{ tp('Refresh') }}
+        </button>
+        <button class="btnPrimary" type="button" :disabled="loading || !!error" @click="exportReport">
+          <AppIcon name="download" :size="18" />{{ tp('Export Report') }}
+        </button>
       </div>
     </div>
 
-    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-if="loading" class="kpis" aria-busy="true">
+      <div v-for="n in 4" :key="n" class="kpi skeleton" />
+    </div>
     <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
-    <div v-else class="grid">
-      <div class="kpi">
-        <div class="kpiLabel">{{ tp('Total orders') }}</div>
-        <div class="kpiValue">{{ totals.orders }}</div>
-      </div>
-      <div class="kpi">
-        <div class="kpiLabel">{{ tp('Gross revenue') }}</div>
-        <div class="kpiValue">{{ format(totals.revenue) }}</div>
-      </div>
-      <div class="kpi">
-        <div class="kpiLabel">{{ tp('Avg order value') }}</div>
-        <div class="kpiValue">{{ format(totals.avg) }}</div>
-      </div>
-      <div class="kpi">
-        <div class="kpiLabel">{{ tp('Completed revenue') }}</div>
-        <div class="kpiValue green">{{ format(bucket.Completed.revenue) }}</div>
-      </div>
-    </div>
-
-    <div v-if="!loading && !error" class="card">
-      <div class="cardHead">
-        <span class="docIcon" aria-hidden="true">▦</span>
-        <div class="cardTitle">{{ tp('Daily Sales Summary') }}</div>
-      </div>
-
-      <div class="tableWrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>{{ tp('Date') }}</th>
-              <th class="c">{{ tp('Orders') }}</th>
-              <th class="c">{{ tp('Revenue') }}</th>
-              <th class="c">{{ tp('Avg value') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in dailySorted" :key="r.day">
-              <td class="mono">{{ formatDay(r.day) }}</td>
-              <td class="c strong">{{ r.orders }}</td>
-              <td class="c strong">{{ format(r.revenue) }}</td>
-              <td class="c mutedTd">{{ format(r.avgValue) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div v-if="!loading && !error" class="card">
-      <div class="breakTitle">{{ tp('Order Status Breakdown') }}</div>
-      <div class="breakGrid">
-        <div v-for="label in ['Pending', 'Confirmed', 'Completed', 'Cancelled']" :key="label" class="breakCard">
-          <div class="breakLabel">{{ label }}</div>
-          <div class="breakCount">{{ bucket[label].orders }} orders</div>
-          <div class="breakRev">{{ format(bucket[label].revenue) }}</div>
+    <template v-else>
+      <div class="kpis">
+        <div class="kpi">
+          <span class="kpiIcon"><AppIcon name="receipt" :size="22" /></span>
+          <div class="kpiLabel">{{ tp('Total orders') }}</div>
+          <div class="kpiValue">{{ totals.orders }}</div>
+        </div>
+        <div class="kpi">
+          <span class="kpiIcon"><AppIcon name="cash" :size="22" /></span>
+          <div class="kpiLabel">{{ tp('Gross revenue') }}</div>
+          <div class="kpiValue" dir="ltr">{{ format(totals.revenue) }}</div>
+        </div>
+        <div class="kpi">
+          <span class="kpiIcon"><AppIcon name="dashboard" :size="22" /></span>
+          <div class="kpiLabel">{{ tp('Avg order value') }}</div>
+          <div class="kpiValue" dir="ltr">{{ format(totals.avg) }}</div>
+        </div>
+        <div class="kpi">
+          <span class="kpiIcon good"><AppIcon name="check" :size="22" /></span>
+          <div class="kpiLabel">{{ tp('Delivered revenue') }}</div>
+          <div class="kpiValue" dir="ltr">{{ format(deliveredRevenue) }}</div>
         </div>
       </div>
-    </div>
+
+      <div class="card">
+        <div class="cardHead">
+          <h2 class="cardTitle">{{ tp('Daily revenue') }}</h2>
+          <span class="hint">{{ tp('Last {n} days').replace('{n}', days) }}</span>
+        </div>
+        <p v-if="!chartDays.length" class="empty">{{ tp('No sales in this period') }}</p>
+        <div v-else class="chart" role="img" :aria-label="tp('Daily revenue')">
+          <div v-for="d in chartDays" :key="d.day" class="barCol" :title="`${formatDay(d.day)} — ${format(d.revenue)} · ${d.orders}`">
+            <div class="bar" :style="{ height: `${Math.max(4, (d.revenue / maxRevenue) * 100)}%` }" />
+            <span class="barLabel">{{ shortDay(d.day) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="twoCol">
+        <div class="card">
+          <div class="cardHead">
+            <h2 class="cardTitle">{{ tp('Daily Sales Summary') }}</h2>
+          </div>
+          <p v-if="!rangeRows.length" class="empty">{{ tp('No sales in this period') }}</p>
+          <div v-else class="tableWrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>{{ tp('Date') }}</th>
+                  <th class="num">{{ tp('Orders') }}</th>
+                  <th class="num">{{ tp('Revenue') }}</th>
+                  <th class="num">{{ tp('Avg value') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in rangeRows" :key="r.day">
+                  <td dir="ltr" class="dateCell">{{ formatDay(r.day) }}</td>
+                  <td class="num strong">{{ r.orders }}</td>
+                  <td class="num strong" dir="ltr">{{ format(r.revenue) }}</td>
+                  <td class="num muted" dir="ltr">{{ format(r.avgValue) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHead">
+            <h2 class="cardTitle">{{ tp('Order Status Breakdown') }}</h2>
+          </div>
+          <ul class="statusList">
+            <li v-for="s in statusRows" :key="s.status" class="statusRow">
+              <div class="statusTop">
+                <span class="statusName"><span class="dot" :style="{ background: s.color }" />{{ statusLabel(s.status) }}</span>
+                <span class="statusNums">
+                  <strong>{{ s.orders }}</strong> {{ tp('orders') }} · <span dir="ltr">{{ format(s.revenue) }}</span>
+                </span>
+              </div>
+              <div class="track"><div class="fill" :style="{ width: `${s.share}%`, background: s.color }" /></div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </template>
   </section>
 </template>
 
 <script setup>
-import { useI18n } from '../../i18n'
 import { computed, onMounted, ref } from 'vue'
-import { api } from '../../api/client'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { api } from '../../api/client'
 import { useCurrency } from '../../composables/useCurrency'
+import { useI18n } from '../../i18n'
+import AppIcon from '../../components/AppIcon.vue'
 
-const { tp } = useI18n()
-
+const { tp, statusLabel } = useI18n()
 const { format } = useCurrency()
+
+const rangeOptions = [7, 30, 60]
+const days = ref(30)
 const loading = ref(false)
 const error = ref(null)
 const daily = ref([])
 const breakdown = ref([])
 
-const dailySorted = computed(() => {
-  const rows = Array.isArray(daily.value) ? daily.value : []
-  return [...rows].sort((a, b) => String(b.day).localeCompare(String(a.day)))
-})
-
-function normStatus(s) {
-  return String(s || '').trim().toLowerCase()
+// The order lifecycle used everywhere in the system.
+const STATUSES = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
+const STATUS_COLORS = {
+  Placed: '#8a8273',
+  Processing: '#b45309',
+  Shipped: '#b8914f',
+  Delivered: '#1f7a4d',
+  Cancelled: '#9a2a16',
 }
 
-function bucketFor(raw) {
-  const s = normStatus(raw)
-  if (s.includes('cancel')) return 'Cancelled'
-  if (s.includes('complete') || s.includes('deliver')) return 'Completed'
-  if (s.includes('confirm') || s.includes('placed') || s.includes('process') || s.includes('ship')) return 'Confirmed'
-  if (s.includes('pending') || s.includes('credit')) return 'Pending'
-  return 'Confirmed'
+function dayKey(day) {
+  return String(day || '').slice(0, 10)
 }
 
-const bucket = computed(() => {
-  const base = {
-    Pending: { orders: 0, revenue: 0 },
-    Confirmed: { orders: 0, revenue: 0 },
-    Completed: { orders: 0, revenue: 0 },
-    Cancelled: { orders: 0, revenue: 0 },
-  }
-
-  for (const row of breakdown.value || []) {
-    const b = bucketFor(row.orderStatus)
-    base[b].orders += Number(row.orders) || 0
-    base[b].revenue += Number(row.revenue) || 0
-  }
-
-  return base
+// Rows inside the selected period, newest first.
+const rangeRows = computed(() => {
+  const since = new Date()
+  since.setHours(0, 0, 0, 0)
+  since.setDate(since.getDate() - (days.value - 1))
+  const sinceKey = since.toISOString().slice(0, 10)
+  return (Array.isArray(daily.value) ? daily.value : [])
+    .filter((r) => dayKey(r.day) >= sinceKey)
+    .sort((a, b) => dayKey(b.day).localeCompare(dayKey(a.day)))
 })
+
+// Oldest → newest for the chart.
+const chartDays = computed(() => [...rangeRows.value].reverse())
+const maxRevenue = computed(() => Math.max(1, ...chartDays.value.map((d) => Number(d.revenue) || 0)))
 
 const totals = computed(() => {
   let orders = 0
   let revenue = 0
-  for (const row of dailySorted.value) {
-    orders += Number(row.orders) || 0
-    revenue += Number(row.revenue) || 0
+  for (const r of rangeRows.value) {
+    orders += Number(r.orders) || 0
+    revenue += Number(r.revenue) || 0
   }
-  const avg = orders === 0 ? 0 : revenue / orders
-  return { orders, revenue, avg }
+  return { orders, revenue, avg: orders ? revenue / orders : 0 }
 })
 
+function normalizeStatus(raw) {
+  const s = String(raw || '').toLowerCase()
+  if (s.includes('cancel')) return 'Cancelled'
+  if (s.includes('deliver') || s.includes('complete')) return 'Delivered'
+  if (s.includes('ship')) return 'Shipped'
+  if (s.includes('process')) return 'Processing'
+  return 'Placed'
+}
+
+const statusRows = computed(() => {
+  const acc = Object.fromEntries(STATUSES.map((s) => [s, { orders: 0, revenue: 0 }]))
+  for (const row of breakdown.value || []) {
+    const s = normalizeStatus(row.orderStatus)
+    acc[s].orders += Number(row.orders) || 0
+    acc[s].revenue += Number(row.revenue) || 0
+  }
+  const total = Object.values(acc).reduce((n, x) => n + x.orders, 0) || 1
+  return STATUSES.map((s) => ({ status: s, ...acc[s], share: Math.round((acc[s].orders / total) * 100), color: STATUS_COLORS[s] }))
+})
+
+const deliveredRevenue = computed(() => statusRows.value.find((s) => s.status === 'Delivered')?.revenue || 0)
+
 function formatDay(day) {
-  const s = String(day || '')
-  if (!s) return ''
-  if (s.length >= 10) return s.slice(0, 10)
-  const d = new Date(s)
-  if (Number.isNaN(d.getTime())) return s
-  const yyyy = d.getFullYear()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
+  return dayKey(day)
+}
+
+function shortDay(day) {
+  const k = dayKey(day)
+  return k ? `${k.slice(8, 10)}/${k.slice(5, 7)}` : ''
 }
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    const res = await api.get('/api/admin/reports/sales', { params: { dailyLimit: 60 } })
+    const res = await api.get('/api/admin/reports/sales', { params: { dailyLimit: 90 } })
     daily.value = res.data?.daily ?? res.data?.Daily ?? []
     breakdown.value = res.data?.statusBreakdown ?? res.data?.StatusBreakdown ?? []
   } catch (e) {
@@ -165,130 +225,128 @@ async function load() {
   }
 }
 
+// PDF export in the brand colors (black + gold). Text stays in English because the
+// built-in PDF fonts have no Arabic letters.
 function exportReport() {
+  const INK = [20, 20, 20]
+  const GOLD = [184, 145, 79]
+  const GOLD_TEXT = [133, 101, 42]
+  const MUTED = [107, 100, 89]
+  const BORDER = [236, 230, 218]
+  const SOFT = [250, 248, 244]
+
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const pageW = doc.internal.pageSize.getWidth()
   const now = new Date()
   const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 
-  // ── Header bar ──────────────────────────────────────────────────
-  doc.setFillColor(15, 23, 42)
+  doc.setFillColor(...INK)
   doc.rect(0, 0, pageW, 28, 'F')
-
+  doc.setFillColor(...GOLD)
+  doc.rect(0, 28, pageW, 1.2, 'F')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(16)
   doc.setTextColor(255, 255, 255)
   doc.text('Al-Wakeel Al-Shamel', 14, 12)
-
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
-  doc.setTextColor(148, 163, 184)
-  doc.text('Sales Report', 14, 19)
+  doc.setTextColor(...GOLD)
+  doc.text(`Sales Report · Last ${days.value} days`, 14, 19)
+  doc.setTextColor(207, 199, 184)
   doc.text(`Generated: ${dateStr} at ${timeStr}`, pageW - 14, 19, { align: 'right' })
 
-  // ── KPI summary boxes ────────────────────────────────────────────
   const kpis = [
     { label: 'Total Orders', value: String(totals.value.orders) },
     { label: 'Gross Revenue', value: format(totals.value.revenue) },
     { label: 'Avg Order Value', value: format(totals.value.avg) },
-    { label: 'Completed Revenue', value: format(bucket.value.Completed.revenue) },
+    { label: 'Delivered Revenue', value: format(deliveredRevenue.value) },
   ]
   const boxW = (pageW - 28 - 9) / 4
   kpis.forEach((k, i) => {
     const x = 14 + i * (boxW + 3)
-    const y = 34
-    doc.setFillColor(248, 250, 252)
-    doc.setDrawColor(226, 232, 240)
+    const y = 35
+    doc.setFillColor(...SOFT)
+    doc.setDrawColor(...BORDER)
     doc.roundedRect(x, y, boxW, 22, 3, 3, 'FD')
-
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7.5)
-    doc.setTextColor(100, 116, 139)
+    doc.setTextColor(...MUTED)
     doc.text(k.label.toUpperCase(), x + boxW / 2, y + 8, { align: 'center' })
-
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(13)
-    doc.setTextColor(15, 23, 42)
+    doc.setFontSize(12.5)
+    doc.setTextColor(...INK)
     doc.text(k.value, x + boxW / 2, y + 17, { align: 'center' })
   })
 
-  // ── Daily Sales table ────────────────────────────────────────────
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
-  doc.setTextColor(15, 23, 42)
-  doc.text('Daily Sales Summary', 14, 68)
+  doc.setTextColor(...GOLD_TEXT)
+  doc.text('Daily Sales Summary', 14, 69)
+
+  const tableStyle = {
+    styles: { fontSize: 9, cellPadding: 3.5, textColor: INK, lineColor: BORDER, lineWidth: 0.1 },
+    headStyles: { fillColor: INK, textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+    alternateRowStyles: { fillColor: SOFT },
+    margin: { left: 14, right: 14, bottom: 18 },
+  }
 
   autoTable(doc, {
-    startY: 72,
+    ...tableStyle,
+    startY: 73,
     head: [['Date', 'Orders', 'Revenue', 'Avg Value']],
-    body: dailySorted.value.map((r) => [
-      formatDay(r.day),
-      String(r.orders),
-      format(r.revenue),
-      format(r.avgValue),
-    ]),
-    styles: { fontSize: 9, cellPadding: 4, textColor: [30, 41, 59] },
-    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
+    body: rangeRows.value.length
+      ? rangeRows.value.map((r) => [formatDay(r.day), String(r.orders), format(r.revenue), format(r.avgValue)])
+      : [['No sales in this period', '', '', '']],
     columnStyles: {
-      0: { halign: 'left', font: 'courier' },
+      0: { halign: 'left' },
       1: { halign: 'center', fontStyle: 'bold' },
       2: { halign: 'center', fontStyle: 'bold' },
-      3: { halign: 'center', textColor: [100, 116, 139] },
+      3: { halign: 'center', textColor: MUTED },
     },
-    margin: { left: 14, right: 14 },
   })
 
-  // ── Status Breakdown table ───────────────────────────────────────
   const afterDaily = doc.lastAutoTable.finalY + 10
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
-  doc.setTextColor(15, 23, 42)
+  doc.setTextColor(...GOLD_TEXT)
   doc.text('Order Status Breakdown', 14, afterDaily)
 
-  const statusColors = {
-    Pending: [245, 158, 11],
-    Confirmed: [37, 99, 235],
-    Completed: [4, 120, 87],
-    Cancelled: [180, 35, 24],
-  }
+  const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
   autoTable(doc, {
+    ...tableStyle,
     startY: afterDaily + 4,
-    head: [['Status', 'Orders', 'Revenue']],
-    body: ['Pending', 'Confirmed', 'Completed', 'Cancelled'].map((label) => [
-      label,
-      String(bucket.value[label].orders),
-      format(bucket.value[label].revenue),
-    ]),
-    styles: { fontSize: 9, cellPadding: 4, textColor: [30, 41, 59] },
-    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
+    head: [['Status', 'Orders', 'Share', 'Revenue']],
+    body: statusRows.value.map((s) => [s.status, String(s.orders), `${s.share}%`, format(s.revenue)]),
     columnStyles: {
-      0: { halign: 'left', fontStyle: 'bold' },
+      0: { halign: 'left', fontStyle: 'bold', cellPadding: { left: 8, top: 3.5, bottom: 3.5, right: 3.5 } },
       1: { halign: 'center' },
-      2: { halign: 'center' },
+      2: { halign: 'center', textColor: MUTED },
+      3: { halign: 'center' },
     },
     didDrawCell(data) {
       if (data.section === 'body' && data.column.index === 0) {
-        const label = data.cell.text[0]
-        const [r, g, b] = statusColors[label] ?? [100, 116, 139]
-        doc.setFillColor(r, g, b)
-        doc.circle(data.cell.x + 3.5, data.cell.y + data.cell.height / 2, 1.5, 'F')
+        const s = statusRows.value[data.row.index]
+        if (!s) return
+        doc.setFillColor(...hex(s.color))
+        doc.circle(data.cell.x + 4, data.cell.y + data.cell.height / 2, 1.4, 'F')
       }
     },
-    margin: { left: 14, right: 14 },
   })
 
-  // ── Footer ───────────────────────────────────────────────────────
+  // Footer with the right page numbers on every page.
+  const pages = doc.getNumberOfPages()
   const pageH = doc.internal.pageSize.getHeight()
-  doc.setDrawColor(226, 232, 240)
-  doc.line(14, pageH - 12, pageW - 14, pageH - 12)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7.5)
-  doc.setTextColor(148, 163, 184)
-  doc.text('Al-Wakeel Al-Shamel — Confidential', 14, pageH - 7)
-  doc.text(`Page 1`, pageW - 14, pageH - 7, { align: 'right' })
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i)
+    doc.setDrawColor(...BORDER)
+    doc.line(14, pageH - 12, pageW - 14, pageH - 12)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...MUTED)
+    doc.text('Al-Wakeel Al-Shamel — Confidential', 14, pageH - 7)
+    doc.text(`Page ${i} of ${pages}`, pageW - 14, pageH - 7, { align: 'right' })
+  }
 
   doc.save(`sales-report-${now.toISOString().slice(0, 10)}.pdf`)
 }
@@ -298,209 +356,307 @@ onMounted(load)
 
 <style scoped>
 .page {
-  display: grid;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 .head {
   display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.headActions {
-  display: flex;
-  gap: 10px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
 }
 .h1 {
   margin: 0;
   font-size: 30px;
-  font-weight: 950;
-  letter-spacing: -0.8px;
-  color: var(--text-h);
+  font-weight: 800;
 }
 .sub {
   margin: 6px 0 0;
   color: var(--text);
 }
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+.headActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
-@media (max-width: 980px) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.ranges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
-@media (max-width: 520px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
+.chip {
+  border: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--sand-2);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
 }
-
-.kpi {
-  border: 1px solid var(--border);
-  border-radius: 14px;
+.chip.active {
+  background: var(--ink);
+  color: #fff;
+}
+.btnPrimary,
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btnPrimary {
+  border: 0;
+  background: var(--ink);
+  color: #fff;
+}
+.btnGhost {
+  border: 1px solid var(--border-strong);
   background: #fff;
-  padding: 14px;
-  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+.btnPrimary:disabled,
+.btnGhost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.kpi {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.kpiIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--sand);
+  color: var(--gold-text);
+  display: grid;
+  place-items: center;
+}
+.kpiIcon.good {
+  background: #e6f2ec;
+  color: var(--success);
 }
 .kpiLabel {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  color: var(--text);
 }
 .kpiValue {
-  margin-top: 8px;
-  font-size: 26px;
-  font-weight: 950;
-  letter-spacing: -0.7px;
-  color: var(--text-h);
+  font-family: var(--font-head);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
-.kpiValue.green {
-  color: #047857;
+.skeleton {
+  height: 128px;
+  background: linear-gradient(90deg, #f1ece2 25%, #f8f4ec 37%, #f1ece2 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
 }
 
 .card {
-  border: 1px solid var(--border);
-  border-radius: 14px;
   background: #fff;
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 18px 20px;
+  min-width: 0;
 }
 .cardHead {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 10px;
-  padding: 14px 14px 10px;
-}
-.docIcon {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  color: var(--brand-blue);
-  font-weight: 950;
-  background: rgba(184, 145, 79, 0.08);
+  margin-bottom: 12px;
 }
 .cardTitle {
-  font-weight: 950;
-  color: var(--text-h);
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.hint {
+  font-size: 13px;
+  color: var(--text);
+}
+.empty {
+  margin: 0;
+  padding: 28px 0;
+  text-align: center;
+  color: var(--text);
 }
 
+.chart {
+  height: 200px;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.barCol {
+  flex: 1 0 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+.bar {
+  width: 100%;
+  max-width: 34px;
+  border-radius: 8px 8px 3px 3px;
+  background: var(--gold);
+}
+.barCol:hover .bar {
+  background: var(--ink);
+}
+.barLabel {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  direction: ltr;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
 .tableWrap {
-  overflow: auto;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 860px;
+  font-size: 14px;
 }
-thead th {
+.table th {
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 12px;
   text-align: start;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 900;
-  padding: 12px 14px;
-  background: #FAF8F4;
+  white-space: nowrap;
+}
+.table td {
+  padding: 10px 12px;
   border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  color: var(--ink);
 }
-tbody td {
-  padding: 12px 14px;
-  border-bottom: 1px solid #F1ECE2;
+.table tbody tr:nth-child(even) td {
+  background: var(--bg);
 }
-.c {
-  text-align: center;
+.num {
+  text-align: center !important;
 }
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+.dateCell {
+  text-align: start;
+  white-space: nowrap;
 }
 .strong {
-  font-weight: 950;
-  color: var(--text-h);
+  font-weight: 600;
 }
-.mutedTd {
-  color: var(--text);
-  font-weight: 700;
-}
-
-.breakTitle {
-  padding: 14px 14px 6px;
-  font-weight: 950;
-  color: var(--text-h);
-}
-.breakGrid {
-  padding: 10px 14px 14px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-@media (max-width: 980px) {
-  .breakGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-.breakCard {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
-  background: #fff;
-}
-.breakLabel {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 900;
-}
-.breakCount {
-  margin-top: 8px;
-  font-size: 20px;
-  font-weight: 950;
-  color: var(--text-h);
-  letter-spacing: -0.4px;
-}
-.breakRev {
-  margin-top: 6px;
-  color: var(--text);
-  font-weight: 750;
-}
-
-.btnPrimary {
-  border: 0;
-  cursor: pointer;
-  background: var(--brand-blue);
-  color: #fff;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-weight: 950;
-  box-shadow: var(--shadow-sm);
-}
-.btnGhost {
-  border: 1px solid var(--border);
-  background: #fff;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-weight: 900;
-  cursor: pointer;
-  color: var(--text-h);
-}
-
 .muted {
+  color: var(--text) !important;
+}
+
+.statusList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.statusTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.statusName {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+}
+.statusNums {
+  font-size: 13px;
   color: var(--text);
+}
+.statusNums strong {
+  color: var(--ink);
+}
+.track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--sand-2);
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  border-radius: 4px;
 }
 .error {
-  color: #b42318;
-  background: rgba(180, 35, 24, 0.08);
-  border: 1px solid rgba(180, 35, 24, 0.2);
+  color: var(--danger);
+  background: rgba(154, 42, 22, 0.06);
+  border: 1px solid rgba(154, 42, 22, 0.2);
   padding: 10px 12px;
   border-radius: 12px;
+}
+
+@media (max-width: 900px) {
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .h1 {
+    font-size: 26px;
+  }
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kpiValue {
+    font-size: 19px;
+  }
 }
 </style>

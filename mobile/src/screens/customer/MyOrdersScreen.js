@@ -125,7 +125,7 @@ export default function MyOrdersScreen({ navigation }) {
                   <Row key={it.productID} label={`${it.quantity} × ${it.name}`} value={format(it.subtotal)} />
                 ))}
                 <Divider />
-                <Row label={t('orders.shipping')} value={`${o.shippingService} — ${o.shippingCostLabel}`} />
+                <Row label={t('orders.shipping')} value={`${o.shippingService} — ${tp(o.shippingCostLabel)}`} />
                 {o.shippingTrackingNumber ? <Row label={t('orders.tracking')} value={o.shippingTrackingNumber} /> : null}
                 {o.paymentStatus ? <Row label={t('orders.paymentStatus')} value={o.paymentStatus} /> : null}
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>

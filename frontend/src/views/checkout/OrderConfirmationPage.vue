@@ -3,7 +3,7 @@
     <CheckoutSteps current="confirm" />
 
     <div class="card">
-      <div class="successIcon" aria-hidden="true">✓</div>
+      <div class="successIcon" aria-hidden="true"><AppIcon name="check" :size="30" :stroke="2.6" /></div>
       <h1 class="h1">{{ tp('Order placed successfully') }}</h1>
       <p class="sub">
         {{ tp('Thank you for your purchase. Your order is being prepared for FedEx Express delivery.') }}
@@ -15,12 +15,12 @@
           <span class="v mono">{{ order?.orderID }}</span>
         </div>
         <div class="row">
-          <span class="k">{{ tp('Amount paid') }}</span>
-          <span class="v">{{ format(order?.total || 0) }}</span>
+          <span class="k">{{ tp(order?.paymentMethod === 'Cash' ? 'Amount due on delivery' : 'Amount paid') }}</span>
+          <span class="v" dir="ltr">{{ format(order?.total || 0) }}</span>
         </div>
         <div class="row">
           <span class="k">{{ tp('Payment method') }}</span>
-          <span class="v">{{ methodLabel }}</span>
+          <span class="v">{{ tp(methodLabel) }}</span>
         </div>
         <div v-if="order?.transactionId" class="row">
           <span class="k">{{ tp('Transaction ID') }}</span>
@@ -28,11 +28,11 @@
         </div>
         <div class="row">
           <span class="k">{{ tp('Shipping') }}</span>
-          <span class="v">{{ shippingLabel }}</span>
+          <span class="v">{{ tp(shippingLabel) }}</span>
         </div>
         <div class="row">
           <span class="k">{{ tp('Delivery') }}</span>
-          <span class="v">{{ deliveryEta }}</span>
+          <span class="v">{{ tp(deliveryEta) }}</span>
         </div>
         <div v-if="trackingNumber" class="row">
           <span class="k">{{ tp('FedEx tracking') }}</span>
@@ -56,6 +56,7 @@
 </template>
 
 <script setup>
+import AppIcon from '../../components/AppIcon.vue'
 import { useI18n } from '../../i18n'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

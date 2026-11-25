@@ -1,17 +1,37 @@
 import { useMemo, useState } from 'react'
-import { Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { useApi } from '../../api/useApi'
-import { Card, Chip, Empty, ErrorBox, Loading, Row, Screen, SectionTitle, StatCard, StatusBadge } from '../../components/ui'
+import { Card, Chip, Empty, ErrorBox, Loading, Row, Screen, SectionTitle, StatCard } from '../../components/ui'
 import { useCurrency } from '../../context/CurrencyContext'
-import { colors } from '../../theme'
+import { tp, useI18n } from '../../i18n'
+import { colors, fonts } from '../../theme'
 import { formatDate } from '../../utils/format'
-import { tp } from '../../i18n'
 
 const RANGES = [7, 30, 60]
 
+// The order lifecycle used everywhere in the system (same colors as the website report).
+const STATUSES = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
+const STATUS_COLORS = {
+  Placed: '#8A8273',
+  Processing: '#B45309',
+  Shipped: '#B8914F',
+  Delivered: '#1F7A4D',
+  Cancelled: '#9A2A16',
+}
+
+function normalizeStatus(raw) {
+  const s = String(raw || '').toLowerCase()
+  if (s.includes('cancel')) return 'Cancelled'
+  if (s.includes('deliver') || s.includes('complete')) return 'Delivered'
+  if (s.includes('ship')) return 'Shipped'
+  if (s.includes('process')) return 'Processing'
+  return 'Placed'
+}
+
 export default function AdminReportsScreen() {
   const { format } = useCurrency()
-  const { data, error, loading, refreshing, refresh, reload } = useApi('/api/admin/reports/sales', { params: { dailyLimit: 60 } })
+  const { statusLabel, textAlign } = useI18n()
+  const { data, error, loading, refreshing, refresh, reload } = useApi('/api/admin/reports/sales', { params: { dailyLimit: 90 } })
   const [range, setRange] = useState(30)
 
   const daily = useMemo(() => {
@@ -26,62 +46,75 @@ export default function AdminReportsScreen() {
     return { revenue, orders, avg: orders ? revenue / orders : 0 }
   }, [daily])
 
-  if (loading) return <Loading />
+  const statusRows = useMemo(() => {
+    const acc = Object.fromEntries(STATUSES.map((s) => [s, { orders: 0, revenue: 0 }]))
+    for (const row of data?.statusBreakdown || []) {
+      const s = normalizeStatus(row.orderStatus)
+      acc[s].orders += Number(row.orders) || 0
+      acc[s].revenue += Number(row.revenue) || 0
+    }
+    const total = Object.values(acc).reduce((n, x) => n + x.orders, 0) || 1
+    return STATUSES.map((s) => ({ status: s, ...acc[s], share: (acc[s].orders / total) * 100 }))
+  }, [data])
+
+  if (loading) return <Loading label={tp('Loading...')} />
 
   const maxRevenue = Math.max(1, ...daily.map((r) => Number(r.revenue || 0)))
-  const statusRows = data?.statusBreakdown || []
-  const maxStatus = Math.max(1, ...statusRows.map((s) => Number(s.orders || 0)))
+  const delivered = statusRows.find((s) => s.status === 'Delivered')?.revenue || 0
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
       <ErrorBox message={error} onRetry={reload} />
-      <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+      <View style={styles.ranges}>
         {RANGES.map((r) => (
           <Chip key={r} label={tp('Last {n} days').replace('{n}', r)} active={range === r} onPress={() => setRange(r)} />
         ))}
       </View>
 
-      <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
-        <StatCard icon="cash-outline" label={tp('Revenue')} value={format(totals.revenue)} tint={colors.success} />
-        <StatCard icon="receipt-outline" label={tp('Orders')} value={String(totals.orders)} />
+      <View style={styles.statRow}>
+        <StatCard icon="cash-outline" label={tp('Gross revenue')} value={format(totals.revenue)} tint={colors.goldText} />
+        <StatCard icon="receipt-outline" label={tp('Total orders')} value={String(totals.orders)} tint={colors.ink} />
       </View>
-      <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
-        <StatCard icon="trending-up-outline" label={tp('Avg. order value')} value={format(totals.avg)} tint={colors.teal} />
+      <View style={styles.statRow}>
+        <StatCard icon="trending-up-outline" label={tp('Avg order value')} value={format(totals.avg)} tint={colors.goldText} />
+        <StatCard icon="checkmark-circle-outline" label={tp('Delivered revenue')} value={format(delivered)} tint={colors.success} />
       </View>
 
-      <SectionTitle>Orders by status</SectionTitle>
+      <SectionTitle>{tp('Order Status Breakdown')}</SectionTitle>
       <Card>
-        {statusRows.length === 0 ? <Text style={{ color: colors.textSoft }}>{tp('No data.')}</Text> : null}
         {statusRows.map((s) => (
-          <View key={s.orderStatus} style={{ marginBottom: 10 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <StatusBadge status={s.orderStatus} />
-              <Text style={{ color: colors.textSoft, fontSize: 12 }}>
-                {s.orders} order{Number(s.orders) === 1 ? '' : 's'} · {format(s.revenue)}
+          <View key={s.status} style={styles.statusItem}>
+            <View style={styles.statusTop}>
+              <View style={styles.statusName}>
+                <View style={[styles.dot, { backgroundColor: STATUS_COLORS[s.status] }]} />
+                <Text style={styles.statusText}>{statusLabel(s.status)}</Text>
+              </View>
+              <Text style={styles.small}>
+                {s.orders} {tp('orders')} · {format(s.revenue)}
               </Text>
             </View>
-            <View style={{ height: 8, backgroundColor: colors.bg, borderRadius: 4, overflow: 'hidden' }}>
-              <View style={{ width: `${(Number(s.orders) / maxStatus) * 100}%`, height: '100%', backgroundColor: colors.primary, borderRadius: 4 }} />
+            <View style={styles.track}>
+              <View style={[styles.fill, { width: `${s.share}%`, backgroundColor: STATUS_COLORS[s.status] }]} />
             </View>
           </View>
         ))}
       </Card>
 
-      <SectionTitle>Daily revenue</SectionTitle>
+      <SectionTitle>{tp('Daily revenue')}</SectionTitle>
       {daily.length === 0 ? (
         <Empty icon="bar-chart-outline" title={tp('No sales in this period')} />
       ) : (
         <Card>
           {daily.map((r) => (
-            <View key={r.day} style={{ marginBottom: 10 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>{formatDate(r.day)}</Text>
-                <Text style={{ color: colors.textSoft, fontSize: 12 }}>
-                  {r.orders} order{Number(r.orders) === 1 ? '' : 's'} · <Text style={{ color: colors.text, fontWeight: '700' }}>{format(r.revenue)}</Text>
+            <View key={r.day} style={styles.statusItem}>
+              <View style={styles.statusTop}>
+                <Text style={[styles.statusText, { textAlign }]}>{formatDate(r.day)}</Text>
+                <Text style={styles.small}>
+                  {r.orders} {tp('orders')} · <Text style={styles.strong}>{format(r.revenue)}</Text>
                 </Text>
               </View>
-              <View style={{ height: 8, backgroundColor: colors.bg, borderRadius: 4, overflow: 'hidden' }}>
-                <View style={{ width: `${(Number(r.revenue) / maxRevenue) * 100}%`, height: '100%', backgroundColor: colors.teal, borderRadius: 4 }} />
+              <View style={styles.track}>
+                <View style={[styles.fill, { width: `${(Number(r.revenue) / maxRevenue) * 100}%`, backgroundColor: colors.gold }]} />
               </View>
             </View>
           ))}
@@ -91,3 +124,17 @@ export default function AdminReportsScreen() {
     </Screen>
   )
 }
+
+const styles = StyleSheet.create({
+  ranges: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12, rowGap: 8 },
+  statRow: { flexDirection: 'row', marginHorizontal: -4 },
+  statusItem: { marginBottom: 12 },
+  statusTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, gap: 8 },
+  statusName: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  statusText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 14 },
+  small: { color: colors.textSoft, fontFamily: fonts.regular, fontSize: 12, flexShrink: 1 },
+  strong: { color: colors.text, fontFamily: fonts.bold },
+  track: { height: 8, backgroundColor: colors.sand2, borderRadius: 4, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 4 },
+})

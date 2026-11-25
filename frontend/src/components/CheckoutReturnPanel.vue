@@ -15,10 +15,10 @@
     </div>
 
     <p class="message">{{ tp(message) }}</p>
-    <p class="hint">{{ hint }}</p>
+    <p class="hint">{{ tp(hint) }}</p>
 
     <button class="returnBtn" type="button" @click="$emit('proceed')">
-      {{ buttonLabel }}
+      {{ tp(buttonLabel) }}
     </button>
   </div>
 </template>

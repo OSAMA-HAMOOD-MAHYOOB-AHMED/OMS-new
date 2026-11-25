@@ -6,13 +6,25 @@ namespace Oms.Api.Invoicing;
 
 public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<InvoicePdfGenerator> logger)
 {
-    private static readonly Color BrandBlue = Color.FromHex("#2563EB");
-    private static readonly Color BrandDark = Color.FromHex("#0F172A");
-    private static readonly Color Muted = Color.FromHex("#64748B");
-    private static readonly Color Border = Color.FromHex("#E2E8F0");
-    private static readonly Color SoftBg = Color.FromHex("#F8FAFC");
-    private static readonly Color Success = Color.FromHex("#047857");
-    private static readonly Color HeaderSubtext = Color.FromHex("#DBEAFE");
+    // Brand palette from the logo (matches the website and the app).
+    private static readonly Color Ink = Color.FromHex("#141414");
+    private static readonly Color Gold = Color.FromHex("#B8914F");
+    private static readonly Color GoldText = Color.FromHex("#85652A");
+    private static readonly Color Sand = Color.FromHex("#F6EFE1");
+    private static readonly Color BrandDark = Ink;
+    private static readonly Color Muted = Color.FromHex("#6B6459");
+    private static readonly Color Border = Color.FromHex("#ECE6DA");
+    private static readonly Color SoftBg = Color.FromHex("#FAF8F4");
+    private static readonly Color Success = Color.FromHex("#1F7A4D");
+    private static readonly Color HeaderSubtext = Color.FromHex("#CFC7B8");
+
+    /// <summary>Card orders are paid at checkout; cash orders only once delivered.</summary>
+    private static bool IsPaid(InvoiceDocumentData d) =>
+        !string.Equals(d.PaymentMethod, "Cash", StringComparison.OrdinalIgnoreCase)
+            ? !string.Equals(d.PaymentStatus, "Failed", StringComparison.OrdinalIgnoreCase)
+            : string.Equals(d.OrderStatus, "Delivered", StringComparison.OrdinalIgnoreCase)
+              || string.Equals(d.PaymentStatus, "Completed", StringComparison.OrdinalIgnoreCase)
+              || string.Equals(d.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase);
 
     public byte[] Generate(InvoiceDocumentData data, string currencyCode = "USD", decimal exchangeRate = 1m)
     {
@@ -64,34 +76,34 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
     {
         container.Column(column =>
         {
-            column.Item().Background(BrandBlue).Padding(18).Row(row =>
+            column.Item().Background(Ink).Padding(18).Row(row =>
             {
                 row.RelativeItem().Row(inner =>
                 {
                     if (logoBytes is not null)
                     {
-                        inner.ConstantItem(56).Height(56).Image(logoBytes).FitArea();
+                        inner.ConstantItem(60).Height(60).Background(Colors.White).Padding(4).Image(logoBytes).FitArea();
                         inner.ConstantItem(14);
                     }
 
                     inner.RelativeItem().Column(brand =>
                     {
                         brand.Item().Text("Al-Wakeel Al-Shamel").FontSize(18).Bold().FontColor(Colors.White);
-                        brand.Item().Text("Order Management System").FontSize(10).FontColor(HeaderSubtext);
+                        brand.Item().Text("Phone accessories").FontSize(10).FontColor(Gold);
                         brand.Item().PaddingTop(4).Text("Riyadh, Saudi Arabia").FontSize(9).FontColor(HeaderSubtext);
                     });
                 });
 
-                row.ConstantItem(180).AlignRight().Column(right =>
+                row.ConstantItem(230).AlignRight().Column(right =>
                 {
-                    right.Item().AlignRight().Text("INVOICE").FontSize(24).Bold().FontColor(Colors.White);
-                    right.Item().AlignRight().Text(data.OrderId).FontSize(11).SemiBold().FontColor(Colors.White);
+                    right.Item().AlignRight().Text("INVOICE").FontSize(24).Bold().FontColor(Gold);
+                    right.Item().AlignRight().Text(data.OrderId).FontSize(9).SemiBold().FontColor(Colors.White);
                     right.Item().AlignRight().PaddingTop(6).Text(data.OrderDate.ToString("dd MMM yyyy, HH:mm 'UTC'"))
                         .FontSize(9).FontColor(HeaderSubtext);
                 });
             });
 
-            column.Item().PaddingTop(10).LineHorizontal(1).LineColor(Border);
+            column.Item().Height(4).Background(Gold);
         });
     }
 
@@ -100,6 +112,17 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
         container.Column(column =>
         {
             column.Spacing(14);
+
+            var paid = IsPaid(data);
+            column.Item().Row(row =>
+            {
+                row.AutoItem()
+                    .Background(paid ? Color.FromHex("#E6F2EC") : Sand)
+                    .PaddingVertical(5).PaddingHorizontal(12)
+                    .Text(paid ? "PAID" : "PAYMENT DUE ON DELIVERY")
+                    .FontSize(9).Bold().FontColor(paid ? Success : GoldText);
+                row.RelativeItem();
+            });
 
             column.Item().Row(row =>
             {
@@ -119,7 +142,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
                     DetailRow(stack, "Order Date", data.OrderDate.ToString("dd MMM yyyy"));
                     DetailRow(stack, "Order Status", data.OrderStatus);
                     DetailRow(stack, "Payment Method", FormatPaymentMethod(data.PaymentMethod));
-                    DetailRow(stack, "Payment Status", data.PaymentStatus ?? "—");
+                    DetailRow(stack, "Payment Status", IsPaid(data) ? "Paid" : "Due on delivery");
                     if (!string.IsNullOrWhiteSpace(data.TransactionReference))
                         DetailRow(stack, "Transaction Ref.", data.TransactionReference);
                 }));
@@ -151,7 +174,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
                     {
                         static IContainer HeaderCell(IContainer c) =>
                             c.DefaultTextStyle(x => x.SemiBold().FontColor(Colors.White).FontSize(9))
-                                .Background(BrandBlue)
+                                .Background(Ink)
                                 .PaddingVertical(8)
                                 .PaddingHorizontal(6);
 
@@ -188,7 +211,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
 
             column.Item().AlignRight().Width(240).Element(totalCard =>
             {
-                totalCard.Border(1).BorderColor(Border).Background(SoftBg).Padding(12).Column(col =>
+                totalCard.Border(1).BorderColor(Gold).Background(SoftBg).Padding(12).Column(col =>
                 {
                     col.Item().Row(r =>
                     {
@@ -203,14 +226,15 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
                     col.Item().PaddingTop(8).LineHorizontal(1).LineColor(Border);
                     col.Item().PaddingTop(8).Row(r =>
                     {
-                        r.RelativeItem().Text("Total Paid").FontSize(12).Bold();
-                        r.ConstantItem(90).AlignRight().Text(fmt(data.TotalPrice)).FontSize(14).Bold().FontColor(BrandBlue);
+                        r.RelativeItem().Text(paid ? "Total Paid" : "Amount Due").FontSize(12).Bold();
+                        r.ConstantItem(90).AlignRight().Text(fmt(data.TotalPrice)).FontSize(14).Bold().FontColor(GoldText);
                     });
                 });
             });
 
-            column.Item().PaddingTop(4).Text(
-                    "This invoice confirms payment received for the order listed above. Please retain a copy for your records.")
+            column.Item().PaddingTop(4).Text(paid
+                    ? "This invoice confirms payment received for the order listed above. Please keep a copy for your records."
+                    : "Please pay the amount due in cash when your order is delivered. Keep this invoice for your records.")
                 .FontSize(9).FontColor(Muted);
         });
     }
@@ -238,7 +262,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
     {
         container.Border(1).BorderColor(Border).Background(Colors.White).Padding(12).Column(column =>
         {
-            column.Item().Text(title).FontSize(11).SemiBold().FontColor(BrandBlue);
+            column.Item().Text(title).FontSize(11).SemiBold().FontColor(GoldText);
             column.Item().PaddingTop(8).Column(content);
         });
     }
@@ -247,8 +271,8 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
     {
         column.Item().PaddingBottom(4).Row(row =>
         {
-            row.RelativeItem().Text(label).FontColor(Muted).FontSize(9);
-            row.RelativeItem().AlignRight().Text(value).FontSize(9).SemiBold();
+            row.RelativeItem(2).Text(label).FontColor(Muted).FontSize(9);
+            row.RelativeItem(5).AlignRight().Text(value).FontSize(9).SemiBold();
         });
     }
 
@@ -256,7 +280,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
     {
         "CreditCard" => "Credit Card",
         "OnlineBanking" => "Online Banking",
-        "Cash" => "Cash",
+        "Cash" => "Cash on Delivery",
         "Credit" => "Credit",
         _ => method
     };

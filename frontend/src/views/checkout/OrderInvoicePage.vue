@@ -7,7 +7,7 @@
         <img class="logo" :src="siteLogoUrl" :alt="tp('Al-Wakeel Al-Shamel')" />
         <div>
           <h1 class="h1">{{ tp('Your invoice') }}</h1>
-          <p class="sub">Order {{ orderId }} — official PDF invoice with full order details.</p>
+          <p class="sub">{{ tp('Order') }} <span dir="ltr">{{ orderId }}</span> — {{ tp('official PDF invoice with full order details.') }}</p>
         </div>
       </div>
       <div v-if="invoice" class="headActions">
@@ -22,14 +22,14 @@
 
     <div v-else-if="invoice" class="layout">
       <aside class="summaryCard">
-        <div class="stamp">{{ tp('PAID') }}</div>
-        <div class="sumTitle">{{ invoice.subject }}</div>
+        <div class="stamp" :class="{ due: !isPaid }">{{ tp(isPaid ? 'PAID' : 'PAYMENT DUE ON DELIVERY') }}</div>
+        <div class="sumTitle">{{ tp('Invoice for order') }} <span dir="ltr">{{ invoice.orderId }}</span></div>
 
         <div class="block">
           <div class="blockTitle">{{ tp('Order') }}</div>
           <div class="detail"><span>{{ tp('Order number') }}</span><strong class="mono">{{ invoice.orderId }}</strong></div>
           <div class="detail"><span>{{ tp('Order date') }}</span><strong>{{ formatDate(invoice.orderDate) }}</strong></div>
-          <div class="detail"><span>{{ tp('Status') }}</span><strong>{{ tp(invoice.orderStatus) }}</strong></div>
+          <div class="detail"><span>{{ tp('Status') }}</span><strong>{{ statusLabel(invoice.orderStatus) }}</strong></div>
         </div>
 
         <div class="block">
@@ -51,8 +51,8 @@
 
         <div class="block">
           <div class="blockTitle">{{ tp('Payment') }}</div>
-          <div class="detail"><span>{{ tp('Method') }}</span><strong>{{ paymentLabel }}</strong></div>
-          <div class="detail"><span>{{ tp('Status') }}</span><strong>{{ invoice.paymentStatus || '—' }}</strong></div>
+          <div class="detail"><span>{{ tp('Method') }}</span><strong>{{ tp(paymentLabel) }}</strong></div>
+          <div class="detail"><span>{{ tp('Status') }}</span><strong>{{ tp(isPaid ? 'Paid' : 'Due on delivery') }}</strong></div>
           <div v-if="invoice.transactionReference" class="detail">
             <span>{{ tp('Transaction') }}</span><strong class="mono small">{{ invoice.transactionReference }}</strong>
           </div>
@@ -61,15 +61,15 @@
         <div class="itemsBlock">
           <div class="blockTitle">{{ tp('Items') }}</div>
           <div v-for="it in invoice.items" :key="it.productId" class="itemRow">
-            <div class="itemName">{{ it.name }}</div>
-            <div class="itemMeta">{{ it.productId }} · Qty {{ it.quantity }} × {{ format(it.unitPrice) }}</div>
+            <div class="itemName" dir="auto">{{ it.name }}</div>
+            <div class="itemMeta">{{ it.productId }} · {{ tp('Qty') }} {{ it.quantity }} × <span dir="ltr">{{ format(it.unitPrice) }}</span></div>
             <div class="itemTotal">{{ format(it.subtotal) }}</div>
           </div>
         </div>
 
         <div class="totalRow">
-          <span>{{ tp('Total paid') }}</span>
-          <strong>{{ format(invoice.totalPrice) }}</strong>
+          <span>{{ tp(isPaid ? 'Total paid' : 'Amount due') }}</span>
+          <strong dir="ltr">{{ format(invoice.totalPrice) }}</strong>
         </div>
       </aside>
 
@@ -80,7 +80,7 @@
         </div>
         <iframe v-if="pdfUrl && !isMobile" class="pdfFrame" :src="pdfUrl" :title="tp('Invoice PDF preview')" />
         <div v-else-if="isMobile && invoice" class="mobilePdf">
-          <div class="pdfFileIcon">📄</div>
+          <div class="pdfFileIcon"><AppIcon name="receipt" :size="40" /></div>
           <p class="mobilePdfMsg">{{ tp('Tap the button below to download your PDF invoice.') }}</p>
           <button class="btnPrimary mobilePdfBtn" type="button" :disabled="downloading" @click="download">
             {{ tp(downloading ? 'Preparing…' : 'Download PDF Invoice') }}
@@ -90,6 +90,7 @@
       </div>
 
       <CheckoutReturnPanel
+        v-if="fromCheckout"
         class="returnPanel"
         :seconds-left="secondsLeft"
         message="Your transaction is complete. You will be returned to the store shortly."
@@ -119,10 +120,11 @@ import {
   paymentMethodLabel,
 } from '../../utils/invoice'
 import { siteLogoUrl } from '../../utils/images'
+import AppIcon from '../../components/AppIcon.vue'
 import { useCurrency } from '../../composables/useCurrency'
 import { clearCompletedOrder, loadCompletedOrder } from '../../stores/checkout'
 
-const { tp } = useI18n()
+const { tp, statusLabel } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -135,6 +137,18 @@ const downloading = ref(false)
 const error = ref(null)
 
 const paymentLabel = computed(() => paymentMethodLabel(invoice.value?.paymentMethod))
+
+// Card orders are paid at checkout; cash orders only once delivered.
+const isPaid = computed(() => {
+  const inv = invoice.value
+  if (!inv) return false
+  const status = String(inv.paymentStatus || '').toLowerCase()
+  if (inv.paymentMethod !== 'Cash') return status !== 'failed'
+  return String(inv.orderStatus || '').toLowerCase() === 'delivered' || status === 'completed' || status === 'paid'
+})
+
+// Only right after checkout do we count down back to the store (not when opened from "My orders").
+const fromCheckout = ref(false)
 const { format, currencyCode, rate } = useCurrency()
 
 const { secondsLeft, start: startReturnTimer, proceedNow: proceedToStore } = useReturnTimer(() => {
@@ -150,7 +164,7 @@ async function load() {
     if (!isMobile.value) {
       pdfUrl.value = await loadInvoicePdfUrl(api, orderId, currencyCode.value, rate.value)
     }
-    startReturnTimer()
+    if (fromCheckout.value) startReturnTimer()
   } catch (e) {
     error.value = e?.response?.data || 'Invoice not found for this order.'
   } finally {
@@ -172,7 +186,7 @@ async function download() {
 
 onMounted(() => {
   window.addEventListener('resize', onResize)
-  loadCompletedOrder(orderId)
+  fromCheckout.value = !!loadCompletedOrder(orderId)
   load()
   clearCompletedOrder()
 })
@@ -284,13 +298,19 @@ onUnmounted(() => {
 }
 .stamp {
   justify-self: start;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(5, 96, 58, 0.12);
-  color: #05603a;
-  border: 1px solid rgba(5, 96, 58, 0.22);
+  background: #e6f2ec;
+  color: var(--success);
+  border: 1px solid rgba(31, 122, 77, 0.25);
   font-size: 12px;
-  font-weight: 950;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.stamp.due {
+  background: var(--sand);
+  color: var(--gold-text);
+  border-color: rgba(184, 145, 79, 0.35);
 }
 .sumTitle {
   font-weight: 950;
