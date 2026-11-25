@@ -28,7 +28,7 @@
         </div>
         <div class="row">
           <span class="k">{{ tp('Shipping') }}</span>
-          <span class="v">{{ tp(shippingLabel) }}</span>
+          <span class="v">{{ shippingLabel }}</span>
         </div>
         <div class="row">
           <span class="k">{{ tp('Delivery') }}</span>
@@ -41,7 +41,9 @@
       </div>
 
       <p class="notice">
-        {{ tp('A confirmation email with your invoice has been sent to your registered email address.') }}
+        {{ tp('We are emailing your confirmation and invoice to') }}
+        <strong dir="ltr">{{ auth.email }}</strong>.
+        {{ tp('If it is not in your inbox within a few minutes, check your spam folder.') }}
       </p>
 
       <CheckoutReturnPanel
@@ -67,8 +69,10 @@ import { useReturnTimer } from '../../composables/useReturnTimer'
 import { loadCompletedOrder, paymentMethodLabel } from '../../stores/checkout'
 import { SHIPPING, trackingNumber as buildTracking } from '../../utils/shipping'
 import { useCurrency } from '../../composables/useCurrency'
+import { useAuthStore } from '../../stores/auth'
 
 const { tp } = useI18n()
+const auth = useAuthStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -78,10 +82,10 @@ const order = ref(null)
 
 const methodLabel = computed(() => paymentMethodLabel(order.value?.paymentMethod))
 const shippingLabel = computed(() => {
-  const carrier = order.value?.shippingCarrier || SHIPPING.carrier
+  // The service name already includes the carrier ("FedEx Express").
   const service = order.value?.shippingService || SHIPPING.service
   const cost = order.value?.shippingCostLabel || SHIPPING.costLabel
-  return `${carrier} ${service} — ${cost}`
+  return `${service} — ${tp(cost)}`
 })
 const deliveryEta = computed(() => order.value?.shippingEstimatedDelivery || SHIPPING.estimatedDelivery)
 const trackingNumber = computed(() =>

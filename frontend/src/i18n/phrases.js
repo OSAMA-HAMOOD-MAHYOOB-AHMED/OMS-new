@@ -398,4 +398,6 @@ export const arPhrases = {
   'Cannot reach the server. Check your internet connection and try again.': 'ما قدرنا نوصل للسيرفر. تأكد من اتصالك بالإنترنت وحاول مرة ثانية.',
   'The server is starting up. Wait a moment and try again.': 'السيرفر قاعد يشتغل. انتظر لحظة وحاول مرة ثانية.',
   'Request failed': 'تعذّر تنفيذ الطلب',
+  'We are emailing your confirmation and invoice to': 'نرسل تأكيد الطلب والفاتورة إلى',
+  'If it is not in your inbox within a few minutes, check your spam folder.': 'إذا ما وصلت خلال دقائق، شوف مجلد الرسائل غير المرغوب فيها (Spam).',
 }

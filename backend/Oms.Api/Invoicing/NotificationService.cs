@@ -81,25 +81,32 @@ public sealed class NotificationService(IEmailSender emailSender, IConfiguration
         string invoiceBody,
         byte[] invoicePdf)
     {
+        var isCash = string.Equals(paymentMethod, "Cash", StringComparison.OrdinalIgnoreCase);
         var methodLabel = paymentMethod switch
         {
             "CreditCard" => "Credit Card",
             "OnlineBanking" => "Online Banking",
+            "Cash" => "Cash on Delivery",
             _ => paymentMethod
         };
+        // Cash orders are paid to the courier, so the email must not say they are already paid.
+        var paymentLine = isCash
+            ? "Please have the amount ready when your order arrives — you pay the courier on delivery."
+            : "Your payment has been received and verified successfully.";
+        var statusLine = isCash ? "Due on delivery" : "Paid";
 
         var invoiceUrl = $"{FrontendUrl.TrimEnd('/')}/checkout/invoice/{Uri.EscapeDataString(orderID)}";
         var subject = $"Order confirmed — {orderID}";
         var body = $"""
             Hello {name},
 
-            Thank you for your order! Your payment has been received and verified successfully.
+            Thank you for your order! {paymentLine}
 
             Order ID:    {orderID}
             Amount:      ${total:F2}
             Method:      {methodLabel}
             Transaction: {transactionId ?? "—"}
-            Status:      Paid
+            Status:      {statusLine}
 
             Your PDF invoice is attached to this email.
             You can also view or download it online:
