@@ -17,7 +17,10 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -28,10 +31,18 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Al-Wakeel Al-Shamel to use your photos to set your profile picture."
+          "photosPermission": "Allow Al-Wakeel Al-Shamel to use your photos to set your profile picture.",
+          "microphonePermission": false,
+          "cameraPermission": false
         }
       ],
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1af02bd4-f712-4069-8942-ea4a38b07062"
+      }
+    },
+    "owner": "osama21"
   }
 }
