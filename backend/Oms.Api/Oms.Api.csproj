@@ -19,6 +19,10 @@
     <None Update="Assets\logo.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- Arabic + Latin font for the bilingual PDF invoice (SIL Open Font License). -->
+    <None Update="Assets\Fonts\*.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
