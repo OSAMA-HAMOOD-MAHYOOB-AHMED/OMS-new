@@ -40,6 +40,7 @@ builder.Services.AddSingleton<Oms.Api.Auth.TokenService>();
 builder.Services.AddSingleton<Oms.Api.Catalog.ProductRepository>();
 builder.Services.AddSingleton<Oms.Api.Catalog.ProductImageRepository>();
 builder.Services.AddSingleton<Oms.Api.Catalog.CategoryRepository>();
+builder.Services.AddSingleton<Oms.Api.Chat.GroqModelPicker>();
 builder.Services.AddSingleton<Oms.Api.Orders.OrderRepository>();
 builder.Services.AddSingleton<Oms.Api.Inventory.InventoryRepository>();
 builder.Services.AddSingleton<Oms.Api.Dashboards.DashboardRepository>();
