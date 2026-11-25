@@ -10,14 +10,30 @@ public sealed class ProductRepository(IDbConnectionFactory db)
     {
         const string sql = """
             SELECT
-              productID AS ProductID,
+              p.productID AS ProductID,
               name AS Name,
               category AS Category,
               price AS Price,
               stockLevel AS StockLevel,
               description AS Description,
-              imageUrl AS ImageUrl
-            FROM Product
+              imageUrl AS ImageUrl,
+              compareatprice AS CompareAtPrice,
+              specs AS Specs,
+              createdat AS CreatedAt,
+              COALESCE(r.rating, 0) AS Rating,
+              COALESCE(r.reviews, 0) AS ReviewCount,
+              COALESCE(s.sold, 0) AS SoldCount
+            FROM Product p
+            LEFT JOIN (
+              SELECT productid, ROUND(AVG(rating)::numeric, 1) AS rating, COUNT(*)::int AS reviews
+              FROM product_review GROUP BY productid
+            ) r ON r.productid = p.productid
+            LEFT JOIN (
+              SELECT oi.productid, SUM(oi.quantity)::int AS sold
+              FROM order_item oi JOIN "Order" o ON o.orderid = oi.orderid
+              WHERE o.orderstatus NOT ILIKE 'cancel%'
+              GROUP BY oi.productid
+            ) s ON s.productid = p.productid
             ORDER BY name ASC;
             """;
 
@@ -30,15 +46,31 @@ public sealed class ProductRepository(IDbConnectionFactory db)
     {
         const string sql = """
             SELECT
-              productID AS ProductID,
+              p.productID AS ProductID,
               name AS Name,
               category AS Category,
               price AS Price,
               stockLevel AS StockLevel,
               description AS Description,
-              imageUrl AS ImageUrl
-            FROM Product
-            WHERE productID = @productID
+              imageUrl AS ImageUrl,
+              compareatprice AS CompareAtPrice,
+              specs AS Specs,
+              createdat AS CreatedAt,
+              COALESCE(r.rating, 0) AS Rating,
+              COALESCE(r.reviews, 0) AS ReviewCount,
+              COALESCE(s.sold, 0) AS SoldCount
+            FROM Product p
+            LEFT JOIN (
+              SELECT productid, ROUND(AVG(rating)::numeric, 1) AS rating, COUNT(*)::int AS reviews
+              FROM product_review GROUP BY productid
+            ) r ON r.productid = p.productid
+            LEFT JOIN (
+              SELECT oi.productid, SUM(oi.quantity)::int AS sold
+              FROM order_item oi JOIN "Order" o ON o.orderid = oi.orderid
+              WHERE o.orderstatus NOT ILIKE 'cancel%'
+              GROUP BY oi.productid
+            ) s ON s.productid = p.productid
+            WHERE p.productID = @productID
             LIMIT 1;
             """;
 

@@ -53,11 +53,43 @@
           <div class="shipMeta">{{ tp('Standard express delivery to your registered address.') }}</div>
         </div>
 
+        <!-- Discount code: checked with the server now and again when the order is placed. -->
+        <form class="couponForm" novalidate @submit.prevent="applyCoupon">
+          <label class="srOnly" for="couponCode">{{ tp('Discount code') }}</label>
+          <div v-if="!coupon" class="couponRow">
+            <AppIcon name="tag" :size="18" class="couponIcon" />
+            <input
+              id="couponCode"
+              v-model.trim="couponInput"
+              class="couponInput"
+              type="text"
+              dir="ltr"
+              autocomplete="off"
+              maxlength="40"
+              :placeholder="tp('Discount code')"
+            />
+            <button class="couponBtn" type="submit" :disabled="checkingCoupon || !couponInput">
+              {{ checkingCoupon ? tp('Checking…') : tp('Apply') }}
+            </button>
+          </div>
+          <div v-else class="couponApplied">
+            <AppIcon name="check" :size="18" />
+            <span><strong dir="ltr">{{ coupon.code }}</strong> · {{ coupon.percent }}% {{ tp('off') }}</span>
+            <button type="button" class="couponRemove" @click="removeCoupon">{{ tp('Remove') }}</button>
+          </div>
+          <p v-if="couponError" class="couponError" role="alert">{{ tp(couponError) }}</p>
+        </form>
+
+        <div v-if="coupon" class="row">
+          <div class="k">{{ tp('Discount') }}</div>
+          <div class="v discountVal" dir="ltr">-{{ format(discount) }}</div>
+        </div>
+
         <div class="hr" />
 
         <div class="row total">
           <div class="k">{{ tp('Total') }}</div>
-          <div class="v big">{{ format(cart.total) }}</div>
+          <div class="v big">{{ format(grandTotal) }}</div>
         </div>
 
         <form class="checkoutForm" novalidate @submit.prevent="checkout">
@@ -172,9 +204,12 @@
 </template>
 
 <script setup>
+import { api } from '../api/client'
+import AppIcon from '../components/AppIcon.vue'
 import { useI18n } from '../i18n'
 import { computed, reactive, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import CheckoutSteps from '../components/CheckoutSteps.vue'
 import { useCartStore } from '../stores/cart'
 import { savePendingCheckout } from '../stores/checkout'
@@ -190,6 +225,8 @@ import { SHIPPING, shippingSummary } from '../utils/shipping'
 import { useCurrency } from '../composables/useCurrency'
 
 const { tp } = useI18n()
+const auth = useAuthStore()
+const route = useRoute()
 
 const cart = useCartStore()
 const router = useRouter()
@@ -311,6 +348,51 @@ function buildPaymentDetails() {
   return null
 }
 
+// ----- Discount code -----
+const couponInput = ref('')
+const coupon = ref(loadSavedCoupon())
+const couponError = ref(null)
+const checkingCoupon = ref(false)
+
+function loadSavedCoupon() {
+  try {
+    return JSON.parse(sessionStorage.getItem('oms_coupon') || 'null')
+  } catch {
+    return null
+  }
+}
+
+// The percentage is fixed; the amount follows the cart.
+const discount = computed(() =>
+  coupon.value ? Math.round(cart.total * coupon.value.percent) / 100 : 0,
+)
+const grandTotal = computed(() => Math.max(0, cart.total - discount.value))
+
+async function applyCoupon() {
+  couponError.value = null
+  if (!couponInput.value) return
+  if (!auth.token) {
+    router.push({ name: 'login', query: { next: route.fullPath } })
+    return
+  }
+  checkingCoupon.value = true
+  try {
+    const { data } = await api.post('/api/coupons/check', { code: couponInput.value, subtotal: cart.total })
+    coupon.value = { code: data.code, percent: data.percent }
+    sessionStorage.setItem('oms_coupon', JSON.stringify(coupon.value))
+    couponInput.value = ''
+  } catch (e) {
+    couponError.value = (typeof e?.response?.data === 'string' && e.response.data) || 'Could not check the code. Please try again.'
+  } finally {
+    checkingCoupon.value = false
+  }
+}
+
+function removeCoupon() {
+  coupon.value = null
+  sessionStorage.removeItem('oms_coupon')
+}
+
 async function checkout() {
   submitted.value = true
   applyValidation()
@@ -328,7 +410,9 @@ async function checkout() {
       paymentMethod: paymentMethod.value,
       items: cart.items.map((i) => ({ productID: i.productID, quantity: i.quantity })),
       paymentDetails: buildPaymentDetails(),
-      total: cart.total,
+      couponCode: coupon.value?.code || null,
+      discount: discount.value,
+      total: grandTotal.value,
       shipping: { ...SHIPPING },
     })
 
@@ -751,5 +835,88 @@ applyValidation()
     position: sticky;
     bottom: 8px;
   }
+}
+/* ----- Discount code ----- */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.couponForm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.couponRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px dashed var(--gold);
+  border-radius: 12px;
+  padding: 4px 4px 4px 12px;
+  background: var(--sand);
+}
+[dir='rtl'] .couponRow {
+  padding: 4px 12px 4px 4px;
+}
+.couponIcon {
+  color: var(--gold-text);
+  flex-shrink: 0;
+}
+.couponInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  height: 38px;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  outline: none;
+}
+.couponBtn {
+  height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.couponBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.couponApplied {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #e6f2ec;
+  color: var(--success);
+  font-size: 14px;
+}
+.couponRemove {
+  margin-inline-start: auto;
+  border: 0;
+  background: none;
+  color: var(--danger);
+  font-weight: 600;
+  cursor: pointer;
+}
+.couponError {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+.discountVal {
+  color: var(--success);
+  font-weight: 600;
 }
 </style>

@@ -59,7 +59,9 @@ public sealed class InvoiceController(IDbConnectionFactory db, InvoiceService in
             data.ShippingEstimatedDelivery,
             data.ShippingTrackingNumber,
             data.Items,
-            row.CreatedAt));
+            row.CreatedAt,
+            data.Discount,
+            data.CouponCode));
     }
 
     [HttpGet("{orderID}/pdf")]

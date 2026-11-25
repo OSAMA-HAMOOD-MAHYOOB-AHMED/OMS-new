@@ -14,6 +14,10 @@
           <span class="k">{{ tp('Order ID') }}</span>
           <span class="v mono">{{ order?.orderID }}</span>
         </div>
+        <div v-if="order?.discount > 0" class="row">
+          <span class="k">{{ tp('Discount') }} <span v-if="order.couponCode" dir="ltr">({{ order.couponCode }})</span></span>
+          <span class="v" dir="ltr">-{{ format(order.discount) }}</span>
+        </div>
         <div class="row">
           <span class="k">{{ tp(order?.paymentMethod === 'Cash' ? 'Amount due on delivery' : 'Amount paid') }}</span>
           <span class="v" dir="ltr">{{ format(order?.total || 0) }}</span>

@@ -7,7 +7,9 @@ public sealed record ProductUpsertRequest(
     decimal Price,
     int StockLevel,
     string? Description,
-    string? ImageUrl
+    string? ImageUrl,
+    decimal? CompareAtPrice = null,
+    string? Specs = null
 );
 
 public sealed record AdminCustomerRow(string Email, string Name, string PhoneNumber, string Address, string Role);

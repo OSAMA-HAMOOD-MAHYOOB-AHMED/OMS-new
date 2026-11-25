@@ -7,10 +7,18 @@
 
       <form class="form" @submit.prevent="submit">
         <label class="field">
-          <span class="lbl">{{ tp('Email Address') }}</span>
+          <span class="lbl">{{ tp('Email or phone number') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">✉</span>
-            <input v-model.trim="email" type="email" :placeholder="tp('you@example.com')" autocomplete="email" required />
+            <input
+              v-model.trim="email"
+              type="text"
+              inputmode="email"
+              dir="ltr"
+              :placeholder="tp('you@example.com or 05XXXXXXXX')"
+              autocomplete="username"
+              required
+            />
           </div>
         </label>
 
@@ -27,6 +35,10 @@
             />
           </div>
         </label>
+
+        <RouterLink class="forgot" :to="{ name: 'forgotPassword', query: email.includes('@') ? { email } : {} }">
+          {{ tp('Forgot password?') }}
+        </RouterLink>
 
         <button class="btn" type="submit" :disabled="auth.loading">
           {{ tp(auth.loading ? 'Signing in...' : 'Sign In') }}
@@ -83,7 +95,7 @@ async function submit() {
   unverifiedEmail.value = ''
   const result = await auth.login({ email: email.value, password: password.value })
   if (result === 'unverified') {
-    unverifiedEmail.value = email.value.trim().toLowerCase()
+    unverifiedEmail.value = email.value.includes('@') ? email.value.trim().toLowerCase() : auth.email || ''
     return
   }
   if (result !== 'ok') return
@@ -95,6 +107,14 @@ async function submit() {
 </script>
 
 <style scoped>
+.forgot {
+  justify-self: end;
+  margin-top: -4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-text);
+  text-decoration: none;
+}
 .wrap {
   min-height: calc(100svh - 140px);
   display: grid;

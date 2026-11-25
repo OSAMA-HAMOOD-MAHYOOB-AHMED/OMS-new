@@ -146,6 +146,7 @@ async function submitCheckout() {
       paymentMethod: pending.value.paymentMethod,
       items: pending.value.items,
       paymentDetails: pending.value.paymentDetails,
+      couponCode: pending.value.couponCode || null,
     })
     const [res] = await Promise.all([request, animation])
 
@@ -159,10 +160,13 @@ async function submitCheckout() {
       shippingCostLabel: res.data.shippingCostLabel,
       shippingEstimatedDelivery: res.data.shippingEstimatedDelivery,
       shippingTrackingNumber: res.data.shippingTrackingNumber,
+      discount: res.data.discount || 0,
+      couponCode: res.data.couponCode || null,
     }
 
     cart.clear()
     clearPendingCheckout()
+    sessionStorage.removeItem('oms_coupon')
     saveCompletedOrder(completedOrder.value)
 
     phase.value = 'verified'

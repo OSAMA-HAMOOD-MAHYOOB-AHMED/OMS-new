@@ -1,5 +1,5 @@
 <template>
-  <div class="chatRoot">
+  <div class="chatRoot" :class="{ raised }">
     <Transition name="window">
       <section v-if="isOpen" class="window" role="dialog" :aria-label="tp('Store Assistant')">
         <header class="header">
@@ -79,6 +79,7 @@ import { useI18n } from '../i18n'
 import AppIcon from './AppIcon.vue'
 
 const { tp, isRtl } = useI18n()
+defineProps({ raised: { type: Boolean, default: false } })
 
 const isOpen = ref(false)
 const input = ref('')
@@ -419,6 +420,14 @@ async function send() {
   .chatRoot {
     bottom: 14px;
     inset-inline-end: 12px;
+  }
+}
+@media (max-width: 768px) {
+  .chatRoot.raised {
+    bottom: 82px;
+  }
+  .chatRoot.raised .window {
+    height: min(560px, calc(100svh - 170px));
   }
   .window {
     width: calc(100vw - 24px);

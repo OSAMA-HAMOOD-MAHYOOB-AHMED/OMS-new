@@ -1,21 +1,60 @@
 <template>
   <div class="home">
-    <section class="hero" :aria-label="t('home.title2')">
-      <div class="heroText">
-        <span class="badge">{{ t('home.badge') }}</span>
-        <h1 class="h1">
-          {{ t('home.title1') }}<br />
-          <span class="gold">{{ t('home.title2') }}</span>
-        </h1>
-        <p class="sub">{{ t('home.sub') }}</p>
-        <div class="cta">
-          <button class="goldBtn" type="button" @click="goPrimary">{{ isStaff ? t('home.staffCta') : t('home.shopNow') }}</button>
-          <RouterLink v-if="!auth.token" class="outlineBtn" :to="{ name: 'register' }">{{ t('home.createAccount') }}</RouterLink>
+    <!-- Slider: the welcome slide plus offers / discount code / delivery slides. -->
+    <section
+      class="slider"
+      :aria-label="tp('Highlights')"
+      aria-roledescription="carousel"
+      @mouseenter="paused = true"
+      @mouseleave="paused = false"
+      @focusin="paused = true"
+      @focusout="paused = false"
+    >
+      <Transition name="slide" mode="out-in">
+        <div :key="current.key" class="hero" role="group" aria-roledescription="slide" :aria-label="`${slide + 1} / ${slides.length}`">
+          <div class="heroText">
+            <span class="badge">{{ current.badge }}</span>
+            <component :is="slide === 0 ? 'h1' : 'h2'" class="h1">
+              {{ current.title1 }}<br v-if="current.title2" />
+              <span v-if="current.title2" class="gold">{{ current.title2 }}</span>
+            </component>
+            <p class="sub">{{ current.sub }}</p>
+            <div class="cta">
+              <button v-if="current.key === 'welcome'" class="goldBtn" type="button" @click="goPrimary">
+                {{ isStaff ? t('home.staffCta') : t('home.shopNow') }}
+              </button>
+              <RouterLink v-else class="goldBtn" :to="current.to">{{ current.cta }}</RouterLink>
+              <RouterLink v-if="current.key === 'welcome' && !auth.token" class="outlineBtn" :to="{ name: 'register' }">
+                {{ t('home.createAccount') }}
+              </RouterLink>
+            </div>
+          </div>
+          <div class="heroMedia">
+            <img :src="current.image" alt="" />
+          </div>
         </div>
-      </div>
-      <div class="heroMedia">
-        <img :src="siteHeroUrl" alt="" />
-      </div>
+      </Transition>
+
+      <template v-if="slides.length > 1">
+        <button class="arrow prev" type="button" :aria-label="tp('Previous slide')" @click="go(slide - 1)">
+          <AppIcon name="chevron" :size="20" :style="isRtl ? '' : 'transform: scaleX(-1)'" />
+        </button>
+        <button class="arrow next" type="button" :aria-label="tp('Next slide')" @click="go(slide + 1)">
+          <AppIcon name="chevron" :size="20" :style="isRtl ? 'transform: scaleX(-1)' : ''" />
+        </button>
+        <div class="dots">
+          <button
+            v-for="(sl, i) in slides"
+            :key="sl.key"
+            type="button"
+            class="dotBtn"
+            :class="{ on: i === slide }"
+            :aria-label="`${tp('Slide')} ${i + 1}`"
+            :aria-current="i === slide ? 'true' : undefined"
+            @click="go(i)"
+          />
+        </div>
+      </template>
     </section>
 
     <section class="section" aria-labelledby="catsTitle">
@@ -31,6 +70,16 @@
       </div>
     </section>
 
+    <section v-if="offers.length" class="section" aria-labelledby="offersTitle">
+      <div class="sectionHead">
+        <h2 id="offersTitle" class="sectionTitle"><AppIcon name="percent" :size="22" class="offerIcon" />{{ tp('Offers') }}</h2>
+        <RouterLink class="more" :to="{ name: 'products', query: { offers: '1' } }">{{ t('common.viewAll') }}</RouterLink>
+      </div>
+      <div class="grid">
+        <ProductCard v-for="p in offers" :key="p.productID" :product="p" />
+      </div>
+    </section>
+
     <section v-if="featured.length" class="section" aria-labelledby="featuredTitle">
       <div class="sectionHead">
         <h2 id="featuredTitle" class="sectionTitle">{{ t('home.featured') }}</h2>
@@ -38,6 +87,16 @@
       </div>
       <div class="grid">
         <ProductCard v-for="p in featured" :key="p.productID" :product="p" />
+      </div>
+    </section>
+
+    <section v-for="row in categoryRows" :key="row.name" class="section" :aria-label="categoryLabel(row.name)">
+      <div class="sectionHead">
+        <h2 class="sectionTitle">{{ categoryLabel(row.name) }}</h2>
+        <RouterLink class="more" :to="{ name: 'products', query: { cat: row.name } }">{{ t('common.viewAll') }}</RouterLink>
+      </div>
+      <div class="grid">
+        <ProductCard v-for="p in row.items" :key="p.productID" :product="p" />
       </div>
     </section>
 
@@ -62,17 +121,19 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
-import { siteHeroUrl } from '../utils/images'
+import { productImageUrl, siteHeroUrl } from '../utils/images'
+import { discountPercent, isOnSale } from '../utils/pricing'
+import { loadSettings, localized } from '../stores/settings'
 import { useI18n } from '../i18n'
 import AppIcon from '../components/AppIcon.vue'
 import ProductCard from '../components/ProductCard.vue'
 import { loadCategories, shopCategories } from '../stores/categories'
 
-const { t, categoryLabel, categoryIcon } = useI18n()
+const { t, tp, isRtl, categoryLabel, categoryIcon } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 auth.hydrate()
@@ -103,6 +164,78 @@ const featured = computed(() => {
   return picked
 })
 
+// ----- Offers and category rows -----
+const offers = computed(() =>
+  products.value
+    .filter((p) => isOnSale(p) && Number(p.stockLevel) > 0)
+    .sort((a, b) => discountPercent(b) - discountPercent(a))
+    .slice(0, 4),
+)
+const categoryRows = computed(() =>
+  shopCategories.value
+    .map((c) => ({ name: c.name, items: products.value.filter((p) => p.category === c.name && Number(p.stockLevel) > 0).slice(0, 4) }))
+    .filter((row) => row.items.length >= 2),
+)
+
+// ----- Slider -----
+const slide = ref(0)
+const paused = ref(false)
+const slides = computed(() => {
+  const list = [
+    { key: 'welcome', badge: t('home.badge'), title1: t('home.title1'), title2: t('home.title2'), sub: t('home.sub'), image: siteHeroUrl },
+  ]
+  const best = offers.value[0]
+  if (best) {
+    list.push({
+      key: 'offers',
+      badge: tp('Offers'),
+      title1: tp('Deals up to'),
+      title2: `${discountPercent(best)}% ${tp('off')}`,
+      sub: tp('Limited-time prices on selected accessories.'),
+      cta: tp('Shop offers'),
+      to: { name: 'products', query: { offers: '1' } },
+      image: productImageUrl(best),
+    })
+  }
+  const promo = localized('promo')
+  if (promo) {
+    list.push({
+      key: 'promo',
+      badge: tp('Discount code'),
+      title1: promo,
+      title2: '',
+      sub: tp('Enter the code in your cart before you check out.'),
+      cta: t('home.shopNow'),
+      to: { name: 'products' },
+      image: productImageUrl(products.value.find((p) => Number(p.stockLevel) > 0) || {}),
+    })
+  }
+  list.push({
+    key: 'delivery',
+    badge: tp('Fast delivery'),
+    title1: tp('Pay on delivery,'),
+    title2: tp('free FedEx Express shipping'),
+    sub: tp('Order today and track every step from your account.'),
+    cta: t('home.shopNow'),
+    to: { name: 'products' },
+    image: productImageUrl(products.value.find((p) => p.category && /charg/i.test(p.category)) || products.value[0] || {}),
+  })
+  return list
+})
+const current = computed(() => slides.value[Math.min(slide.value, slides.value.length - 1)])
+function go(i) {
+  const n = slides.value.length
+  slide.value = ((i % n) + n) % n
+}
+let timer = null
+onMounted(() => {
+  timer = setInterval(() => {
+    // Respect people who prefer less motion, and stop while hovered or focused.
+    if (!paused.value && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) go(slide.value + 1)
+  }, 6000)
+})
+onUnmounted(() => clearInterval(timer))
+
 async function loadProducts() {
   try {
     const res = await api.get('/api/products')
@@ -123,6 +256,7 @@ function goPrimary() {
 onMounted(() => {
   loadProducts()
   loadCategories()
+  loadSettings()
 })
 </script>
 
@@ -375,6 +509,84 @@ onMounted(() => {
   }
   .ctaBand {
     padding: 26px 22px;
+  }
+}
+/* ----- Slider ----- */
+.slider {
+  position: relative;
+}
+.slider .hero {
+  min-height: 420px;
+}
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(20, 20, 20, 0.55);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.arrow.prev {
+  inset-inline-start: 10px;
+}
+.arrow.next {
+  inset-inline-end: 10px;
+}
+.dots {
+  position: absolute;
+  bottom: 16px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+[dir='rtl'] .dots {
+  transform: translateX(50%);
+}
+.dotBtn {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  padding: 0;
+  transition: width 0.2s;
+}
+.dotBtn.on {
+  width: 26px;
+  background: var(--gold);
+}
+.slide-enter-active,
+.slide-leave-active {
+  transition: opacity 0.35s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+}
+.section {
+  scroll-margin-top: 150px; /* clear the sticky header when jumped to */
+}
+.offerIcon {
+  color: var(--danger);
+  vertical-align: -3px;
+  margin-inline-end: 6px;
+}
+@media (max-width: 700px) {
+  .arrow {
+    display: none;
+  }
+  .slider .hero {
+    min-height: 0;
   }
 }
 </style>

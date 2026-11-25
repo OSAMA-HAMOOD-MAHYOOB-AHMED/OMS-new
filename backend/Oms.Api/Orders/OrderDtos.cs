@@ -5,7 +5,8 @@ public sealed record CheckoutItem(string ProductID, int Quantity);
 public sealed record CheckoutRequest(
     string PaymentMethod,
     IReadOnlyList<CheckoutItem> Items,
-    Oms.Api.Payments.PaymentDetails? PaymentDetails
+    Oms.Api.Payments.PaymentDetails? PaymentDetails,
+    string? CouponCode = null
 );
 
 public sealed record CheckoutResponse(
@@ -18,7 +19,9 @@ public sealed record CheckoutResponse(
     decimal ShippingCost,
     string ShippingCostLabel,
     string ShippingEstimatedDelivery,
-    string ShippingTrackingNumber
+    string ShippingTrackingNumber,
+    decimal Discount = 0,
+    string? CouponCode = null
 );
 
 public sealed record OrderItemResponse(string ProductID, string Name, int Quantity, decimal Subtotal);

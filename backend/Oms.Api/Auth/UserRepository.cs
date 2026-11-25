@@ -34,6 +34,20 @@ public sealed class UserRepository(IDbConnectionFactory db)
         return await conn.QuerySingleOrDefaultAsync<UserRow>(sql, new { email });
     }
 
+    /// <summary>Accounts whose phone number has these digits (ignoring +, spaces and dashes).</summary>
+    public async Task<IReadOnlyList<UserRow>> GetByPhoneDigits(string digits)
+    {
+        var sql = $"""
+            SELECT {SelectColumns}
+            FROM "User"
+            WHERE regexp_replace(phonenumber, '[^0-9]', '', 'g') = @digits
+            LIMIT 2;
+            """;
+
+        using var conn = db.Create();
+        return (await conn.QueryAsync<UserRow>(sql, new { digits })).ToList();
+    }
+
     public async Task<UserRow?> GetByVerificationToken(string token)
     {
         var sql = $"""

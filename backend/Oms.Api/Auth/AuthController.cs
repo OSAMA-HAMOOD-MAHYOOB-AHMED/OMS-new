@@ -73,15 +73,29 @@ public sealed class AuthController(UserRepository users, TokenService tokens, Em
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest req)
     {
-        var email = (req.Email ?? "").Trim().ToLowerInvariant();
+        var login = (req.Email ?? "").Trim().ToLowerInvariant();
         var password = (req.Password ?? "").Trim();
 
-        var emailError = AuthValidator.ValidateLoginEmail(email);
-        if (emailError is not null) return BadRequest(emailError);
-
-        var user = await users.GetByEmail(email);
+        // Customers can sign in with their email or the phone number on their account.
+        UserRow? user;
+        if (!login.Contains('@') && login.Any(char.IsDigit))
+        {
+            var digits = new string(login.Where(char.IsDigit).ToArray());
+            if (digits.Length < 8) return BadRequest("Enter a valid email address or phone number.");
+            var matches = await users.GetByPhoneDigits(digits);
+            // A number shared by two accounts can't tell them apart: ask for the email instead.
+            if (matches.Count > 1) return BadRequest("This phone number is on more than one account. Please sign in with your email.");
+            user = matches.FirstOrDefault();
+        }
+        else
+        {
+            var emailError = AuthValidator.ValidateLoginEmail(login);
+            if (emailError is not null) return BadRequest(emailError);
+            user = await users.GetByEmail(login);
+        }
         if (user is null)
             return Unauthorized();
+        var email = user.Email;
 
         if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
             return Unauthorized();

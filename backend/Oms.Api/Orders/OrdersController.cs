@@ -19,6 +19,7 @@ public sealed class OrdersController(
     InvoiceService invoices,
     NotificationService notifications,
     PaymentService payments,
+    CouponRepository coupons,
     ILogger<OrdersController> logger) : ControllerBase
 {
     [HttpPost("checkout")]
@@ -50,7 +51,13 @@ public sealed class OrdersController(
             expanded.Add((p.ProductID, p.Name, p.Price, i.Quantity));
         }
 
-        var total = expanded.Sum(i => i.Price * i.Quantity);
+        var subtotal = expanded.Sum(i => i.Price * i.Quantity);
+
+        // Discount code: checked again here so the customer can't change the amount in the browser.
+        var coupon = await coupons.Evaluate(req.CouponCode, subtotal);
+        if (!coupon.Ok) return BadRequest(coupon.Error);
+        var discount = coupon.Discount;
+        var total = subtotal - discount;
 
         try
         {
@@ -59,7 +66,7 @@ public sealed class OrdersController(
 
             if (string.Equals(req.PaymentMethod, "Cash", StringComparison.OrdinalIgnoreCase))
             {
-                orderID = await orders.CreateCashOrder(email, expanded);
+                orderID = await orders.CreateCashOrder(email, expanded, discount, coupon.Code);
             }
             else if (string.Equals(req.PaymentMethod, "CreditCard", StringComparison.OrdinalIgnoreCase))
             {
@@ -73,7 +80,9 @@ public sealed class OrdersController(
                     req.PaymentMethod,
                     "Completed",
                     paymentResult.TransactionId,
-                    expanded);
+                    expanded,
+                    discount,
+                    coupon.Code);
 
                 var (invoiceBody, invoicePdf) = await invoices.GenerateAndStore(orderID, email);
                 try
@@ -86,7 +95,7 @@ public sealed class OrdersController(
                     logger.LogError(ex, "Order {OrderID} placed but confirmation email failed to send.", orderID);
                 }
 
-                return Ok(BuildCheckoutResponse(orderID, total, req.PaymentMethod, transactionId));
+                return Ok(BuildCheckoutResponse(orderID, total, req.PaymentMethod, transactionId, discount, coupon.Code));
             }
             else
             {
@@ -104,7 +113,7 @@ public sealed class OrdersController(
                 logger.LogError(ex, "Order {OrderID} placed but confirmation email failed to send.", orderID);
             }
 
-            return Ok(BuildCheckoutResponse(orderID, total, req.PaymentMethod, transactionId));
+            return Ok(BuildCheckoutResponse(orderID, total, req.PaymentMethod, transactionId, discount, coupon.Code));
         }
         catch (InvalidOperationException ex)
         {
@@ -112,7 +121,7 @@ public sealed class OrdersController(
         }
     }
 
-    private static CheckoutResponse BuildCheckoutResponse(string orderID, decimal total, string paymentMethod, string? transactionId) =>
+    private static CheckoutResponse BuildCheckoutResponse(string orderID, decimal total, string paymentMethod, string? transactionId, decimal discount, string? couponCode) =>
         new(
             orderID,
             total,
@@ -123,7 +132,9 @@ public sealed class OrdersController(
             ShippingInfo.Cost,
             ShippingInfo.CostLabel,
             ShippingInfo.EstimatedDelivery,
-            ShippingInfo.TrackingNumber(orderID));
+            ShippingInfo.TrackingNumber(orderID),
+            discount,
+            couponCode);
 
     [HttpGet("mine")]
     [Authorize(Roles = "Customer")]

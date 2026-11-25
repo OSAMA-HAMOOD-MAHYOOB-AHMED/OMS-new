@@ -25,7 +25,10 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               price AS Price,
               stockLevel AS StockLevel,
               description AS Description,
-              imageUrl AS ImageUrl
+              imageUrl AS ImageUrl,
+              compareatprice AS CompareAtPrice,
+              specs AS Specs,
+              createdat AS CreatedAt
             FROM Product
             ORDER BY name ASC;
             """;
@@ -40,15 +43,18 @@ public sealed class AdminRepository(IDbConnectionFactory db)
     public async Task UpsertProduct(ProductUpsertRequest req)
     {
         const string upsertProduct = """
-            INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl)
-            VALUES (@productID, @name, @category, @price, @stockLevel, @description, @imageUrl)
+            INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl, compareatprice, specs)
+            VALUES (@productID, @name, @category, @price, @stockLevel, @description, @imageUrl, @compareAtPrice, @specs)
             ON CONFLICT (productID) DO UPDATE SET
               name = EXCLUDED.name,
               category = EXCLUDED.category,
               price = EXCLUDED.price,
               stockLevel = EXCLUDED.stockLevel,
               description = EXCLUDED.description,
-              imageUrl = EXCLUDED.imageUrl;
+              imageUrl = EXCLUDED.imageUrl,
+              -- Not sent (older app versions) keeps the current value; 0 / "" clears it.
+              compareatprice = CASE WHEN @keepCompare THEN Product.compareatprice ELSE EXCLUDED.compareatprice END,
+              specs = CASE WHEN @keepSpecs THEN Product.specs ELSE EXCLUDED.specs END;
             """;
 
         const string lockInventory = """
@@ -89,7 +95,12 @@ public sealed class AdminRepository(IDbConnectionFactory db)
             price = req.Price,
             stockLevel = req.StockLevel,
             description = req.Description,
-            imageUrl = req.ImageUrl
+            imageUrl = req.ImageUrl,
+            // Only a price above the selling price makes the product "on sale".
+            compareAtPrice = req.CompareAtPrice is { } c && c > req.Price ? c : (decimal?)null,
+            specs = string.IsNullOrWhiteSpace(req.Specs) ? null : req.Specs.Trim(),
+            keepCompare = req.CompareAtPrice is null,
+            keepSpecs = req.Specs is null
         }, tx);
 
         var inv = await conn.QuerySingleOrDefaultAsync<(string InventoryID, int QuantityAvailable)>(

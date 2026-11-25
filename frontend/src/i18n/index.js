@@ -117,7 +117,10 @@ export function useI18n() {
 }
 
 // Server messages that carry an id or number are matched by their start.
-const PATTERNS = [[/^Insufficient stock for product /, 'Not enough stock for one of the items in your cart.']]
+const PATTERNS = [
+  [/^Insufficient stock for product /, 'Not enough stock for one of the items in your cart.'],
+  [/^This code needs a cart total of at least /, 'This code needs a higher cart total.'],
+]
 function patternPhrase(text, dict) {
   const hit = PATTERNS.find(([re]) => re.test(text))
   return hit ? dict[hit[1]] : undefined

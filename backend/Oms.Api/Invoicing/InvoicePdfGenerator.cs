@@ -282,7 +282,10 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
             {
                 totalCard.Border(1).BorderColor(Gold).Background(SoftBg).Padding(10).Column(col =>
                 {
-                    TotalRow(col, "Subtotal", "المجموع الفرعي", fmt(data.TotalPrice));
+                    TotalRow(col, "Subtotal", "المجموع الفرعي", fmt(data.TotalPrice + data.Discount));
+                    if (data.Discount > 0)
+                        TotalRow(col, string.IsNullOrEmpty(data.CouponCode) ? "Discount" : $"Discount ({data.CouponCode})",
+                            "الخصم", "-" + fmt(data.Discount), Success);
                     var (costEn, costAr) = Translate(data.ShippingCostLabel);
                     TotalRow(col, "Shipping", "الشحن", costAr is null ? costEn : $"{costEn} · {costAr}", Success);
                     col.Item().PaddingVertical(6).LineHorizontal(1).LineColor(Border);

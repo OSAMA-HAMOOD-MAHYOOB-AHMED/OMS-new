@@ -71,6 +71,59 @@ public sealed class NotificationService(IEmailSender emailSender, IConfiguration
         return emailSender.Send(email, subject, plainBody, htmlBody);
     }
 
+    public Task SendPasswordResetAsync(string email, string name, string token)
+    {
+        var link = $"{FrontendUrl.TrimEnd('/')}/reset-password?token={Uri.EscapeDataString(token)}";
+        var subject = "Reset your Al-Wakeel Al-Shamel password";
+        var plainBody = $"""
+            Hello {name},
+
+            We received a request to reset the password for your Al-Wakeel Al-Shamel account.
+
+            Choose a new password by opening this link:
+            {link}
+
+            The link works once and expires in 1 hour.
+
+            If you did not ask for this, you can ignore this email — your password stays the same.
+
+            — Al-Wakeel Al-Shamel
+            """;
+
+        var htmlBody = $"""
+            <!DOCTYPE html>
+            <html>
+            <body style="margin:0;padding:0;background:#faf8f4;font-family:Segoe UI,Arial,sans-serif;color:#141414;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#faf8f4;padding:24px 12px;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #ece6da;border-radius:16px;overflow:hidden;">
+                      <tr>
+                        <td style="background:#141414;padding:24px 28px;border-bottom:4px solid #b8914f;">
+                          <div style="font-size:22px;font-weight:800;color:#ffffff;">Al-Wakeel Al-Shamel</div>
+                          <div style="font-size:13px;color:#cfc7b8;margin-top:4px;">Reset your password · إعادة تعيين كلمة المرور</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:28px;font-size:15px;line-height:1.7;">
+                          <p style="margin:0 0 12px;">Hello {System.Net.WebUtility.HtmlEncode(name)},</p>
+                          <p style="margin:0 0 20px;">We received a request to reset your password. The link works once and expires in 1 hour.</p>
+                          <p style="margin:0 0 24px;" dir="rtl">وصلنا طلب لإعادة تعيين كلمة المرور. الرابط يعمل مرة واحدة وينتهي بعد ساعة.</p>
+                          <a href="{link}" style="display:inline-block;background:#b8914f;color:#141414;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;">Choose a new password · اختر كلمة مرور جديدة</a>
+                          <p style="margin:24px 0 0;font-size:13px;color:#6b6459;">If you did not ask for this, ignore this email. Your password stays the same.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+            """;
+
+        return emailSender.Send(email, subject, plainBody, htmlBody);
+    }
+
     public Task SendOrderConfirmationWithInvoiceAsync(
         string email,
         string name,

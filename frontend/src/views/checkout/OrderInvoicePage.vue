@@ -67,6 +67,10 @@
           </div>
         </div>
 
+        <div v-if="invoice.discount > 0" class="discountRow">
+          <span>{{ tp('Discount') }} <span v-if="invoice.couponCode" dir="ltr">({{ invoice.couponCode }})</span></span>
+          <span dir="ltr">-{{ format(invoice.discount) }}</span>
+        </div>
         <div class="totalRow">
           <span>{{ tp(isPaid ? 'Total paid' : 'Amount due') }}</span>
           <strong dir="ltr">{{ format(invoice.totalPrice) }}</strong>
@@ -450,5 +454,13 @@ onUnmounted(() => {
 .returnPanel {
   width: 100%;
   max-width: none;
+}
+.discountRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0 0;
+  color: var(--success);
+  font-weight: 600;
+  font-size: 14px;
 }
 </style>

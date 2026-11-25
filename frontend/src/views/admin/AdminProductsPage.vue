@@ -63,12 +63,20 @@
             <input v-model.number="form.price" type="number" step="0.01" min="0" />
           </label>
           <label class="field">
+            <span>{{ tp('Original price (USD) — for sales') }}</span>
+            <input v-model.number="form.compareAtPrice" type="number" step="0.01" min="0" :placeholder="tp('Leave empty if not on sale')" />
+          </label>
+          <label class="field">
             <span>{{ tp('Stock') }}</span>
             <input v-model.number="form.stockLevel" type="number" step="1" min="0" />
           </label>
           <label class="field wide">
             <span>{{ tp('Description') }}</span>
             <textarea v-model.trim="form.description" rows="3" :placeholder="tp('Short description (optional)')" />
+          </label>
+          <label class="field wide">
+            <span>{{ tp('Specifications') }}</span>
+            <textarea v-model="form.specs" rows="4" dir="auto" :placeholder="tp('One per line, e.g. Capacity: 20000mAh')" />
           </label>
         </div>
       </div>
@@ -205,6 +213,8 @@ const emptyForm = () => ({
   stockLevel: 0,
   description: '',
   imageUrl: '',
+  compareAtPrice: null,
+  specs: '',
 })
 const form = reactive(emptyForm())
 
@@ -364,6 +374,8 @@ function edit(p) {
   form.stockLevel = Number(p.stockLevel)
   form.description = p.description || ''
   form.imageUrl = p.imageUrl || ''
+  form.compareAtPrice = p.compareAtPrice != null ? Number(p.compareAtPrice) : null
+  form.specs = p.specs || ''
   ok.value = null
   error.value = null
   focusPanel()
@@ -386,6 +398,9 @@ async function save() {
       stockLevel: Number(form.stockLevel),
       description: form.description || null,
       imageUrl: form.imageUrl || null,
+      // 0 and "" clear these; leaving them out would keep the old values.
+      compareAtPrice: Number(form.compareAtPrice) > 0 ? Number(form.compareAtPrice) : 0,
+      specs: form.specs || '',
     })
     if (pendingFile.value) {
       try {

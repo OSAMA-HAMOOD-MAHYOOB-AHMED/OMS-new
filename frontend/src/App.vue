@@ -43,6 +43,12 @@
         <RouterLink class="adminLink" :class="{ active: isActive('adminReports') }" to="/admin/reports" @click="closeNav">
           {{ t('shell.adminReports') }}
         </RouterLink>
+        <RouterLink class="adminLink" :class="{ active: isActive('adminCoupons') }" to="/admin/coupons" @click="closeNav">
+          {{ tp('Discount codes') }}
+        </RouterLink>
+        <RouterLink class="adminLink" :class="{ active: isActive('adminSettings') }" to="/admin/settings" @click="closeNav">
+          {{ tp('Store settings') }}
+        </RouterLink>
       </nav>
 
       <div class="adminActions">
@@ -59,7 +65,7 @@
     <template v-else>
       <!-- The promo strip and the header stay pinned together while the page scrolls. -->
       <div class="stickyTop">
-      <div v-if="showShopChrome" class="promo">{{ t('shell.promo') }}</div>
+      <div v-if="showShopChrome" class="promo">{{ localized('promo') || t('shell.promo') }}</div>
 
       <header class="topbar">
         <div class="topRow">
@@ -203,6 +209,13 @@
           </template>
           <RouterLink v-else to="/profile">{{ t('shell.profile') }}</RouterLink>
         </nav>
+        <nav class="footerCol" :aria-label="tp('Help')">
+          <span class="footerHead">{{ tp('Help') }}</span>
+          <RouterLink :to="{ name: 'products', query: { offers: '1' } }">{{ tp('Offers') }}</RouterLink>
+          <RouterLink :to="{ name: 'contact' }">{{ tp('Contact us') }}</RouterLink>
+          <RouterLink :to="{ name: 'privacy' }">{{ tp('Privacy policy') }}</RouterLink>
+          <a v-if="whatsappLink" :href="whatsappLink" target="_blank" rel="noopener">WhatsApp</a>
+        </nav>
       </div>
       <div class="footerBottom">
         <span>{{ t('shell.rights', { year: new Date().getFullYear() }) }}</span>
@@ -210,7 +223,43 @@
       </div>
     </footer>
 
-    <ChatBot v-if="!isAdminShell && !navOpen && route.name !== 'login' && route.name !== 'register' && route.name !== 'adminLogin'" />
+    <ChatBot
+      v-if="!isAdminShell && !navOpen && route.name !== 'login' && route.name !== 'register' && route.name !== 'adminLogin'"
+      :raised="showBottomBar"
+    />
+
+    <!-- WhatsApp: shown once the admin adds the number in Store settings. -->
+    <a
+      v-if="whatsappLink && !isAdminShell && !navOpen"
+      class="waFab"
+      :class="{ raised: showBottomBar }"
+      :href="whatsappLink"
+      target="_blank"
+      rel="noopener"
+      :aria-label="tp('Chat on WhatsApp')"
+    >
+      <AppIcon name="whatsapp" :size="28" :stroke="1.7" />
+    </a>
+
+    <!-- Phone bottom bar for shoppers. -->
+    <nav v-if="showBottomBar" class="bottomBar" :aria-label="tp('Quick links')">
+      <RouterLink :to="{ name: 'home' }" :class="{ on: route.name === 'home' }">
+        <AppIcon name="home" :size="22" /><span>{{ t('shell.home') }}</span>
+      </RouterLink>
+      <RouterLink :to="{ name: 'products', query: { offers: '1' } }" :class="{ on: route.name === 'products' && route.query.offers === '1' }">
+        <AppIcon name="percent" :size="22" /><span>{{ tp('Offers') }}</span>
+      </RouterLink>
+      <RouterLink :to="{ name: 'products' }" :class="{ on: (route.name === 'products' && route.query.offers !== '1') || route.name === 'productDetails' }">
+        <AppIcon name="grid" :size="22" /><span>{{ t('shell.products') }}</span>
+      </RouterLink>
+      <RouterLink :to="isAuthed ? '/cart' : '/login'" :class="{ on: route.name === 'cart' }">
+        <span class="bbIcon"><AppIcon name="cart" :size="22" /><span v-if="cartCount" class="bbBadge">{{ cartCount }}</span></span>
+        <span>{{ t('shell.cart') }}</span>
+      </RouterLink>
+      <RouterLink :to="isAuthed ? '/profile' : '/login'" :class="{ on: route.name === 'profile' || route.name === 'login' }">
+        <AppIcon name="user" :size="22" /><span>{{ t('shell.account') }}</span>
+      </RouterLink>
+    </nav>
   </div>
 </template>
 
@@ -222,10 +271,11 @@ import { useCartStore } from './stores/cart'
 import { siteLogoUrl } from './utils/images'
 import { useI18n } from './i18n'
 import { loadCategories, shopCategories } from './stores/categories'
+import { loadSettings, localized, whatsappLink } from './stores/settings'
 import ChatBot from './components/ChatBot.vue'
 import AppIcon from './components/AppIcon.vue'
 
-const { t, toggleLocale, categoryLabel } = useI18n()
+const { t, tp, toggleLocale, categoryLabel } = useI18n()
 
 const auth = useAuthStore()
 auth.hydrate()
@@ -241,6 +291,7 @@ const role = computed(() => auth.role)
 
 // Category menu comes from the admin-managed list (only categories that have products).
 loadCategories()
+loadSettings()
 const shopCats = shopCategories
 
 const isAdminShell = computed(() => {
@@ -252,6 +303,9 @@ const isAdminShell = computed(() => {
 
 // Search bar, category pills and the promo strip are for shoppers (guests and customers).
 const showShopChrome = computed(() => !isAuthed.value || role.value === 'Customer')
+const showBottomBar = computed(
+  () => showShopChrome.value && !isAdminShell.value && !['login', 'register', 'adminLogin', 'checkoutVerify'].includes(route.name),
+)
 
 const cartCount = computed(() => cart.items.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0))
 
@@ -867,6 +921,92 @@ async function logout() {
   .content.wide {
     width: calc(100% - 24px);
     padding: 16px 0 32px;
+  }
+}
+/* ----- WhatsApp button ----- */
+.waFab {
+  position: fixed;
+  bottom: 24px;
+  inset-inline-start: 24px;
+  z-index: 999;
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  background: #1f9e55;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 20px rgba(20, 20, 20, 0.3);
+  transition: transform 0.2s;
+}
+.waFab:hover {
+  transform: scale(1.06);
+}
+
+/* ----- Phone bottom bar ----- */
+.bottomBar {
+  display: none;
+}
+@media (max-width: 768px) {
+  .bottomBar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 900;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 18px rgba(20, 20, 20, 0.06);
+  }
+  .bottomBar a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .bottomBar a.on {
+    color: var(--ink);
+  }
+  .bottomBar a.on :deep(.appIcon) {
+    color: var(--gold-text);
+  }
+  .bbIcon {
+    position: relative;
+    display: inline-flex;
+  }
+  .bbBadge {
+    position: absolute;
+    top: -6px;
+    inset-inline-end: -10px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+  }
+  .footer {
+    padding-bottom: 72px;
+  }
+  .waFab {
+    width: 50px;
+    height: 50px;
+    bottom: 14px;
+    inset-inline-start: 12px;
+  }
+  .waFab.raised {
+    bottom: 82px;
   }
 }
 </style>

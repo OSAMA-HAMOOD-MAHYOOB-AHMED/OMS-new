@@ -52,6 +52,8 @@ public sealed class InvoiceService(
               o.orderStatus AS OrderStatus,
               o.paymentMethod AS PaymentMethod,
               o.paymentStatus AS PaymentStatus,
+              COALESCE(o.discount, 0) AS Discount,
+              o.couponcode AS CouponCode,
               u.name AS CustomerName,
               u.email AS CustomerEmail,
               u.phoneNumber AS CustomerPhone,
@@ -114,7 +116,9 @@ public sealed class InvoiceService(
             ShippingInfo.CostLabel,
             ShippingInfo.EstimatedDelivery,
             ShippingInfo.TrackingNumber(header.OrderId),
-            items);
+            items,
+            header.Discount,
+            header.CouponCode);
     }
 
     public static string BuildTextSummary(InvoiceDocumentData data)
@@ -164,6 +168,8 @@ public sealed class InvoiceService(
     private sealed class InvoiceHeaderRow
     {
         public required string OrderId { get; init; }
+        public decimal Discount { get; init; }
+        public string? CouponCode { get; init; }
         public DateTime OrderDate { get; init; }
         public decimal TotalPrice { get; init; }
         public required string OrderStatus { get; init; }

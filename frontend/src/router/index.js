@@ -24,6 +24,11 @@ import AdminProductsPage from '../views/admin/AdminProductsPage.vue'
 import AdminCustomersPage from '../views/admin/AdminCustomersPage.vue'
 import AdminOrdersPage from '../views/admin/AdminOrdersPage.vue'
 import AdminReportsPage from '../views/admin/AdminReportsPage.vue'
+import ContactPage from '../views/ContactPage.vue'
+import PasswordResetPage from '../views/PasswordResetPage.vue'
+import PrivacyPage from '../views/PrivacyPage.vue'
+import AdminCouponsPage from '../views/admin/AdminCouponsPage.vue'
+import AdminSettingsPage from '../views/admin/AdminSettingsPage.vue'
 
 const AUTH_STORAGE_KEY = 'oms_auth'
 
@@ -51,6 +56,10 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', name: 'home', component: HomePage },
+    { path: '/contact', name: 'contact', component: ContactPage },
+    { path: '/forgot-password', name: 'forgotPassword', component: PasswordResetPage },
+    { path: '/reset-password', name: 'resetPassword', component: PasswordResetPage },
+    { path: '/privacy', name: 'privacy', component: PrivacyPage },
     { path: '/login', name: 'login', component: LoginPage, meta: { guestOnly: true } },
     { path: '/admin/login', name: 'adminLogin', component: AdminLoginPage, meta: { guestOnly: true } },
     { path: '/register', name: 'register', component: RegisterPage, meta: { guestOnly: true } },
@@ -89,6 +98,8 @@ const router = createRouter({
     { path: '/admin/customers', name: 'adminCustomers', component: AdminCustomersPage, meta: { auth: true, roles: ['Admin'] } },
     { path: '/admin/orders', name: 'adminOrders', component: AdminOrdersPage, meta: { auth: true, roles: ['Admin'] } },
     { path: '/admin/reports', name: 'adminReports', component: AdminReportsPage, meta: { auth: true, roles: ['Admin'] } },
+    { path: '/admin/coupons', name: 'adminCoupons', component: AdminCouponsPage, meta: { auth: true, roles: ['Admin'] } },
+    { path: '/admin/settings', name: 'adminSettings', component: AdminSettingsPage, meta: { auth: true, roles: ['Admin'] } },
   ],
 })
 

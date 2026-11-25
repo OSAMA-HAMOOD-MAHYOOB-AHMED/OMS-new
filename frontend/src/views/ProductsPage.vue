@@ -2,14 +2,17 @@
   <section class="page">
     <div class="head">
       <div>
-        <h1 class="h1">{{ activeCat === 'all' ? t('products.title') : activeTitle }}</h1>
+        <h1 class="h1">{{ offersOnly ? tp('Offers') : activeCat === 'all' ? t('products.title') : activeTitle }}</h1>
         <p class="sub">{{ t('products.sub') }}</p>
       </div>
     </div>
 
     <div class="toolbar">
       <div class="chips" role="group" :aria-label="t('shell.menu')">
-        <button :class="['chip', { active: activeCat === 'all' }]" type="button" @click="setCat('all')">{{ t('cats.all') }}</button>
+        <button :class="['chip', { active: activeCat === 'all' && !offersOnly }]" type="button" @click="setCat('all')">{{ t('cats.all') }}</button>
+        <button :class="['chip', 'offerChip', { active: offersOnly }]" type="button" @click="setOffers">
+          <AppIcon name="percent" :size="15" />{{ tp('Offers') }}
+        </button>
         <button v-for="c in shopCategories" :key="c.name" :class="['chip', { active: activeCat === c.name }]" type="button" @click="setCat(c.name)">
           {{ categoryLabel(c.name) }}
         </button>
@@ -40,16 +43,6 @@
         </div>
 
         <div class="filterSection">
-          <div class="filterLabel">{{ t('products.sortBy') }}</div>
-          <div class="chips">
-            <button :class="['chip', { active: sortBy === '' }]" type="button" @click="sortBy = ''">{{ t('products.sortDefault') }}</button>
-            <button :class="['chip', { active: sortBy === 'price-asc' }]" type="button" @click="sortBy = 'price-asc'">{{ t('products.priceAsc') }}</button>
-            <button :class="['chip', { active: sortBy === 'price-desc' }]" type="button" @click="sortBy = 'price-desc'">{{ t('products.priceDesc') }}</button>
-            <button :class="['chip', { active: sortBy === 'name-asc' }]" type="button" @click="sortBy = 'name-asc'">{{ t('products.nameAsc') }}</button>
-          </div>
-        </div>
-
-        <div class="filterSection">
           <div class="filterLabel">{{ t('products.availability') }}</div>
           <label class="toggleRow">
             <input v-model="inStockOnly" type="checkbox" class="toggleCheck" />
@@ -74,9 +67,52 @@
     </div>
     <p v-else-if="!filtered.length" class="empty">{{ t('products.empty') }}</p>
 
-    <div v-else class="grid">
-      <ProductCard v-for="p in filtered" :key="p.productID" :product="p" />
-    </div>
+    <template v-else>
+      <div class="resultsBar">
+        <span class="resultCount">{{ tp('Showing') }} <span dir="ltr">{{ firstShown }}–{{ lastShown }}</span> {{ tp('of') }} {{ filtered.length }}</span>
+        <div class="resultTools">
+          <label class="selectWrap">
+            <span class="srOnly">{{ t('products.sortBy') }}</span>
+            <select v-model="sortBy" class="select">
+              <option value="">{{ t('products.sortDefault') }}</option>
+              <option value="newest">{{ tp('Newest') }}</option>
+              <option value="popular">{{ tp('Best selling') }}</option>
+              <option value="rating">{{ tp('Top rated') }}</option>
+              <option value="price-asc">{{ t('products.priceAsc') }}</option>
+              <option value="price-desc">{{ t('products.priceDesc') }}</option>
+              <option value="name-asc">{{ t('products.nameAsc') }}</option>
+            </select>
+          </label>
+          <label class="selectWrap">
+            <span class="srOnly">{{ tp('Per page') }}</span>
+            <select v-model.number="perPage" class="select small">
+              <option v-for="n in [12, 24, 48]" :key="n" :value="n">{{ n }} / {{ tp('page') }}</option>
+            </select>
+          </label>
+          <div class="density" role="group" :aria-label="tp('Columns')">
+            <button v-for="n in [3, 4]" :key="n" type="button" :class="{ on: columns === n }" :aria-label="`${n} ${tp('Columns')}`" @click="columns = n">
+              <span v-for="i in n" :key="i" class="bar" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" :class="`cols${columns}`">
+        <ProductCard v-for="p in paged" :key="p.productID" :product="p" />
+      </div>
+
+      <nav v-if="pageCount > 1" class="pager" :aria-label="tp('Pages')">
+        <button type="button" class="pageBtn" :disabled="page === 1" :aria-label="tp('Previous page')" @click="goPage(page - 1)">
+          <AppIcon name="chevron" :size="16" :style="isRtl ? '' : 'transform: scaleX(-1)'" />
+        </button>
+        <button v-for="n in pageCount" :key="n" type="button" class="pageBtn" :class="{ on: n === page }" :aria-current="n === page ? 'page' : undefined" @click="goPage(n)">
+          {{ n }}
+        </button>
+        <button type="button" class="pageBtn" :disabled="page === pageCount" :aria-label="tp('Next page')" @click="goPage(page + 1)">
+          <AppIcon name="chevron" :size="16" :style="isRtl ? 'transform: scaleX(-1)' : ''" />
+        </button>
+      </nav>
+    </template>
     <p v-if="loading && loadingMessage" class="muted">{{ loadingMessage }}</p>
   </section>
 </template>
@@ -90,9 +126,10 @@ import { useCurrency } from '../composables/useCurrency'
 import { useI18n } from '../i18n'
 import AppIcon from '../components/AppIcon.vue'
 import ProductCard from '../components/ProductCard.vue'
+import { isOnSale } from '../utils/pricing'
 import { loadCategories, shopCategories } from '../stores/categories'
 
-const { t, categoryGroup, categoryLabel } = useI18n()
+const { t, tp, isRtl, categoryGroup, categoryLabel } = useI18n()
 const { currencyCode, rate } = useCurrency()
 const route = useRoute()
 const router = useRouter()
@@ -113,6 +150,11 @@ const minPrice = ref(null)
 const maxPrice = ref(null)
 const sortBy = ref('')
 const inStockOnly = ref(false)
+const offersOnly = ref(route.query.offers === '1')
+const page = ref(1)
+const perPage = ref(12)
+const columns = ref(Number(localStorage.getItem('oms_shop_cols')) === 3 ? 3 : 4)
+watch(columns, (n) => localStorage.setItem('oms_shop_cols', String(n)))
 
 // Keep the page in sync with the header search and category links.
 watch(
@@ -122,9 +164,22 @@ watch(
     activeCat.value = String(cat || 'all')
   },
 )
+watch(
+  () => route.query.offers,
+  (v) => (offersOnly.value = v === '1'),
+)
+
+function setOffers() {
+  const query = { ...route.query }
+  delete query.cat
+  if (offersOnly.value) delete query.offers
+  else query.offers = '1'
+  router.replace({ name: 'products', query }).catch(() => {})
+}
 
 function setCat(c) {
   const query = { ...route.query }
+  delete query.offers
   if (c === 'all') delete query.cat
   else query.cat = c
   router.replace({ name: 'products', query }).catch(() => {})
@@ -144,7 +199,6 @@ const filterCount = computed(() => {
   let n = 0
   if (minPrice.value !== null && minPrice.value !== '') n++
   if (maxPrice.value !== null && maxPrice.value !== '') n++
-  if (sortBy.value) n++
   if (inStockOnly.value) n++
   return n
 })
@@ -152,7 +206,6 @@ const filterCount = computed(() => {
 function clearFilters() {
   minPrice.value = null
   maxPrice.value = null
-  sortBy.value = ''
   inStockOnly.value = false
 }
 
@@ -165,6 +218,7 @@ const filtered = computed(() => {
       if (!hay.includes(needle)) return false
     }
     if (inStockOnly.value && p.stockLevel <= 0) return false
+    if (offersOnly.value && !isOnSale(p)) return false
     const price = Number(p.price)
     const r = rate.value || 1
     if (minPrice.value !== null && minPrice.value !== '' && price < Number(minPrice.value) / r) return false
@@ -174,8 +228,24 @@ const filtered = computed(() => {
   if (sortBy.value === 'price-asc') result = [...result].sort((a, b) => Number(a.price) - Number(b.price))
   else if (sortBy.value === 'price-desc') result = [...result].sort((a, b) => Number(b.price) - Number(a.price))
   else if (sortBy.value === 'name-asc') result = [...result].sort((a, b) => String(a.name).localeCompare(String(b.name)))
+  else if (sortBy.value === 'newest') result = [...result].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  else if (sortBy.value === 'popular') result = [...result].sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0))
+  else if (sortBy.value === 'rating')
+    result = [...result].sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.reviewCount || 0) - (a.reviewCount || 0))
   return result
 })
+
+// ----- Pages -----
+const pageCount = computed(() => Math.max(1, Math.ceil(filtered.value.length / perPage.value)))
+const paged = computed(() => filtered.value.slice((page.value - 1) * perPage.value, page.value * perPage.value))
+const firstShown = computed(() => (filtered.value.length ? (page.value - 1) * perPage.value + 1 : 0))
+const lastShown = computed(() => Math.min(page.value * perPage.value, filtered.value.length))
+function goPage(n) {
+  page.value = Math.min(Math.max(1, n), pageCount.value)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+// Any change to what is shown starts again from page 1.
+watch([q, activeCat, offersOnly, minPrice, maxPrice, inStockOnly, sortBy, perPage], () => (page.value = 1))
 
 async function load(attempt = 0) {
   loading.value = true
@@ -483,6 +553,122 @@ onMounted(load)
   }
   .search {
     max-width: none;
+  }
+}
+/* ----- Offers, results bar, pages ----- */
+.offerChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--danger);
+}
+.offerChip.active {
+  color: #fff;
+}
+.resultsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.resultCount {
+  color: var(--muted);
+  font-size: 14px;
+}
+.resultTools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.select {
+  height: 40px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.select.small {
+  width: auto;
+}
+.density {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.density button {
+  height: 38px;
+  padding: 0 10px;
+  border: 0;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.density button.on {
+  background: var(--sand);
+}
+.density .bar {
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--muted);
+}
+.density button.on .bar {
+  background: var(--ink);
+}
+.grid.cols3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.grid.cols4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.pager {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.pageBtn {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.pageBtn.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (max-width: 1100px) {
+  .grid.cols4 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 820px) {
+  .grid.cols3,
+  .grid.cols4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .density {
+    display: none;
   }
 }
 </style>

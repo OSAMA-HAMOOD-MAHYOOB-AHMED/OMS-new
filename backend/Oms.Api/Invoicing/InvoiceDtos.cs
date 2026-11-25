@@ -26,7 +26,9 @@ public sealed record InvoiceDocumentData(
     string ShippingCostLabel,
     string ShippingEstimatedDelivery,
     string ShippingTrackingNumber,
-    IReadOnlyList<InvoiceLineItem> Items
+    IReadOnlyList<InvoiceLineItem> Items,
+    decimal Discount = 0,
+    string? CouponCode = null
 );
 
 public sealed record InvoiceSummaryResponse(
@@ -48,5 +50,7 @@ public sealed record InvoiceSummaryResponse(
     string ShippingEstimatedDelivery,
     string ShippingTrackingNumber,
     IReadOnlyList<InvoiceLineItem> Items,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    decimal Discount = 0,
+    string? CouponCode = null
 );

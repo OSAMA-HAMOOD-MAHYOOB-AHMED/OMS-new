@@ -9,12 +9,15 @@ public sealed class OrderRepository(IDbConnectionFactory db)
 {
     public async Task<string> CreateCashOrder(
         string customerEmail,
-        IReadOnlyList<(string ProductID, string ProductName, decimal Price, int Quantity)> items)
+        IReadOnlyList<(string ProductID, string ProductName, decimal Price, int Quantity)> items,
+        decimal discount = 0,
+        string? couponCode = null)
     {
         var orderID = $"ORD-{Guid.NewGuid():N}".ToUpperInvariant();
         var now = DateTime.UtcNow;
 
-        var total = items.Sum(i => i.Price * i.Quantity);
+        // Items keep their full price; the order total is after the discount code.
+        var total = items.Sum(i => i.Price * i.Quantity) - discount;
 
         using var conn = db.Create();
         if (conn is System.Data.Common.DbConnection dbc)
@@ -77,15 +80,17 @@ public sealed class OrderRepository(IDbConnectionFactory db)
         }
 
         const string insertOrder = """
-            INSERT INTO "Order" (orderID, email, orderDate, totalPrice, orderStatus, paymentMethod, creditStatus)
-            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Placed', 'Cash', NULL);
+            INSERT INTO "Order" (orderID, email, orderDate, totalPrice, orderStatus, paymentMethod, creditStatus, discount, couponcode)
+            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Placed', 'Cash', NULL, @discount, @couponCode);
             """;
         await conn.ExecuteAsync(insertOrder, new
         {
             orderID,
             email = customerEmail,
             orderDate = now,
-            totalPrice = total
+            totalPrice = total,
+            discount,
+            couponCode
         }, tx);
 
         const string insertItem = """
@@ -113,11 +118,13 @@ public sealed class OrderRepository(IDbConnectionFactory db)
         string paymentMethod,
         string paymentStatus,
         string? transactionId,
-        IReadOnlyList<(string ProductID, string ProductName, decimal Price, int Quantity)> items)
+        IReadOnlyList<(string ProductID, string ProductName, decimal Price, int Quantity)> items,
+        decimal discount = 0,
+        string? couponCode = null)
     {
         var orderID = $"ORD-{Guid.NewGuid():N}".ToUpperInvariant();
         var now = DateTime.UtcNow;
-        var total = items.Sum(i => i.Price * i.Quantity);
+        var total = items.Sum(i => i.Price * i.Quantity) - discount;
 
         using var conn = db.Create();
         if (conn is System.Data.Common.DbConnection dbc)
@@ -179,8 +186,8 @@ public sealed class OrderRepository(IDbConnectionFactory db)
         }
 
         const string insertOrder = """
-            INSERT INTO "Order" (orderID, email, orderDate, totalPrice, orderStatus, paymentMethod, paymentStatus, creditStatus)
-            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Placed', @paymentMethod, @paymentStatus, NULL);
+            INSERT INTO "Order" (orderID, email, orderDate, totalPrice, orderStatus, paymentMethod, paymentStatus, creditStatus, discount, couponcode)
+            VALUES (@orderID, @email, @orderDate, @totalPrice, 'Placed', @paymentMethod, @paymentStatus, NULL, @discount, @couponCode);
             """;
         await conn.ExecuteAsync(insertOrder, new
         {
@@ -189,7 +196,9 @@ public sealed class OrderRepository(IDbConnectionFactory db)
             orderDate = now,
             totalPrice = total,
             paymentMethod,
-            paymentStatus
+            paymentStatus,
+            discount,
+            couponCode
         }, tx);
 
         const string insertItem = """
