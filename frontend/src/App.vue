@@ -131,21 +131,15 @@
           </div>
           <RouterLink class="pill" :class="{ on: route.name === 'home' }" to="/" @click="closeNav">{{ t('shell.home') }}</RouterLink>
 
-          <template v-if="showShopChrome">
-            <RouterLink class="pill" :class="{ on: route.name === 'products' && !route.query.cat }" to="/products" @click="closeNav">
-              {{ t('cats.all') }}
-            </RouterLink>
-            <RouterLink
-              v-for="c in shopCats"
-              :key="c.name"
-              class="pill"
-              :class="{ on: route.name === 'products' && route.query.cat === c.name }"
-              :to="{ name: 'products', query: { cat: c.name } }"
-              @click="closeNav"
-            >
-              {{ categoryLabel(c.name) }}
-            </RouterLink>
-          </template>
+          <RouterLink
+            v-if="showShopChrome"
+            class="pill"
+            :class="{ on: route.name === 'products' || route.name === 'productDetails' }"
+            to="/products"
+            @click="closeNav"
+          >
+            {{ t('shell.products') }}
+          </RouterLink>
 
           <template v-if="isAuthed && role === 'Customer'">
             <RouterLink class="pill" to="/customer/orders" @click="closeNav">{{ t('shell.orders') }}</RouterLink>
@@ -514,7 +508,7 @@ async function logout() {
   background: var(--sand);
 }
 .pill.on,
-.pill.router-link-exact-active:not([href='/products']) {
+.pill.router-link-exact-active {
   background: var(--ink);
   color: #fff;
 }
