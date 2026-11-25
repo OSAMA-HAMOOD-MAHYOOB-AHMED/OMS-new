@@ -13,13 +13,21 @@
         class="menuBtn adminMenuBtn"
         type="button"
         :aria-expanded="adminNavOpen ? 'true' : 'false'"
+        aria-controls="adminDrawer"
         :aria-label="t('shell.menu')"
         @click="adminNavOpen = !adminNavOpen"
       >
-        <AppIcon :name="adminNavOpen ? 'close' : 'menu'" />
+        <AppIcon name="menu" />
       </button>
 
-      <nav class="adminNav" :class="{ open: adminNavOpen }">
+      <div v-if="adminNavOpen" class="drawerBackdrop" aria-hidden="true" @click="closeNav" />
+      <nav id="adminDrawer" class="adminNav" :class="{ open: adminNavOpen }" :aria-label="t('shell.menu')">
+        <div class="drawerHead dark">
+          <span class="drawerTitle">{{ t('shell.adminPanel') }}</span>
+          <button class="drawerClose" type="button" :aria-label="t('shell.closeMenu')" @click="closeNav">
+            <AppIcon name="close" />
+          </button>
+        </div>
         <RouterLink class="adminLink" :class="{ active: isActive('adminDashboard') }" to="/admin/dashboard" @click="closeNav">
           {{ t('shell.adminDashboard') }}
         </RouterLink>
@@ -103,15 +111,24 @@
               class="menuBtn"
               type="button"
               :aria-expanded="navOpen ? 'true' : 'false'"
+              aria-controls="siteDrawer"
               :aria-label="t('shell.menu')"
               @click="navOpen = !navOpen"
             >
-              <AppIcon :name="navOpen ? 'close' : 'menu'" />
+              <AppIcon name="menu" />
             </button>
           </div>
         </div>
 
-        <nav class="nav" :class="{ open: navOpen }" :aria-label="t('shell.menu')">
+        <div v-if="navOpen" class="drawerBackdrop" aria-hidden="true" @click="closeNav" />
+        <nav id="siteDrawer" class="nav" :class="{ open: navOpen }" :aria-label="t('shell.menu')">
+          <div class="drawerHead">
+            <img class="drawerLogo" :src="siteLogoUrl" alt="" />
+            <span class="drawerTitle">{{ t('shell.name') }}</span>
+            <button class="drawerClose" type="button" :aria-label="t('shell.closeMenu')" @click="closeNav">
+              <AppIcon name="close" />
+            </button>
+          </div>
           <RouterLink class="pill" :class="{ on: route.name === 'home' }" to="/" @click="closeNav">{{ t('shell.home') }}</RouterLink>
 
           <template v-if="showShopChrome">
@@ -146,6 +163,18 @@
             <RouterLink class="pill" to="/products" @click="closeNav">{{ t('shell.products') }}</RouterLink>
             <RouterLink class="pill" to="/profile" @click="closeNav">{{ t('shell.profile') }}</RouterLink>
           </template>
+
+          <div class="drawerFoot">
+            <RouterLink v-if="isAuthed && role === 'Customer'" class="pill drawerOnly" to="/profile" @click="closeNav">
+              <AppIcon name="user" :size="18" />{{ t('shell.account') }}
+            </RouterLink>
+            <RouterLink v-if="!isAuthed" class="pill drawerOnly" to="/register" @click="closeNav">
+              <AppIcon name="user" :size="18" />{{ t('shell.signup') }}
+            </RouterLink>
+            <button class="pill drawerOnly" type="button" @click="toggleLocale">
+              <AppIcon name="globe" :size="18" />{{ t('shell.otherLanguage') }}
+            </button>
+          </div>
         </nav>
       </header>
     </template>
@@ -184,12 +213,12 @@
       </div>
     </footer>
 
-    <ChatBot v-if="!isAdminShell && route.name !== 'login' && route.name !== 'register' && route.name !== 'adminLogin'" />
+    <ChatBot v-if="!isAdminShell && !navOpen && route.name !== 'login' && route.name !== 'register' && route.name !== 'adminLogin'" />
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
@@ -234,6 +263,20 @@ function closeNav() {
   navOpen.value = false
   adminNavOpen.value = false
 }
+
+// While a drawer is open: stop the page behind it from scrolling, and let Escape close it.
+watch([navOpen, adminNavOpen], ([a, b]) => {
+  document.body.style.overflow = a || b ? 'hidden' : ''
+})
+
+function onKey(e) {
+  if (e.key === 'Escape' && (navOpen.value || adminNavOpen.value)) closeNav()
+}
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  document.body.style.overflow = ''
+})
 
 function isActive(name) {
   return route.name === name
@@ -483,6 +526,13 @@ async function logout() {
   width: min(1280px, calc(100% - 32px));
 }
 
+/* Drawer pieces only show on phones */
+.drawerHead,
+.drawerFoot,
+.drawerBackdrop {
+  display: none;
+}
+
 /* Footer */
 .footer {
   background: var(--ink);
@@ -667,6 +717,11 @@ async function logout() {
   .hideSm {
     display: none;
   }
+  /* backdrop-filter would trap the fixed sidebar inside the header, so drop the blur on phones. */
+  .topbar {
+    backdrop-filter: none;
+    background: #fff;
+  }
   .adminTopbar {
     flex-wrap: wrap;
     padding: 10px 12px;
@@ -687,28 +742,111 @@ async function logout() {
   .menuBtn {
     display: inline-flex;
   }
+  /* Phone menu: a sidebar that slides in from the start side (right in Arabic, left in English). */
   .nav,
   .adminNav {
-    display: none;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 60;
+    width: min(300px, 84vw);
+    margin: 0;
+    padding: 0 16px 24px;
+    display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 6px;
+    overflow-y: auto;
+    background: #fff;
+    box-shadow: 0 0 40px rgba(20, 20, 20, 0.25);
+    /* Parked just off-screen on the start side; inset-inline-start follows the text direction. */
+    inset-inline-start: calc(-1 * min(300px, 84vw) - 48px);
+    visibility: hidden;
+    transition: inset-inline-start 0.25s ease, visibility 0.25s;
   }
   .adminNav {
-    flex-basis: 100%;
-    width: 100%;
-    padding-top: 6px;
-    border-top: 1px solid #2e2a24;
+    background: var(--admin-bg);
   }
   .nav.open,
   .adminNav.open {
+    inset-inline-start: 0;
+    visibility: visible;
+  }
+  .drawerHead {
     display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: inherit;
+  }
+  .drawerHead.dark {
+    border-bottom-color: #2e2a24;
+  }
+  .drawerLogo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .drawerTitle {
+    flex: 1;
+    font-family: var(--font-head);
+    font-weight: 800;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .drawerHead.dark .drawerTitle {
+    color: #fff;
+  }
+  .drawerClose {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--ink);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .drawerHead.dark .drawerClose {
+    background: #26221c;
+    border-color: #3a342b;
+    color: #fff;
+  }
+  .drawerFoot {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .drawerBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(20, 20, 20, 0.45);
   }
   .pill,
   .adminLink {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: start;
     border-radius: 12px;
-    padding: 12px;
+    padding: 13px 14px;
+    font-size: 15px;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
   }
   .logo {
     width: 44px;
