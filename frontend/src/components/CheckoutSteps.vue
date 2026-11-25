@@ -96,7 +96,7 @@ const currentIndex = computed(() => {
 .line {
   position: absolute;
   top: 17px;
-  left: calc(50% + 18px);
+  inset-inline-start: calc(50% + 18px); /* runs toward the next step in both Arabic and English */
   width: calc(100% - 36px);
   height: 2px;
   background: var(--border);

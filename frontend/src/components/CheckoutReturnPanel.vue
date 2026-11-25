@@ -26,11 +26,18 @@
 <script setup>
 import { computed } from 'vue'
 import { CHECKOUT_RETURN_SECONDS } from '../composables/useReturnTimer'
+import { useI18n } from '../i18n'
+
+const { tp } = useI18n()
 
 const props = defineProps({
   secondsLeft: {
     type: Number,
     required: true,
+  },
+  totalSeconds: {
+    type: Number,
+    default: CHECKOUT_RETURN_SECONDS,
   },
   message: {
     type: String,
@@ -51,7 +58,7 @@ defineEmits(['proceed'])
 const circumference = 2 * Math.PI * 30
 
 const progressOffset = computed(() => {
-  const ratio = props.secondsLeft / CHECKOUT_RETURN_SECONDS
+  const ratio = props.secondsLeft / props.totalSeconds
   return circumference * (1 - ratio)
 })
 </script>

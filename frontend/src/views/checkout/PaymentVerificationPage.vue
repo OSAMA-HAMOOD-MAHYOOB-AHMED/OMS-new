@@ -1,6 +1,6 @@
 <template>
   <section class="page">
-    <CheckoutSteps current="verify" />
+    <CheckoutSteps :current="phase === 'verified' ? 'confirm' : 'verify'" />
 
     <div class="card">
       <div class="iconWrap" aria-hidden="true">
@@ -8,8 +8,8 @@
         <div v-else-if="phase === 'verified'" class="successIcon">✓</div>
       </div>
 
-      <h1 class="h1">{{ headline }}</h1>
-      <p class="sub">{{ subline }}</p>
+      <h1 class="h1">{{ tp(headline) }}</h1>
+      <p class="sub">{{ tp(subline) }}</p>
 
       <div v-if="phase !== 'error'" class="progressList" role="status" aria-live="polite">
         <div
@@ -24,20 +24,15 @@
           <span class="bullet">
             {{ phase === 'verified' || index < stepIndex ? '✓' : index === stepIndex ? '…' : '○' }}
           </span>
-          <span>{{ step }}</span>
+          <span>{{ tp(step) }}</span>
         </div>
       </div>
 
-      <div class="amount">{{ format(pending?.total || 0) }}</div>
+      <div class="amount" dir="ltr">{{ format(pending?.total || 0) }}</div>
 
-      <CheckoutReturnPanel
-        v-if="phase === 'verified'"
-        :seconds-left="secondsLeft"
-        message="Payment verified successfully. You will be returned to Al-Wakeel Al-Shamel in a moment."
-        hint="You may click the button below to continue immediately, or wait for the timer."
-        button-label="Return to Al-Wakeel Al-Shamel"
-        @proceed="proceedToConfirmation"
-      />
+      <button v-if="phase === 'verified'" class="btnPrimary" type="button" @click="goToConfirmation">
+        {{ tp('Continue to confirmation') }}
+      </button>
 
       <p v-if="error" class="error" role="alert">{{ tp(error) }}</p>
 
@@ -54,8 +49,6 @@ import { useI18n } from '../../i18n'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import CheckoutSteps from '../../components/CheckoutSteps.vue'
-import CheckoutReturnPanel from '../../components/CheckoutReturnPanel.vue'
-import { useReturnTimer } from '../../composables/useReturnTimer'
 import { api } from '../../api/client'
 import { useCartStore } from '../../stores/cart'
 import {
@@ -102,7 +95,7 @@ const visibleSteps = computed(() => {
 const headline = computed(() => {
   if (error.value) return 'Order processing failed'
   if (phase.value === 'verified') {
-    return pending.value?.paymentMethod === 'Cash' ? 'Order confirmed' : 'Payment verified'
+    return pending.value?.paymentMethod === 'Cash' ? 'Order received' : 'Payment verified'
   }
   if (pending.value?.paymentMethod === 'Cash') return 'Processing your order'
   return 'Verifying your payment'
@@ -111,16 +104,12 @@ const headline = computed(() => {
 const subline = computed(() => {
   if (error.value) return 'We could not complete your order. Please try again.'
   if (phase.value === 'verified') {
-    return 'Your order has been placed. Please return to the merchant store to view your confirmation.'
+    return 'Taking you to your order confirmation…'
   }
   if (pending.value?.paymentMethod === 'Cash') {
     return 'Your order is being prepared for FedEx Express delivery with cash on delivery.'
   }
   return 'Your payment is being securely verified with the payment gateway. This may take a moment.'
-})
-
-const { secondsLeft, start: startReturnTimer, proceedNow: proceedToConfirmation } = useReturnTimer(() => {
-  goToConfirmation()
 })
 
 function sleep(ms) {
@@ -134,8 +123,10 @@ async function animateSteps() {
   }
 }
 
+let leaving = false
 function goToConfirmation() {
-  if (!completedOrder.value?.orderID) return
+  if (!completedOrder.value?.orderID || leaving) return
+  leaving = true
   router.replace({
     name: 'checkoutConfirmation',
     params: { orderId: completedOrder.value.orderID },
@@ -176,7 +167,8 @@ async function submitCheckout() {
 
     phase.value = 'verified'
     stepIndex.value = visibleSteps.value.length
-    startReturnTimer()
+    // A short pause so the finished checklist is seen, then on to the confirmation step.
+    setTimeout(goToConfirmation, 1800)
   } catch (e) {
     error.value = e?.response?.data || 'Payment verification failed. Please check your details and try again.'
     phase.value = 'error'

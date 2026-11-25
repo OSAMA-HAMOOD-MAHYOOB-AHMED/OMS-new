@@ -2,8 +2,8 @@ import { onUnmounted, ref } from 'vue'
 
 export const CHECKOUT_RETURN_SECONDS = 40
 
-export function useReturnTimer(onExpire) {
-  const secondsLeft = ref(CHECKOUT_RETURN_SECONDS)
+export function useReturnTimer(onExpire, totalSeconds = CHECKOUT_RETURN_SECONDS) {
+  const secondsLeft = ref(totalSeconds)
   let timer = null
   let expired = false
 
@@ -24,7 +24,7 @@ export function useReturnTimer(onExpire) {
   function start() {
     stop()
     expired = false
-    secondsLeft.value = CHECKOUT_RETURN_SECONDS
+    secondsLeft.value = totalSeconds
     timer = window.setInterval(() => {
       secondsLeft.value -= 1
       if (secondsLeft.value <= 0) proceedNow()

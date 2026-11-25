@@ -46,9 +46,10 @@
 
       <CheckoutReturnPanel
         :seconds-left="secondsLeft"
+        :total-seconds="CONFIRMATION_SECONDS"
         message="You will be redirected to your invoice page shortly. Please wait or click below to continue."
         hint="Do not close this browser window until you have saved your invoice."
-        button-label="Return to Al-Wakeel Al-Shamel"
+        button-label="View invoice"
         @proceed="proceedToInvoice"
       />
     </div>
@@ -87,9 +88,11 @@ const trackingNumber = computed(() =>
   order.value?.shippingTrackingNumber || (order.value?.orderID ? buildTracking(order.value.orderID) : ''),
 )
 
+// The confirmation is a short stop on the way to the invoice.
+const CONFIRMATION_SECONDS = 15
 const { secondsLeft, start: startReturnTimer, proceedNow: proceedToInvoice } = useReturnTimer(() => {
   goToInvoice()
-})
+}, CONFIRMATION_SECONDS)
 
 function goToInvoice() {
   if (!order.value?.orderID) return
