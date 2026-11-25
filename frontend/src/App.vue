@@ -57,6 +57,8 @@
     </header>
 
     <template v-else>
+      <!-- The promo strip and the header stay pinned together while the page scrolls. -->
+      <div class="stickyTop">
       <div v-if="showShopChrome" class="promo">{{ t('shell.promo') }}</div>
 
       <header class="topbar">
@@ -171,6 +173,7 @@
           </div>
         </nav>
       </header>
+      </div>
     </template>
 
     <main class="content" :class="{ wide: isAdminShell || route.name === 'home' }">
@@ -351,10 +354,12 @@ async function logout() {
   padding: 8px 16px;
 }
 
-.topbar {
+.stickyTop {
   position: sticky;
   top: 0;
   z-index: 20;
+}
+.topbar {
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
@@ -738,6 +743,12 @@ async function logout() {
   }
   .menuBtn {
     display: inline-flex;
+  }
+  /* The pinned strip stays slim on phones. */
+  .promo {
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 6px 12px;
   }
   /* Phone menu: a sidebar that slides in from the start side (right in Arabic, left in English). */
   .nav,
