@@ -2,33 +2,33 @@
   <section class="page">
     <div class="head">
       <div>
-        <h1 class="h1">Order Management</h1>
-        <p class="sub">View and manage customer orders</p>
+        <h1 class="h1">{{ tp('Order Management') }}</h1>
+        <p class="sub">{{ tp('View and manage customer orders') }}</p>
       </div>
-      <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
+      <button class="btnGhost" type="button" :disabled="loading" @click="load">{{ tp('Refresh') }}</button>
     </div>
 
     <div class="toolbar">
       <div class="search">
         <span class="searchIcon" aria-hidden="true">⌕</span>
-        <input v-model.trim="q" class="searchInput" type="search" placeholder="Search by order ID or customer..." />
+        <input v-model.trim="q" class="searchInput" type="search" :placeholder="tp('Search by order ID or customer...')" />
       </div>
     </div>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else class="tableCard">
       <table class="table">
         <thead>
           <tr>
-            <th>Order ID</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Total</th>
-            <th>Payment</th>
-            <th>Status</th>
-            <th>Shipping</th>
+            <th>{{ tp('Order ID') }}</th>
+            <th>{{ tp('Customer') }}</th>
+            <th>{{ tp('Date') }}</th>
+            <th>{{ tp('Total') }}</th>
+            <th>{{ tp('Payment') }}</th>
+            <th>{{ tp('Status') }}</th>
+            <th>{{ tp('Shipping') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -40,7 +40,7 @@
             </td>
             <td class="mutedTd">{{ formatDate(o.orderDate) }}</td>
             <td class="strong">{{ format(o.totalPrice) }}</td>
-            <td class="mutedTd">{{ paymentLabel(o.paymentMethod) }}</td>
+            <td class="mutedTd">{{ tp(paymentLabel(o.paymentMethod)) }}</td>
             <td>
               <select
                 :value="o.orderStatus"
@@ -49,7 +49,7 @@
                 :disabled="updatingStatus[o.orderID]"
                 @change="(e) => updateStatus(o, e.target.value)"
               >
-                <option v-for="s in ORDER_STATUSES" :key="s" :value="s">{{ s }}</option>
+                <option v-for="s in ORDER_STATUSES" :key="s" :value="s">{{ tp(s) }}</option>
               </select>
             </td>
             <td>
@@ -65,10 +65,13 @@
 </template>
 
 <script setup>
+import { useI18n } from '../../i18n'
 import { computed, onMounted, ref, reactive } from 'vue'
 import { api } from '../../api/client'
 import { SHIPPING, trackingNumber } from '../../utils/shipping'
 import { useCurrency } from '../../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const ORDER_STATUSES = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
 
@@ -229,19 +232,19 @@ onMounted(load)
   min-width: 980px;
 }
 thead th {
-  text-align: left;
+  text-align: start;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 900;
   padding: 12px 14px;
-  background: #f8fafc;
+  background: #FAF8F4;
   border-bottom: 1px solid var(--border);
 }
 tbody td {
   padding: 14px;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid #F1ECE2;
   vertical-align: top;
 }
 .mono {
@@ -273,7 +276,7 @@ tbody td {
 .track {
   margin-top: 4px;
   font-size: 12px;
-  color: #1d4ed8;
+  color: #85652A;
   font-weight: 800;
 }
 .shipEta {
@@ -290,9 +293,9 @@ tbody td {
   font-weight: 800;
   border: 1px solid var(--border);
   cursor: pointer;
-  background: #f8fafc;
+  background: #FAF8F4;
 }
-.statusPlaced    { color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe; }
+.statusPlaced    { color: #85652A; background: #F6EFE1; border-color: #E4D3AE; }
 .statusProcessing{ color: #92400e; background: #fffbeb; border-color: #fde68a; }
 .statusShipped   { color: #5b21b6; background: #f5f3ff; border-color: #ddd6fe; }
 .statusDelivered { color: #065f46; background: #ecfdf5; border-color: #a7f3d0; }

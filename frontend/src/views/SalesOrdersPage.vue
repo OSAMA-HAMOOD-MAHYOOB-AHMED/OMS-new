@@ -2,25 +2,25 @@
   <section class="page">
     <div class="head">
       <div>
-        <h1 class="h1">Order Management</h1>
-        <p class="sub">View customer orders — FedEx Express ships automatically after checkout</p>
+        <h1 class="h1">{{ tp('Order Management') }}</h1>
+        <p class="sub">{{ tp('View customer orders — FedEx Express ships automatically after checkout') }}</p>
       </div>
-      <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
+      <button class="btnGhost" type="button" :disabled="loading" @click="load">{{ tp('Refresh') }}</button>
     </div>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else class="tableWrap">
       <table class="table">
         <thead>
           <tr>
-            <th>Order ID</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Total</th>
-            <th>Payment</th>
-            <th>Shipping</th>
+            <th>{{ tp('Order ID') }}</th>
+            <th>{{ tp('Customer') }}</th>
+            <th>{{ tp('Date') }}</th>
+            <th>{{ tp('Total') }}</th>
+            <th>{{ tp('Payment') }}</th>
+            <th>{{ tp('Shipping') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -32,7 +32,7 @@
             </td>
             <td class="mutedTd">{{ formatDate(o.orderDate) }}</td>
             <td class="strong">{{ format(o.totalPrice) }}</td>
-            <td class="mutedTd">{{ paymentLabel(o.paymentMethod) }}</td>
+            <td class="mutedTd">{{ tp(paymentLabel(o.paymentMethod)) }}</td>
             <td>
               <div class="shipLine">{{ SHIPPING.service }}</div>
               <div class="track mono">{{ trackingNumber(o.orderID) }}</div>
@@ -46,10 +46,13 @@
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { onMounted, ref } from 'vue'
 import { api } from '../api/client'
 import { SHIPPING, trackingNumber } from '../utils/shipping'
 import { useCurrency } from '../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const { format } = useCurrency()
 const orders = ref([])
@@ -156,19 +159,19 @@ onMounted(load)
   min-width: 1100px;
 }
 thead th {
-  text-align: left;
+  text-align: start;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 950;
   padding: 12px 14px;
-  background: #f8fafc;
+  background: #FAF8F4;
   border-bottom: 1px solid var(--border);
 }
 tbody td {
   padding: 14px;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid #F1ECE2;
   vertical-align: top;
 }
 .mono {
@@ -200,7 +203,7 @@ tbody td {
 .track {
   margin-top: 4px;
   font-size: 12px;
-  color: #1d4ed8;
+  color: #85652A;
   font-weight: 800;
 }
 .shipEta {

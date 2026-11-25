@@ -1,11 +1,11 @@
 <template>
   <section class="card">
-    <h2>Inventory</h2>
-    <p class="muted">Warehouse controls: receive stock and log check-ups.</p>
+    <h2>{{ tp('Inventory') }}</h2>
+    <p class="muted">{{ tp('Warehouse controls: receive stock and log check-ups.') }}</p>
 
     <div class="controls">
       <div class="box">
-        <h3>Receive Stock</h3>
+        <h3>{{ tp('Receive Stock') }}</h3>
         <div class="row">
           <select v-model="receiveProductID">
             <option v-for="x in rows" :key="x.productID" :value="x.productID">
@@ -14,12 +14,12 @@
           </select>
           <input v-model.number="receiveQty" type="number" min="1" />
         </div>
-        <input v-model.trim="receiveNote" placeholder="Note (optional)" />
-        <button class="btn" :disabled="loading" @click="receive">Receive</button>
+        <input v-model.trim="receiveNote" :placeholder="tp('Note (optional)')" />
+        <button class="btn" :disabled="loading" @click="receive">{{ tp('Receive') }}</button>
       </div>
 
       <div class="box">
-        <h3>Log Check-up</h3>
+        <h3>{{ tp('Log Check-up') }}</h3>
         <div class="row">
           <select v-model="checkupInventoryID">
             <option v-for="x in rows" :key="x.inventoryID" :value="x.inventoryID">
@@ -27,24 +27,24 @@
             </option>
           </select>
         </div>
-        <input v-model.trim="checkupNote" placeholder="Note (optional)" />
-        <button class="btn" :disabled="loading" @click="checkup">Log check-up</button>
+        <input v-model.trim="checkupNote" :placeholder="tp('Note (optional)')" />
+        <button class="btn" :disabled="loading" @click="checkup">{{ tp('Log check-up') }}</button>
       </div>
     </div>
 
-    <div v-if="loading" class="muted">Working...</div>
-    <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="ok" class="success">{{ ok }}</div>
+    <div v-if="loading" class="muted">{{ tp('Working...') }}</div>
+    <div v-if="error" class="error">{{ tp(error) }}</div>
+    <div v-if="ok" class="success">{{ tp(ok) }}</div>
 
     <div class="tableWrap">
       <table class="table">
         <thead>
           <tr>
-            <th>Product</th>
-            <th>Location</th>
-            <th>Available</th>
-            <th>Reserved</th>
-            <th>Last Check-up</th>
+            <th>{{ tp('Product') }}</th>
+            <th>{{ tp('Location') }}</th>
+            <th>{{ tp('Available') }}</th>
+            <th>{{ tp('Reserved') }}</th>
+            <th>{{ tp('Last Check-up') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -65,8 +65,11 @@
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { onMounted, ref } from 'vue'
 import { api } from '../api/client'
+
+const { tp } = useI18n()
 
 const rows = ref([])
 const loading = ref(false)
@@ -194,7 +197,7 @@ input {
 }
 th,
 td {
-  text-align: left;
+  text-align: start;
   padding: 12px;
   border-bottom: 1px solid rgba(17, 24, 39, 0.08);
 }

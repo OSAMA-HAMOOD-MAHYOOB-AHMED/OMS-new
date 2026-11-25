@@ -1,43 +1,43 @@
 <template>
   <section class="card">
-    <h2>Sales Dashboard</h2>
-    <p class="muted">Basic metrics for demo 1.</p>
+    <h2>{{ tp('Sales Dashboard') }}</h2>
+    <p class="muted">{{ tp('Basic metrics for demo 1.') }}</p>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else class="grid">
       <div class="kpi">
-        <div class="label">Total Orders</div>
+        <div class="label">{{ tp('Total Orders') }}</div>
         <div class="value">{{ data.totalOrders }}</div>
       </div>
       <div class="kpi">
-        <div class="label">Cash Orders</div>
+        <div class="label">{{ tp('Cash Orders') }}</div>
         <div class="value">{{ data.cashOrders }}</div>
       </div>
       <div class="kpi">
-        <div class="label">Cash Revenue</div>
+        <div class="label">{{ tp('Cash Revenue') }}</div>
         <div class="value">{{ format(data.cashRevenue) }}</div>
       </div>
     </div>
 
-    <h3 class="h3">Recent Orders</h3>
+    <h3 class="h3">{{ tp('Recent Orders') }}</h3>
     <div class="tableWrap">
       <table class="table">
         <thead>
           <tr>
-            <th>Order</th>
-            <th>Customer</th>
-            <th>Status</th>
-            <th>Total</th>
-            <th>When</th>
+            <th>{{ tp('Order') }}</th>
+            <th>{{ tp('Customer') }}</th>
+            <th>{{ tp('Status') }}</th>
+            <th>{{ tp('Total') }}</th>
+            <th>{{ tp('When') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="o in data.recentOrders" :key="o.orderID">
             <td class="mono">{{ o.orderID }}</td>
             <td>{{ o.email }}</td>
-            <td>{{ o.orderStatus }}</td>
+            <td>{{ tp(o.orderStatus) }}</td>
             <td>{{ format(o.totalPrice) }}</td>
             <td>{{ new Date(o.orderDate).toLocaleString() }}</td>
           </tr>
@@ -48,9 +48,12 @@
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { onMounted, ref } from 'vue'
 import { api } from '../api/client'
 import { useCurrency } from '../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const { format } = useCurrency()
 const data = ref({ totalOrders: 0, cashRevenue: 0, cashOrders: 0, recentOrders: [] })
@@ -122,7 +125,7 @@ onMounted(load)
 }
 th,
 td {
-  text-align: left;
+  text-align: start;
   padding: 12px;
   border-bottom: 1px solid rgba(17, 24, 39, 0.08);
 }

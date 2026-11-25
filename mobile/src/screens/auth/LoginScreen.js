@@ -5,6 +5,7 @@ import { APP_NAME } from '../../config'
 import { useAuth } from '../../context/AuthContext'
 import { colors } from '../../theme'
 import { logo } from '../../utils/images'
+import { tp } from '../../i18n'
 
 export default function LoginScreen({ navigation }) {
   const { login, sessionExpired, clearSessionExpired } = useAuth()
@@ -36,40 +37,40 @@ export default function LoginScreen({ navigation }) {
         <View style={styles.header}>
           <Image source={logo} style={styles.logo} resizeMode="contain" />
           <Text style={styles.brand}>{APP_NAME}</Text>
-          <Text style={styles.tagline}>Phone accessories — order management</Text>
+          <Text style={styles.tagline}>{tp('Phone accessories — order management')}</Text>
         </View>
 
         <Card>
-          <Text style={styles.cardTitle}>Sign in</Text>
-          {sessionExpired ? <InfoBox tone="warning" message="Your session expired. Please sign in again." /> : null}
+          <Text style={styles.cardTitle}>{tp('Sign in')}</Text>
+          {sessionExpired ? <InfoBox tone="warning" message={tp('Your session expired. Please sign in again.')} /> : null}
           <ErrorBox message={error} />
           <Input
-            label="Email"
+            label={tp('Email')}
             value={email}
             onChangeText={setEmail}
-            placeholder="you@example.com"
+            placeholder={tp('you@example.com')}
             keyboardType="email-address"
             autoComplete="email"
             textContentType="emailAddress"
           />
           <Input
-            label="Password"
+            label={tp('Password')}
             value={password}
             onChangeText={setPassword}
-            placeholder="Your password"
+            placeholder={tp('Your password')}
             secure
             autoComplete="password"
             onSubmitEditing={onSubmit}
             returnKeyType="go"
           />
-          <Button title="Sign in" onPress={onSubmit} loading={loading} />
-          <Text style={styles.hint}>Customers, sales staff, warehouse managers and admins all sign in here.</Text>
+          <Button title={tp('Sign in')} onPress={onSubmit} loading={loading} />
+          <Text style={styles.hint}>{tp('Customers, sales staff, warehouse managers and admins all sign in here.')}</Text>
         </Card>
 
         <View style={styles.footer}>
-          <Text style={{ color: colors.textSoft }}>New customer? </Text>
+          <Text style={{ color: colors.textSoft }}>{tp('New customer?')}</Text>
           <Text style={styles.link} onPress={() => navigation.navigate('Register')}>
-            Create an account
+            {tp('Create an account')}
           </Text>
         </View>
       </Screen>

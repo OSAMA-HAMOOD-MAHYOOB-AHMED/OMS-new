@@ -36,7 +36,13 @@
           "cameraPermission": false
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-localization",
+        {
+          "supportsRTL": false
+        }
+      ]
     ],
     "extra": {
       "eas": {

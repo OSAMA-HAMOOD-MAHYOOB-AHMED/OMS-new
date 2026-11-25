@@ -1,3 +1,5 @@
+import { API_URL } from '../config'
+
 // Product images are either absolute URLs (Unsplash etc.) or paths like
 // "/images/products/charger.jpg" that the website serves. The app bundles
 // those few site images so they work offline and without the website.
@@ -9,6 +11,7 @@ const bundled = {
 }
 
 export const logo = require('../../assets/images/logo.jpg')
+export const hero = require('../../assets/images/hero.jpg')
 
 function byCategory(category) {
   const c = String(category || '').toLowerCase()
@@ -22,6 +25,8 @@ function byCategory(category) {
 // Returns a value usable as <Image source={...} />.
 export function productImageSource(product) {
   const url = String(product?.imageUrl || '').trim()
+  // Photos uploaded by the admin are served by the API.
+  if (url.startsWith('/api/')) return { uri: `${API_URL}${url}` }
   if (/^https?:\/\//i.test(url)) return { uri: url }
   if (url.startsWith('data:image/')) return { uri: url }
   if (bundled[url]) return bundled[url]

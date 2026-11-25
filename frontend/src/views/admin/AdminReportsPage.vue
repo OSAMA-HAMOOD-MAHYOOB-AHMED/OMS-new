@@ -2,33 +2,33 @@
   <section class="page">
     <div class="head">
       <div>
-        <h1 class="h1">Sales Report</h1>
-        <p class="sub">Overview of sales and revenue</p>
+        <h1 class="h1">{{ tp('Sales Report') }}</h1>
+        <p class="sub">{{ tp('Overview of sales and revenue') }}</p>
       </div>
       <div class="headActions">
-        <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
-        <button class="btnPrimary" type="button" @click="exportReport">Export Report</button>
+        <button class="btnGhost" type="button" :disabled="loading" @click="load">{{ tp('Refresh') }}</button>
+        <button class="btnPrimary" type="button" @click="exportReport">{{ tp('Export Report') }}</button>
       </div>
     </div>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else class="grid">
       <div class="kpi">
-        <div class="kpiLabel">Total orders</div>
+        <div class="kpiLabel">{{ tp('Total orders') }}</div>
         <div class="kpiValue">{{ totals.orders }}</div>
       </div>
       <div class="kpi">
-        <div class="kpiLabel">Gross revenue</div>
+        <div class="kpiLabel">{{ tp('Gross revenue') }}</div>
         <div class="kpiValue">{{ format(totals.revenue) }}</div>
       </div>
       <div class="kpi">
-        <div class="kpiLabel">Avg order value</div>
+        <div class="kpiLabel">{{ tp('Avg order value') }}</div>
         <div class="kpiValue">{{ format(totals.avg) }}</div>
       </div>
       <div class="kpi">
-        <div class="kpiLabel">Completed revenue</div>
+        <div class="kpiLabel">{{ tp('Completed revenue') }}</div>
         <div class="kpiValue green">{{ format(bucket.Completed.revenue) }}</div>
       </div>
     </div>
@@ -36,17 +36,17 @@
     <div v-if="!loading && !error" class="card">
       <div class="cardHead">
         <span class="docIcon" aria-hidden="true">▦</span>
-        <div class="cardTitle">Daily Sales Summary</div>
+        <div class="cardTitle">{{ tp('Daily Sales Summary') }}</div>
       </div>
 
       <div class="tableWrap">
         <table class="table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th class="c">Orders</th>
-              <th class="c">Revenue</th>
-              <th class="c">Avg value</th>
+              <th>{{ tp('Date') }}</th>
+              <th class="c">{{ tp('Orders') }}</th>
+              <th class="c">{{ tp('Revenue') }}</th>
+              <th class="c">{{ tp('Avg value') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -62,7 +62,7 @@
     </div>
 
     <div v-if="!loading && !error" class="card">
-      <div class="breakTitle">Order Status Breakdown</div>
+      <div class="breakTitle">{{ tp('Order Status Breakdown') }}</div>
       <div class="breakGrid">
         <div v-for="label in ['Pending', 'Confirmed', 'Completed', 'Cancelled']" :key="label" class="breakCard">
           <div class="breakLabel">{{ label }}</div>
@@ -75,11 +75,14 @@
 </template>
 
 <script setup>
+import { useI18n } from '../../i18n'
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api/client'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useCurrency } from '../../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const { format } = useCurrency()
 const loading = ref(false)
@@ -384,7 +387,7 @@ onMounted(load)
   border: 1px solid var(--border);
   color: var(--brand-blue);
   font-weight: 950;
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(184, 145, 79, 0.08);
 }
 .cardTitle {
   font-weight: 950;
@@ -400,20 +403,20 @@ onMounted(load)
   min-width: 860px;
 }
 thead th {
-  text-align: left;
+  text-align: start;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 900;
   padding: 12px 14px;
-  background: #f8fafc;
+  background: #FAF8F4;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
 tbody td {
   padding: 12px 14px;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid #F1ECE2;
 }
 .c {
   text-align: center;

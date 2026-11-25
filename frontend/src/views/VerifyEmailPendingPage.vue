@@ -2,41 +2,43 @@
   <div class="wrap">
     <div class="card">
       <div class="icon" aria-hidden="true">✉</div>
-      <h2 class="h2">Check your email</h2>
+      <h2 class="h2">{{ tp('Check your email') }}</h2>
       <p class="sub">
-        We sent a verification link to
-        <strong>{{ email }}</strong>.
-        Open the email and click <strong>Verify email address</strong> to activate your account.
+        {{ tp('We sent a verification link to') }}
+        <strong>{{ email }}</strong>{{ tp('. Open the email and click') }} <strong>{{ tp('Verify email address') }}</strong> {{ tp('to activate your account.') }}
       </p>
 
       <ol class="steps">
-        <li>Open your inbox (and spam/junk folder if needed).</li>
-        <li>Click the verification button in the email from Al-Wakeel Al-Shamel.</li>
-        <li>Return here and sign in once verification succeeds.</li>
+        <li>{{ tp('Open your inbox (and spam/junk folder if needed).') }}</li>
+        <li>{{ tp('Click the verification button in the email from Al-Wakeel Al-Shamel.') }}</li>
+        <li>{{ tp('Return here and sign in once verification succeeds.') }}</li>
       </ol>
 
       <p v-if="showDevInbox" class="devInbox">
-        Local testing: open <a href="http://localhost:8025" target="_blank" rel="noopener">Mailpit inbox</a>
-        to read the verification email (real inboxes are used only when SMTP is configured).
+        {{ tp('Local testing: open') }} <a href="http://localhost:8025" target="_blank" rel="noopener">{{ tp('Mailpit inbox') }}</a>
+        {{ tp('to read the verification email (real inboxes are used only when SMTP is configured).') }}
       </p>
 
-      <p v-if="resent" class="success">Verification email sent again. Check your inbox.</p>
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="resent" class="success">{{ tp('Verification email sent again. Check your inbox.') }}</p>
+      <p v-if="error" class="error">{{ tp(error) }}</p>
 
       <div class="actions">
         <button class="btn" type="button" :disabled="loading || cooldown > 0" @click="resend">
           {{ resendLabel }}
         </button>
-        <RouterLink class="btnGhost" to="/login">Go to Sign In</RouterLink>
+        <RouterLink class="btnGhost" to="/login">{{ tp('Go to Sign In') }}</RouterLink>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
+
+const { tp } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -121,7 +123,7 @@ onUnmounted(() => {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(37, 99, 235, 0.1);
+  background: rgba(184, 145, 79, 0.1);
   color: var(--brand-blue);
   font-size: 28px;
 }
@@ -140,7 +142,7 @@ onUnmounted(() => {
 .steps {
   margin: 18px 0 0;
   padding-left: 20px;
-  text-align: left;
+  text-align: start;
   color: var(--text);
   font-weight: 650;
   line-height: 1.55;
@@ -150,14 +152,14 @@ onUnmounted(() => {
   margin: 14px 0 0;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #f8fafc;
+  background: #FAF8F4;
   border: 1px solid var(--border);
   font-size: 13px;
-  color: #334155;
-  text-align: left;
+  color: #3A352D;
+  text-align: start;
 }
 .devInbox a {
-  color: #175cd3;
+  color: #85652A;
   font-weight: 900;
 }
 .success {
@@ -177,7 +179,7 @@ onUnmounted(() => {
   padding: 8px 10px;
   border-radius: 12px;
   font-size: 14px;
-  text-align: left;
+  text-align: start;
 }
 .actions {
   margin-top: 18px;

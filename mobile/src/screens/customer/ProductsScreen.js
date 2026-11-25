@@ -1,178 +1,292 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useApi } from '../../api/useApi'
 import { Chip, Empty, ErrorBox, Loading } from '../../components/ui'
 import { ROLES, useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { useCurrency } from '../../context/CurrencyContext'
-import { colors, radius, shadow } from '../../theme'
-import { productImageSource } from '../../utils/images'
+import { categoryGroup, useI18n } from '../../i18n'
+import { colors, fonts, radius } from '../../theme'
+import { hero, logo, productImageSource } from '../../utils/images'
 
-const SORTS = [
-  { key: 'featured', label: 'Featured' },
-  { key: 'priceAsc', label: 'Price ↑' },
-  { key: 'priceDesc', label: 'Price ↓' },
-  { key: 'name', label: 'Name' },
+const CATS = [
+  { key: 'chargers', icon: 'flash-outline' },
+  { key: 'powerbanks', icon: 'battery-charging-outline' },
+  { key: 'earphones', icon: 'headset-outline' },
+  { key: 'cases', icon: 'phone-portrait-outline' },
 ]
 
+const SORTS = ['featured', 'priceAsc', 'priceDesc', 'name']
+const SORT_LABEL = { featured: 'home.sortFeatured', priceAsc: 'home.sortPriceAsc', priceDesc: 'home.sortPriceDesc', name: 'home.sortName' }
+
+function ProductCard({ product: p, onOpen, onAdd, canBuy }) {
+  const { t, categoryLabel, textAlign } = useI18n()
+  const { format } = useCurrency()
+  const [justAdded, setJustAdded] = useState(false)
+  const out = p.stockLevel <= 0
+  const low = !out && p.stockLevel <= 15
+
+  return (
+    <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]} onPress={onOpen}>
+      <View>
+        <Image source={productImageSource(p)} style={styles.image} resizeMode="cover" />
+        {out || low ? (
+          <View style={[styles.flag, out && { backgroundColor: '#EEEBE5' }]}>
+            <Text style={[styles.flagText, out && { color: '#57514A' }]}>
+              {out ? t('common.outOfStock') : t('common.onlyLeft', { n: p.stockLevel })}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+      <View style={styles.cardBody}>
+        <Text style={[styles.cat, { textAlign }]}>{categoryLabel(p.category)}</Text>
+        <Text style={[styles.name, { textAlign }]} numberOfLines={2}>
+          {p.name}
+        </Text>
+        <View style={styles.cardBottom}>
+          <Text style={styles.price}>{format(p.price)}</Text>
+          {canBuy ? (
+            <Pressable
+              disabled={out}
+              onPress={() => {
+                onAdd()
+                setJustAdded(true)
+                setTimeout(() => setJustAdded(false), 1200)
+              }}
+              hitSlop={6}
+              style={({ pressed }) => [styles.addBtn, out && { backgroundColor: colors.border }, pressed && { opacity: 0.8 }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('common.addToCart')}: ${p.name}`}
+            >
+              <Ionicons name={justAdded ? 'checkmark' : 'add'} size={18} color={out ? colors.muted : '#fff'} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    </Pressable>
+  )
+}
+
 export default function ProductsScreen({ navigation }) {
+  const insets = useSafeAreaInsets()
+  const listRef = useRef(null)
   const { role } = useAuth()
   const isCustomer = role === ROLES.Customer
   const { add } = useCart()
-  const { format } = useCurrency()
+  const { t, textAlign, inputAlign } = useI18n()
   const { data, error, loading, refreshing, refresh, reload } = useApi('/api/products', { initial: [] })
 
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('All')
+  const [cat, setCat] = useState('all')
   const [sort, setSort] = useState('featured')
   const [inStockOnly, setInStockOnly] = useState(false)
-
-  const categories = useMemo(() => {
-    const s = new Set((data || []).map((p) => p.category).filter(Boolean))
-    return ['All', ...Array.from(s).sort()]
-  }, [data])
 
   const products = useMemo(() => {
     const q = query.trim().toLowerCase()
     let list = (data || []).filter((p) => {
-      if (category !== 'All' && p.category !== category) return false
+      if (cat !== 'all' && categoryGroup(p.category) !== cat) return false
       if (inStockOnly && p.stockLevel <= 0) return false
-      if (q && !`${p.name} ${p.category} ${p.productID}`.toLowerCase().includes(q)) return false
+      if (q && !`${p.name} ${p.category} ${p.productID} ${t(`cats.${categoryGroup(p.category)}`)}`.toLowerCase().includes(q)) return false
       return true
     })
     if (sort === 'priceAsc') list = [...list].sort((a, b) => a.price - b.price)
     if (sort === 'priceDesc') list = [...list].sort((a, b) => b.price - a.price)
     if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name))
+    if (sort === 'featured') list = [...list].sort((a, b) => (b.stockLevel > 0) - (a.stockLevel > 0))
     return list
-  }, [data, query, category, sort, inStockOnly])
+  }, [data, query, cat, sort, inStockOnly, t])
 
-  if (loading) return <Loading label="Loading products…" />
+  if (loading) return <Loading label={t('home.loadingProducts')} />
 
   const header = (
     <View>
+      <View style={styles.topRow}>
+        <View style={styles.brandRow}>
+          <Image source={logo} style={styles.logo} resizeMode="contain" />
+          <View>
+            <Text style={[styles.welcome, { textAlign }]}>{isCustomer ? t('home.welcome') : t('home.catalog')}</Text>
+            <Text style={[styles.brand, { textAlign }]}>{t('home.offerTag')}</Text>
+          </View>
+        </View>
+      </View>
+
       <View style={styles.search}>
-        <Ionicons name="search" size={18} color={colors.muted} />
+        <Ionicons name="search" size={19} color={colors.muted} />
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search products"
+          placeholder={t('home.search')}
           placeholderTextColor={colors.muted}
-          style={styles.searchInput}
+          style={[styles.searchInput, { textAlign: inputAlign }]}
           returnKeyType="search"
         />
         {query ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={10}>
+          <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Clear search">
             <Ionicons name="close-circle" size={18} color={colors.muted} />
           </Pressable>
         ) : null}
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-        {categories.map((c) => (
-          <Chip key={c} label={c} active={category === c} onPress={() => setCategory(c)} />
-        ))}
-      </ScrollView>
+
+      {!query && cat === 'all' ? (
+        <View style={styles.banner}>
+          <Image source={hero} style={styles.bannerImg} resizeMode="cover" />
+          <View style={styles.bannerText}>
+            <Text style={[styles.bannerTag, { textAlign }]}>{t('home.offerTag')}</Text>
+            <Text style={[styles.bannerTitle, { textAlign }]}>{t('home.offerTitle')}</Text>
+            <Pressable
+              style={styles.bannerBtn}
+              onPress={() => listRef.current?.scrollToOffset({ offset: 420, animated: true })}
+              accessibilityRole="button"
+            >
+              <Text style={styles.bannerBtnText}>{t('home.shopNow')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      <View style={styles.cats}>
+        {CATS.map((c) => {
+          const active = cat === c.key
+          return (
+            <Pressable
+              key={c.key}
+              style={styles.catItem}
+              onPress={() => setCat(active ? 'all' : c.key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <View style={[styles.catIcon, active && { backgroundColor: colors.ink, borderColor: colors.ink }]}>
+                <Ionicons name={c.icon} size={24} color={active ? colors.gold : colors.goldText} />
+              </View>
+              <Text style={[styles.catLabel, active && { fontFamily: fonts.bold }]}>{t(`cats.${c.key}`)}</Text>
+            </Pressable>
+          )
+        })}
+      </View>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-        <Chip label="In stock" active={inStockOnly} onPress={() => setInStockOnly((v) => !v)} />
+        <Chip label={t('home.inStockOnly')} active={inStockOnly} onPress={() => setInStockOnly((v) => !v)} />
         {SORTS.map((s) => (
-          <Chip key={s.key} label={s.label} active={sort === s.key} onPress={() => setSort(s.key)} />
+          <Chip key={s} label={t(SORT_LABEL[s])} active={sort === s} onPress={() => setSort(s)} />
         ))}
       </ScrollView>
+
       <ErrorBox message={error} onRetry={reload} />
-      <Text style={styles.count}>
-        {products.length} product{products.length === 1 ? '' : 's'}
-      </Text>
+
+      <View style={styles.sectionRow}>
+        <Text style={styles.sectionTitle}>{cat === 'all' ? t('home.allProducts') : t(`cats.${cat}`)}</Text>
+        <Text style={styles.count}>{t('home.count', { n: products.length })}</Text>
+      </View>
     </View>
   )
 
   return (
     <FlatList
+      ref={listRef}
       data={products}
       keyExtractor={(p) => p.productID}
       numColumns={2}
       columnWrapperStyle={{ gap: 12 }}
-      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 32 }}
       style={{ backgroundColor: colors.bg }}
       ListHeaderComponent={header}
       refreshing={refreshing}
       onRefresh={refresh}
-      ListEmptyComponent={
-        !error ? <Empty icon="search" title="No products found" message="Try a different search or category." /> : null
-      }
-      renderItem={({ item: p }) => {
-        const out = p.stockLevel <= 0
-        return (
-          <Pressable
-            style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]}
-            onPress={() => navigation.navigate('ProductDetails', { productID: p.productID, product: p })}
-          >
-            <Image source={productImageSource(p)} style={styles.image} resizeMode="cover" />
-            <View style={{ padding: 10, flex: 1 }}>
-              <Text style={styles.cat}>{p.category}</Text>
-              <Text style={styles.name} numberOfLines={2}>
-                {p.name}
-              </Text>
-              <View style={{ flex: 1 }} />
-              <Text style={styles.price}>{format(p.price)}</Text>
-              <Text style={[styles.stock, out && { color: colors.danger }, p.stockLevel > 0 && p.stockLevel <= 10 && { color: colors.warning }]}>
-                {out ? 'Out of stock' : p.stockLevel <= 10 ? `Only ${p.stockLevel} left` : `${p.stockLevel} in stock`}
-              </Text>
-              {isCustomer ? (
-                <Pressable
-                  disabled={out}
-                  onPress={() => add(p, 1)}
-                  style={({ pressed }) => [styles.addBtn, out && { backgroundColor: colors.border }, pressed && { opacity: 0.8 }]}
-                  accessibilityLabel={`Add ${p.name} to cart`}
-                >
-                  <Ionicons name="add" size={16} color={out ? colors.muted : '#fff'} />
-                  <Text style={[styles.addText, out && { color: colors.muted }]}>Add</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </Pressable>
-        )
-      }}
+      ListEmptyComponent={!error ? <Empty icon="search" title={t('home.noResults')} message={t('home.noResultsHint')} /> : null}
+      renderItem={({ item: p }) => (
+        <ProductCard
+          product={p}
+          canBuy={isCustomer}
+          onOpen={() => navigation.navigate('ProductDetails', { productID: p.productID, product: p })}
+          onAdd={() => add(p, 1)}
+        />
+      )}
     />
   )
 }
 
 const styles = StyleSheet.create({
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logo: { width: 46, height: 46, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border },
+  welcome: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSoft },
+  brand: { fontSize: 17, fontFamily: fonts.heading, color: colors.text },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.sm,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  searchInput: { flex: 1, minHeight: 48, fontSize: 15, fontFamily: fonts.regular, color: colors.text },
+  banner: { height: 160, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.ink, marginBottom: 18 },
+  bannerImg: { position: 'absolute', top: 0, bottom: 0, end: 0, width: '40%', height: '100%', opacity: 0.85 },
+  bannerText: { flex: 1, padding: 18, justifyContent: 'space-between', width: '62%', maxWidth: '62%' },
+  bannerTag: { color: colors.gold, fontSize: 12, fontFamily: fonts.medium },
+  bannerTitle: { color: '#fff', fontSize: 19, lineHeight: 30, fontFamily: fonts.headingHeavy },
+  bannerBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.gold,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    height: 38,
+    justifyContent: 'center',
+  },
+  bannerBtnText: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 13 },
+  cats: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  catItem: { alignItems: 'center', flex: 1, gap: 6 },
+  catIcon: {
+    width: 62,
+    height: 62,
+    borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: 12,
-    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  searchInput: { flex: 1, minHeight: 44, marginLeft: 8, fontSize: 15, color: colors.text },
-  count: { color: colors.textSoft, marginBottom: 8, fontSize: 13 },
+  catLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.text },
+  sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontFamily: fonts.heading, color: colors.text },
+  count: { color: colors.textSoft, fontSize: 13, fontFamily: fonts.regular },
   card: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.md + 2,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 12,
     overflow: 'hidden',
     maxWidth: '48.5%',
-    ...shadow,
   },
-  image: { width: '100%', aspectRatio: 1, backgroundColor: '#eef2f7' },
-  cat: { fontSize: 11, color: colors.primary, fontWeight: '700', textTransform: 'uppercase' },
-  name: { fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 2, marginBottom: 6 },
-  price: { fontSize: 16, fontWeight: '800', color: colors.text },
-  stock: { fontSize: 12, color: colors.success, marginTop: 2 },
+  image: { width: '100%', aspectRatio: 1.1, backgroundColor: colors.sand2 },
+  flag: {
+    position: 'absolute',
+    top: 8,
+    start: 8,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  flagText: { color: colors.danger, fontSize: 11, fontFamily: fonts.semibold },
+  cardBody: { padding: 12, paddingTop: 10, flex: 1 },
+  cat: { fontSize: 11, color: colors.goldText, fontFamily: fonts.medium },
+  name: { fontSize: 13, lineHeight: 20, fontFamily: fonts.semibold, color: colors.text, marginTop: 2, minHeight: 40 },
+  cardBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  price: { fontSize: 16, fontFamily: fonts.headingHeavy, color: colors.text, flexShrink: 1 },
   addBtn: {
-    marginTop: 8,
-    flexDirection: 'row',
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 8,
   },
-  addText: { color: '#fff', fontWeight: '700', marginLeft: 4 },
 })

@@ -2,11 +2,11 @@
   <section class="page">
     <CheckoutSteps current="details" />
 
-    <h1 class="h1">Shopping Cart</h1>
+    <h1 class="h1">{{ tp('Shopping Cart') }}</h1>
 
     <div v-if="cart.items.length === 0" class="empty">
-      <div class="emptyTitle">Your cart is empty</div>
-      <RouterLink class="btnGhost" :to="{ name: 'products' }">Browse products</RouterLink>
+      <div class="emptyTitle">{{ tp('Your cart is empty') }}</div>
+      <RouterLink class="btnGhost" :to="{ name: 'products' }">{{ tp('Browse products') }}</RouterLink>
     </div>
 
     <div v-else class="layout">
@@ -16,14 +16,14 @@
 
           <div class="mid">
             <div class="name">{{ it.name }}</div>
-            <div class="meta">Accessory</div>
+            <div class="meta">{{ tp('Accessory') }}</div>
             <div class="unit">{{ format(it.price) }}</div>
           </div>
 
           <div class="right">
-            <button class="trash" type="button" title="Remove" @click="cart.remove(it.productID)">🗑</button>
+            <button class="trash" type="button" :title="tp('Remove')" @click="cart.remove(it.productID)">🗑</button>
 
-            <div class="stepper" role="group" aria-label="Quantity">
+            <div class="stepper" role="group" :aria-label="tp('Quantity')">
               <button class="step" type="button" @click="bump(it.productID, -1)">−</button>
               <div class="qty">{{ it.quantity }}</div>
               <button class="step" type="button" @click="bump(it.productID, 1)">+</button>
@@ -33,65 +33,65 @@
       </div>
 
       <aside class="summary">
-        <div class="sumTitle">Order Summary</div>
+        <div class="sumTitle">{{ tp('Order Summary') }}</div>
 
         <div class="row">
-          <div class="k">Subtotal</div>
+          <div class="k">{{ tp('Subtotal') }}</div>
           <div class="v">{{ format(cart.total) }}</div>
         </div>
         <div class="row">
-          <div class="k">Shipping</div>
-          <div class="v shipVal">{{ shippingSummary() }}</div>
+          <div class="k">{{ tp('Shipping') }}</div>
+          <div class="v shipVal">{{ tp(shippingSummary()) }}</div>
         </div>
 
         <div class="shippingBox">
           <div class="shipHead">
-            <span class="fedexBadge">FedEx</span>
+            <span class="fedexBadge">{{ tp('FedEx') }}</span>
             <span class="shipService">{{ SHIPPING.service }}</span>
           </div>
-          <div class="shipMeta">Estimated delivery: {{ SHIPPING.estimatedDelivery }}</div>
-          <div class="shipMeta">Standard express delivery to your registered address.</div>
+          <div class="shipMeta">{{ tp('Estimated delivery') }}: {{ tp(SHIPPING.estimatedDelivery) }}</div>
+          <div class="shipMeta">{{ tp('Standard express delivery to your registered address.') }}</div>
         </div>
 
         <div class="hr" />
 
         <div class="row total">
-          <div class="k">Total</div>
+          <div class="k">{{ tp('Total') }}</div>
           <div class="v big">{{ format(cart.total) }}</div>
         </div>
 
         <form class="checkoutForm" novalidate @submit.prevent="checkout">
           <label class="payLabel">
-            <span>Payment Method</span>
+            <span>{{ tp('Payment Method') }}</span>
             <select
               v-model="paymentMethod"
               class="select"
               :disabled="submitting"
               @change="onPaymentMethodChange"
             >
-              <option value="CreditCard">Credit Card</option>
-              <option value="Cash">Cash on Delivery</option>
+              <option value="CreditCard">{{ tp('Credit Card') }}</option>
+              <option value="Cash">{{ tp('Cash on Delivery') }}</option>
             </select>
           </label>
 
           <div v-if="paymentMethod === 'CreditCard'" class="payForm">
             <label class="field" :class="{ invalid: showError('cardName') }">
-              <span>Cardholder Name</span>
+              <span>{{ tp('Cardholder Name') }}</span>
               <input
                 v-model.trim="cardName"
-                placeholder="Ahmed Ali"
+                :placeholder="tp('Ahmed Ali')"
                 autocomplete="cc-name"
                 :disabled="submitting"
                 :aria-invalid="showError('cardName') ? 'true' : 'false'"
                 @blur="touch('cardName')"
                 @input="revalidate('cardName')"
               />
-              <span v-if="showError('cardName')" class="fieldError" role="alert">{{ errors.cardName }}</span>
+              <span v-if="showError('cardName')" class="fieldError" role="alert">{{ tp(errors.cardName) }}</span>
             </label>
 
             <label class="field" :class="{ invalid: showError('cardNumber') }">
               <span class="labelRow">
-                <span>Card Number</span>
+                <span>{{ tp('Card Number') }}</span>
                 <span v-if="cardBrand" class="cardBrand">{{ cardBrand }}</span>
               </span>
               <input
@@ -105,12 +105,12 @@
                 @input="onCardNumberInput"
                 @blur="touch('cardNumber')"
               />
-              <span v-if="showError('cardNumber')" class="fieldError" role="alert">{{ errors.cardNumber }}</span>
+              <span v-if="showError('cardNumber')" class="fieldError" role="alert">{{ tp(errors.cardNumber) }}</span>
             </label>
 
             <div class="row2">
               <label class="field" :class="{ invalid: showError('cardExpiry') }">
-                <span>Expiry (MM/YY)</span>
+                <span>{{ tp('Expiry (MM/YY)') }}</span>
                 <input
                   :value="cardExpiry"
                   placeholder="12/28"
@@ -122,11 +122,11 @@
                   @input="onExpiryInput"
                   @blur="touch('cardExpiry')"
                 />
-                <span v-if="showError('cardExpiry')" class="fieldError" role="alert">{{ errors.cardExpiry }}</span>
+                <span v-if="showError('cardExpiry')" class="fieldError" role="alert">{{ tp(errors.cardExpiry) }}</span>
               </label>
 
               <label class="field" :class="{ invalid: showError('cardCvv') }">
-                <span>CVV</span>
+                <span>{{ tp('CVV') }}</span>
                 <input
                   v-model.trim="cardCvv"
                   placeholder="123"
@@ -139,39 +139,40 @@
                   @input="onCvvInput"
                   @blur="touch('cardCvv')"
                 />
-                <span v-if="showError('cardCvv')" class="fieldError" role="alert">{{ errors.cardCvv }}</span>
+                <span v-if="showError('cardCvv')" class="fieldError" role="alert">{{ tp(errors.cardCvv) }}</span>
               </label>
             </div>
 
             <p class="hint secure">
               <span class="lock" aria-hidden="true">🔒</span>
-              Card details are validated locally and never stored. Use test card <code>4111 1111 1111 1111</code>.
+              {{ tp('Card details are validated locally and never stored. Use test card') }} <code>4111 1111 1111 1111</code>.
             </p>
           </div>
 
           <div v-if="paymentMethod === 'Cash'" class="payForm">
             <div class="cashBox">
-              <div class="cashTitle">Cash on delivery</div>
+              <div class="cashTitle">{{ tp('Cash on delivery') }}</div>
               <p class="hint">
-                Pay in cash when your FedEx shipment arrives. No card details are required to place this order.
+                {{ tp('Pay in cash when your FedEx shipment arrives. No card details are required to place this order.') }}
               </p>
             </div>
           </div>
 
-          <p v-if="formError" class="error" role="alert">{{ formError }}</p>
+          <p v-if="formError" class="error" role="alert">{{ tp(formError) }}</p>
 
           <button class="btnPrimary" type="submit" :disabled="submitting || !canSubmit">
-            {{ submitLabel }}
+            {{ tp(submitLabel) }}
           </button>
         </form>
 
-        <RouterLink class="btnGhost full" :to="{ name: 'products' }">Continue Shopping</RouterLink>
+        <RouterLink class="btnGhost full" :to="{ name: 'products' }">{{ tp('Continue Shopping') }}</RouterLink>
       </aside>
     </div>
   </section>
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { computed, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import CheckoutSteps from '../components/CheckoutSteps.vue'
@@ -187,6 +188,8 @@ import {
 } from '../utils/payment'
 import { SHIPPING, shippingSummary } from '../utils/shipping'
 import { useCurrency } from '../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const cart = useCartStore()
 const router = useRouter()
@@ -358,7 +361,7 @@ applyValidation()
 }
 
 .empty {
-  border: 1px dashed rgba(148, 163, 184, 0.55);
+  border: 1px dashed rgba(207, 199, 184, 0.55);
   border-radius: 16px;
   padding: 22px;
   background: #fff;
@@ -402,10 +405,10 @@ applyValidation()
   width: 92px;
   height: 92px;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(207, 199, 184, 0.25);
   background-size: cover;
   background-position: center;
-  background-color: #f1f5f9;
+  background-color: #F4F0E8;
 }
 .mid {
   min-width: 0;
@@ -450,7 +453,7 @@ applyValidation()
 }
 .step {
   border: 0;
-  background: #f8fafc;
+  background: #FAF8F4;
   cursor: pointer;
   font-weight: 950;
   color: var(--text-h);
@@ -497,14 +500,14 @@ applyValidation()
 .shipVal {
   font-size: 12px;
   font-weight: 850;
-  text-align: right;
+  text-align: end;
   max-width: 160px;
 }
 .shippingBox {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px 12px;
-  background: #f8fafc;
+  background: #FAF8F4;
   display: grid;
   gap: 6px;
 }
@@ -536,10 +539,10 @@ applyValidation()
   line-height: 1.4;
 }
 .cashBox {
-  border: 1px dashed rgba(37, 99, 235, 0.35);
+  border: 1px dashed rgba(184, 145, 79, 0.35);
   border-radius: 12px;
   padding: 12px;
-  background: rgba(37, 99, 235, 0.04);
+  background: rgba(184, 145, 79, 0.04);
 }
 .cashTitle {
   font-weight: 950;
@@ -568,7 +571,7 @@ applyValidation()
 .payLabel span {
   font-size: 12px;
   font-weight: 900;
-  color: #334155;
+  color: #3A352D;
 }
 .select {
   width: 100%;
@@ -625,7 +628,7 @@ applyValidation()
 .field select:focus {
   outline: none;
   border-color: var(--brand-blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 3px rgba(184, 145, 79, 0.12);
 }
 .field.invalid input,
 .field.invalid select {
@@ -660,13 +663,13 @@ applyValidation()
   gap: 6px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: #FAF8F4;
+  border: 1px solid rgba(207, 199, 184, 0.25);
 }
 .hint code {
   font-size: 10px;
   font-weight: 800;
-  color: #334155;
+  color: #3A352D;
 }
 .lock {
   flex-shrink: 0;

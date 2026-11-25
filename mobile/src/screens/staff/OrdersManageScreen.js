@@ -9,6 +9,7 @@ import { useCurrency } from '../../context/CurrencyContext'
 import { colors, radius } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
 import { formatDate, ORDER_STATUSES, paymentMethodLabel } from '../../utils/format'
+import { tp } from '../../i18n'
 
 // Order list for Retail Salesperson and Admin, with status updates.
 export default function OrdersManageScreen({ navigation }) {
@@ -58,16 +59,16 @@ export default function OrdersManageScreen({ navigation }) {
       }
     }
     if (status === 'Cancelled') {
-      Alert.alert('Cancel order?', `Order ${order.orderID} will be marked as cancelled.`, [
-        { text: 'Keep order', style: 'cancel' },
-        { text: 'Cancel order', style: 'destructive', onPress: run },
+      Alert.alert(tp('Cancel order?'), `${tp('Order')} ${order.orderID} ${tp('will be marked as cancelled.')}`, [
+        { text: tp('Keep order'), style: 'cancel' },
+        { text: tp('Cancel order'), style: 'destructive', onPress: run },
       ])
     } else {
       run()
     }
   }
 
-  if (loading) return <Loading label="Loading orders…" />
+  if (loading) return <Loading label={tp('Loading orders…')} />
 
   const header = (
     <View>
@@ -76,7 +77,7 @@ export default function OrdersManageScreen({ navigation }) {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search by order ID or email"
+          placeholder={tp('Search by order ID or email')}
           placeholderTextColor={colors.muted}
           style={styles.searchInput}
           autoCapitalize="none"
@@ -102,7 +103,7 @@ export default function OrdersManageScreen({ navigation }) {
       ListHeaderComponent={header}
       refreshing={refreshing}
       onRefresh={refresh}
-      ListEmptyComponent={!error ? <Empty icon="receipt-outline" title="No orders match" /> : null}
+      ListEmptyComponent={!error ? <Empty icon="receipt-outline" title={tp('No orders match')} /> : null}
       renderItem={({ item: o }) => {
         const expanded = open === o.orderID
         return (
@@ -119,20 +120,20 @@ export default function OrdersManageScreen({ navigation }) {
               </Text>
               <View style={[styles.head, { marginTop: 6 }]}>
                 <Text style={[styles.soft, { fontSize: 12 }]}>
-                  {formatDate(o.orderDate, true)} · {paymentMethodLabel(o.paymentMethod)}
+                  {formatDate(o.orderDate, true)} · {tp(paymentMethodLabel(o.paymentMethod))}
                 </Text>
                 <Text style={styles.total}>{format(o.totalPrice)}</Text>
               </View>
             </Pressable>
             {expanded ? (
               <View style={{ marginTop: 12 }}>
-                <Text style={[styles.soft, { marginBottom: 8, fontWeight: '600' }]}>Change status</Text>
+                <Text style={[styles.soft, { marginBottom: 8, fontWeight: '600' }]}>{tp('Change status')}</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 }}>
                   {ORDER_STATUSES.map((s) => (
                     <Chip key={s} label={s} active={o.orderStatus === s} onPress={() => busy ? null : updateStatus(o, s)} />
                   ))}
                 </View>
-                {busy === o.orderID ? <Text style={[styles.soft, { marginTop: 8 }]}>Saving…</Text> : null}
+                {busy === o.orderID ? <Text style={[styles.soft, { marginTop: 8 }]}>{tp('Saving…')}</Text> : null}
                 {isAdmin ? (
                   <Text
                     style={{ color: colors.primary, fontWeight: '700', marginTop: 12 }}
@@ -161,9 +162,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-  searchInput: { flex: 1, minHeight: 44, marginLeft: 8, fontSize: 15, color: colors.text },
+  searchInput: { flex: 1, minHeight: 44, marginStart: 8, fontSize: 15, color: colors.text },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  id: { fontWeight: '800', color: colors.text, fontSize: 15, flex: 1, marginRight: 8 },
+  id: { fontWeight: '800', color: colors.text, fontSize: 15, flex: 1, marginEnd: 8 },
   soft: { color: colors.textSoft, marginTop: 4 },
   total: { fontWeight: '800', color: colors.text },
 })

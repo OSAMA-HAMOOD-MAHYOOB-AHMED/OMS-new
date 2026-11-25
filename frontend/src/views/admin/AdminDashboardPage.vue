@@ -2,16 +2,16 @@
   <section class="page">
     <div class="head">
       <div>
-        <h1 class="h1">Dashboard Overview</h1>
-        <p class="sub">Welcome to the admin panel</p>
+        <h1 class="h1">{{ tp('Dashboard Overview') }}</h1>
+        <p class="sub">{{ tp('Welcome to the admin panel') }}</p>
       </div>
       <div class="headActions">
-        <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
+        <button class="btnGhost" type="button" :disabled="loading" @click="load">{{ tp('Refresh') }}</button>
       </div>
     </div>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else class="stack">
       <div class="kpis">
@@ -21,7 +21,7 @@
             <div class="trend" aria-hidden="true">↗</div>
           </div>
           <div class="value">{{ data.totalOrders }}</div>
-          <div class="label">Total Orders</div>
+          <div class="label">{{ tp('Total Orders') }}</div>
           <div v-if="pendingOrders > 0" class="subnote">> {{ pendingOrders }} pending</div>
         </div>
 
@@ -31,7 +31,7 @@
             <div class="trend" aria-hidden="true">↗</div>
           </div>
           <div class="value">{{ productCount }}</div>
-          <div class="label">Products</div>
+          <div class="label">{{ tp('Products') }}</div>
         </div>
 
         <div class="kpi">
@@ -40,7 +40,7 @@
             <div class="trend" aria-hidden="true">↗</div>
           </div>
           <div class="value">{{ customerCount }}</div>
-          <div class="label">Customers</div>
+          <div class="label">{{ tp('Customers') }}</div>
         </div>
 
         <div class="kpi">
@@ -49,13 +49,13 @@
             <div class="trend" aria-hidden="true">↗</div>
           </div>
           <div class="value">{{ format(data.cashRevenue) }}</div>
-          <div class="label">Cash Revenue</div>
+          <div class="label">{{ tp('Cash Revenue') }}</div>
         </div>
       </div>
 
       <div class="cols">
         <div class="card">
-          <div class="cardTitle">Recent Orders</div>
+          <div class="cardTitle">{{ tp('Recent Orders') }}</div>
           <div class="rows">
             <div v-for="o in recent" :key="o.orderID" class="row">
               <div>
@@ -64,14 +64,14 @@
               </div>
               <div class="right">
                 <div class="strong">{{ format(o.totalPrice) }}</div>
-                <span class="badge" :class="badgeClass(o.orderStatus)">{{ o.orderStatus }}</span>
+                <span class="badge" :class="badgeClass(o.orderStatus)">{{ tp(o.orderStatus) }}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="cardTitle">Low Stock Alert</div>
+          <div class="cardTitle">{{ tp('Low Stock Alert') }}</div>
           <div class="rows">
             <div v-for="p in lowStock" :key="p.productID" class="row">
               <div>
@@ -87,19 +87,22 @@
       </div>
 
       <div class="quick">
-        <button class="btnGhost" type="button" @click="$router.push({ name: 'adminProducts' })">Manage Products</button>
-        <button class="btnGhost" type="button" @click="$router.push({ name: 'adminCustomers' })">Customers</button>
-        <button class="btnGhost" type="button" @click="$router.push({ name: 'adminOrders' })">Orders</button>
-        <button class="btnGhost" type="button" @click="$router.push({ name: 'adminReports' })">Reports</button>
+        <button class="btnGhost" type="button" @click="$router.push({ name: 'adminProducts' })">{{ tp('Manage Products') }}</button>
+        <button class="btnGhost" type="button" @click="$router.push({ name: 'adminCustomers' })">{{ tp('Customers') }}</button>
+        <button class="btnGhost" type="button" @click="$router.push({ name: 'adminOrders' })">{{ tp('Orders') }}</button>
+        <button class="btnGhost" type="button" @click="$router.push({ name: 'adminReports' })">{{ tp('Reports') }}</button>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
+import { useI18n } from '../../i18n'
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api/client'
 import { useCurrency } from '../../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const { format } = useCurrency()
 const data = ref({ totalOrders: 0, cashRevenue: 0, cashOrders: 0, recentOrders: [] })
@@ -222,10 +225,10 @@ onMounted(load)
   display: grid;
   place-items: center;
   border: 1px solid var(--border);
-  background: #f8fafc;
+  background: #FAF8F4;
 }
 .icon.blue {
-  background: rgba(37, 99, 235, 0.10);
+  background: rgba(184, 145, 79, 0.10);
 }
 .icon.green {
   background: rgba(16, 185, 129, 0.10);
@@ -290,10 +293,10 @@ onMounted(load)
   justify-content: space-between;
   gap: 12px;
   padding: 12px 10px;
-  border-top: 1px solid #eef2f7;
+  border-top: 1px solid #F1ECE2;
 }
 .right {
-  text-align: right;
+  text-align: end;
   display: grid;
   justify-items: end;
   gap: 8px;
@@ -327,9 +330,9 @@ onMounted(load)
   border-color: rgba(16, 185, 129, 0.22);
 }
 .bBlue {
-  background: rgba(37, 99, 235, 0.12);
-  color: #1d4ed8;
-  border-color: rgba(37, 99, 235, 0.22);
+  background: rgba(184, 145, 79, 0.12);
+  color: #85652A;
+  border-color: rgba(184, 145, 79, 0.22);
 }
 .bAmber {
   background: rgba(245, 158, 11, 0.14);
@@ -342,9 +345,9 @@ onMounted(load)
   border-color: rgba(239, 68, 68, 0.18);
 }
 .bGray {
-  background: rgba(148, 163, 184, 0.14);
-  color: #334155;
-  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(207, 199, 184, 0.14);
+  color: #3A352D;
+  border-color: rgba(207, 199, 184, 0.22);
 }
 
 .pill {

@@ -6,8 +6,8 @@
           <div class="headerInfo">
             <div class="avatar">🤖</div>
             <div>
-              <div class="headerTitle">Store Assistant</div>
-              <div class="headerSub">Al-Wakeel Al-Shamel</div>
+              <div class="headerTitle">{{ tp('Store Assistant') }}</div>
+              <div class="headerSub">{{ tp('Al-Wakeel Al-Shamel') }}</div>
             </div>
           </div>
           <button class="closeBtn" type="button" @click="isOpen = false">✕</button>
@@ -30,7 +30,7 @@
             v-model="input"
             class="input"
             type="text"
-            placeholder="Ask about our products..."
+            :placeholder="tp('Ask about our products...')"
             :disabled="loading"
             @keydown.enter="send"
           />
@@ -41,7 +41,7 @@
       </div>
     </Transition>
 
-    <button class="fab" :class="{ active: isOpen }" type="button" aria-label="Chat with us" @click="toggle">
+    <button class="fab" :class="{ active: isOpen }" type="button" :aria-label="tp('Chat with us')" @click="toggle">
       <span v-if="isOpen" class="fabIcon">✕</span>
       <span v-else class="fabIcon">💬</span>
       <span v-if="unread > 0 && !isOpen" class="unreadBadge">{{ unread }}</span>
@@ -50,8 +50,11 @@
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { nextTick, ref } from 'vue'
 import { api } from '../api/client'
+
+const { tp } = useI18n()
 
 const isOpen = ref(false)
 const input = ref('')
@@ -132,7 +135,7 @@ async function send() {
   background: var(--brand-blue);
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 4px 16px rgba(184, 145, 79, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,10 +145,10 @@ async function send() {
 }
 .fab:hover {
   transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.55);
+  box-shadow: 0 6px 20px rgba(184, 145, 79, 0.55);
 }
 .fab.active {
-  background: #334155;
+  background: #3A352D;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 .fabIcon {
@@ -255,7 +258,7 @@ async function send() {
   border-bottom-right-radius: 4px;
 }
 .msg.assistant .bubble {
-  background: #f1f5f9;
+  background: #F4F0E8;
   color: var(--text-h);
   border-bottom-left-radius: 4px;
 }

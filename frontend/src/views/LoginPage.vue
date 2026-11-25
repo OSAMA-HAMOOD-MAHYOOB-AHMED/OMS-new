@@ -1,21 +1,21 @@
 <template>
   <div class="wrap">
     <div class="card">
-      <img class="avatar" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
-      <h2 class="h2">Welcome Back</h2>
-      <p class="sub">Sign in to your account</p>
+      <img class="avatar" :src="siteLogoUrl" :alt="tp('Al-Wakeel Al-Shamel')" />
+      <h2 class="h2">{{ tp('Welcome Back') }}</h2>
+      <p class="sub">{{ tp('Sign in to your account') }}</p>
 
       <form class="form" @submit.prevent="submit">
         <label class="field">
-          <span class="lbl">Email Address</span>
+          <span class="lbl">{{ tp('Email Address') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">✉</span>
-            <input v-model.trim="email" type="email" placeholder="you@example.com" autocomplete="email" required />
+            <input v-model.trim="email" type="email" :placeholder="tp('you@example.com')" autocomplete="email" required />
           </div>
         </label>
 
         <label class="field">
-          <span class="lbl">Password</span>
+          <span class="lbl">{{ tp('Password') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">🔒</span>
             <input
@@ -29,36 +29,39 @@
         </label>
 
         <button class="btn" type="submit" :disabled="auth.loading">
-          {{ auth.loading ? 'Signing in...' : 'Sign In' }}
+          {{ tp(auth.loading ? 'Signing in...' : 'Sign In') }}
         </button>
       </form>
 
-      <p v-if="sessionExpired" class="notice">Your session expired. Sign in again to continue.</p>
-      <p v-if="auth.error" class="error">{{ auth.error }}</p>
+      <p v-if="sessionExpired" class="notice">{{ tp('Your session expired. Sign in again to continue.') }}</p>
+      <p v-if="auth.error" class="error">{{ tp(auth.error) }}</p>
       <p v-if="unverifiedEmail" class="notice">
-        Your account is not verified yet.
+        {{ tp('Your account is not verified yet.') }}
         <RouterLink class="link" :to="{ name: 'verifyEmailPending', query: { email: unverifiedEmail } }">
-          Resend verification email
+          {{ tp('Resend verification email') }}
         </RouterLink>
       </p>
 
       <p class="muted center">
-        Don't have an account?
-        <RouterLink class="link" to="/register">Sign Up</RouterLink>
+        {{ tp('Don\'t have an account?') }}
+        <RouterLink class="link" to="/register">{{ tp('Sign Up') }}</RouterLink>
       </p>
 
       <div class="divider" />
 
-      <RouterLink class="adminLink" to="/admin/login">Admin Login →</RouterLink>
+      <RouterLink class="adminLink" to="/admin/login">{{ tp('Admin Login →') }}</RouterLink>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { siteLogoUrl } from '../utils/images'
+
+const { tp } = useI18n()
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -131,7 +134,7 @@ async function submit() {
   display: grid;
   gap: 12px;
   margin-top: 16px;
-  text-align: left;
+  text-align: start;
 }
 .field {
   display: grid;
@@ -140,7 +143,7 @@ async function submit() {
 .lbl {
   font-size: 12px;
   font-weight: 900;
-  color: #334155;
+  color: #3A352D;
 }
 .input {
   display: flex;
@@ -194,16 +197,16 @@ input {
   border: 1px solid rgba(180, 35, 24, 0.2);
   padding: 8px 10px;
   border-radius: 12px;
-  text-align: left;
+  text-align: start;
 }
 .notice {
   margin-top: 10px;
-  color: #175cd3;
+  color: #85652A;
   background: rgba(23, 92, 211, 0.08);
   border: 1px solid rgba(23, 92, 211, 0.2);
   padding: 8px 10px;
   border-radius: 12px;
-  text-align: left;
+  text-align: start;
   font-size: 14px;
 }
 .divider {
@@ -213,7 +216,7 @@ input {
 }
 .adminLink {
   display: inline-block;
-  color: #334155;
+  color: #3A352D;
   text-decoration: none;
   font-size: 13px;
   font-weight: 800;

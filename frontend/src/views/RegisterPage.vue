@@ -1,28 +1,28 @@
 <template>
   <div class="wrap">
     <div class="card">
-      <img class="avatar" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
-      <h2 class="h2">Create Account</h2>
-      <p class="sub">Sign up with a valid email — we'll send a verification link before you can sign in.</p>
+      <img class="avatar" :src="siteLogoUrl" :alt="tp('Al-Wakeel Al-Shamel')" />
+      <h2 class="h2">{{ tp('Create Account') }}</h2>
+      <p class="sub">{{ tp('Sign up with a valid email — we\'ll send a verification link before you can sign in.') }}</p>
 
       <form class="form" novalidate @submit.prevent="submit">
         <label class="field" :class="{ invalid: showError('name') }">
-          <span class="lbl">Full Name</span>
+          <span class="lbl">{{ tp('Full Name') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">👤</span>
             <input
               v-model.trim="name"
-              placeholder="Ahmed Ali"
+              :placeholder="tp('Ahmed Ali')"
               autocomplete="name"
               @blur="touch('name')"
               @input="revalidate('name')"
             />
           </div>
-          <span v-if="showError('name')" class="fieldError">{{ errors.name }}</span>
+          <span v-if="showError('name')" class="fieldError">{{ tp(errors.name) }}</span>
         </label>
 
         <label class="field" :class="{ invalid: showError('phone') }">
-          <span class="lbl">Phone</span>
+          <span class="lbl">{{ tp('Phone') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">📞</span>
             <input
@@ -33,82 +33,85 @@
               @input="revalidate('phone')"
             />
           </div>
-          <span v-if="showError('phone')" class="fieldError">{{ errors.phone }}</span>
+          <span v-if="showError('phone')" class="fieldError">{{ tp(errors.phone) }}</span>
         </label>
 
         <label class="field" :class="{ invalid: showError('email') }">
-          <span class="lbl">Email Address</span>
+          <span class="lbl">{{ tp('Email Address') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">✉</span>
             <input
               v-model.trim="email"
               type="email"
-              placeholder="you@gmail.com"
+              :placeholder="tp('you@gmail.com')"
               autocomplete="email"
               @blur="touch('email')"
               @input="revalidate('email')"
             />
           </div>
-          <span v-if="showError('email')" class="fieldError">{{ errors.email }}</span>
+          <span v-if="showError('email')" class="fieldError">{{ tp(errors.email) }}</span>
         </label>
 
         <label class="field" :class="{ invalid: showError('address') }">
-          <span class="lbl">Address</span>
+          <span class="lbl">{{ tp('Address') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">📍</span>
             <input
               v-model.trim="address"
-              placeholder="Riyadh, Saudi Arabia"
+              :placeholder="tp('Riyadh, Saudi Arabia')"
               autocomplete="street-address"
               @blur="touch('address')"
               @input="revalidate('address')"
             />
           </div>
-          <span v-if="showError('address')" class="fieldError">{{ errors.address }}</span>
+          <span v-if="showError('address')" class="fieldError">{{ tp(errors.address) }}</span>
         </label>
 
         <label class="field" :class="{ invalid: showError('password') }">
-          <span class="lbl">Password</span>
+          <span class="lbl">{{ tp('Password') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">🔒</span>
             <input
               v-model="password"
               type="password"
-              placeholder="At least 8 characters"
+              :placeholder="tp('At least 8 characters')"
               autocomplete="new-password"
               @blur="touch('password')"
               @input="revalidate('password')"
             />
           </div>
-          <span v-if="showError('password')" class="fieldError">{{ errors.password }}</span>
-          <span v-else class="hint">Use at least 8 characters with letters and numbers.</span>
+          <span v-if="showError('password')" class="fieldError">{{ tp(errors.password) }}</span>
+          <span v-else class="hint">{{ tp('Use at least 8 characters with letters and numbers.') }}</span>
         </label>
 
         <button class="btn" type="submit" :disabled="auth.loading || !canSubmit">
-          {{ auth.loading ? 'Creating account…' : 'Create Account' }}
+          {{ tp(auth.loading ? 'Creating account…' : 'Create Account') }}
         </button>
       </form>
 
-      <p v-if="auth.error" class="error">{{ auth.error }}</p>
+      <p v-if="auth.error" class="error">{{ tp(auth.error) }}</p>
 
       <p class="muted center">
-        Already have an account?
-        <RouterLink class="link" to="/login">Sign In</RouterLink>
+        {{ tp('Already have an account?') }}
+        <RouterLink class="link" to="/login">{{ tp('Sign In') }}</RouterLink>
       </p>
 
       <div class="divider" />
 
-      <RouterLink class="adminLink" to="/admin/login">Admin Login →</RouterLink>
+      <RouterLink class="adminLink" to="/admin/login">{{ tp('Admin Login →') }}</RouterLink>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { computed, reactive, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { siteLogoUrl } from '../utils/images'
 import { validateRegistrationForm } from '../utils/validation'
+
+const { tp } = useI18n()
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -230,7 +233,7 @@ applyValidation()
   display: grid;
   gap: 12px;
   margin-top: 16px;
-  text-align: left;
+  text-align: start;
 }
 .field {
   display: grid;
@@ -253,7 +256,7 @@ applyValidation()
 .lbl {
   font-size: 12px;
   font-weight: 900;
-  color: #334155;
+  color: #3A352D;
 }
 .input {
   display: flex;
@@ -311,7 +314,7 @@ input {
   border: 1px solid rgba(180, 35, 24, 0.2);
   padding: 8px 10px;
   border-radius: 12px;
-  text-align: left;
+  text-align: start;
 }
 .divider {
   height: 1px;
@@ -320,7 +323,7 @@ input {
 }
 .adminLink {
   display: inline-block;
-  color: #334155;
+  color: #3A352D;
   text-decoration: none;
   font-size: 13px;
   font-weight: 800;

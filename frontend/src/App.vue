@@ -2,10 +2,10 @@
   <div class="layout" :class="{ admin: isAdminShell }">
     <header v-if="isAdminShell" class="adminTopbar">
       <div class="adminBrand" @click="$router.push({ name: 'adminDashboard' })">
-        <img class="adminLogo" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
+        <img class="adminLogo" :src="siteLogoUrl" :alt="t('shell.name')" />
         <div class="adminBrandText">
-          <div class="adminBrandTitle">Admin Panel</div>
-          <div class="adminBrandSub">Al-Wakeel Al-Shamel</div>
+          <div class="adminBrandTitle">{{ t('shell.adminPanel') }}</div>
+          <div class="adminBrandSub">{{ t('shell.name') }}</div>
         </div>
       </div>
 
@@ -13,95 +13,176 @@
         class="menuBtn adminMenuBtn"
         type="button"
         :aria-expanded="adminNavOpen ? 'true' : 'false'"
-        aria-label="Toggle admin menu"
+        :aria-label="t('shell.menu')"
         @click="adminNavOpen = !adminNavOpen"
       >
-        {{ adminNavOpen ? '✕' : '☰' }}
+        <AppIcon :name="adminNavOpen ? 'close' : 'menu'" />
       </button>
 
       <nav class="adminNav" :class="{ open: adminNavOpen }">
         <RouterLink class="adminLink" :class="{ active: isActive('adminDashboard') }" to="/admin/dashboard" @click="closeNav">
-          Dashboard
+          {{ t('shell.adminDashboard') }}
         </RouterLink>
         <RouterLink class="adminLink" :class="{ active: isActive('adminProducts') }" to="/admin/products" @click="closeNav">
-          Products
+          {{ t('shell.adminProducts') }}
         </RouterLink>
-        <RouterLink class="adminLink" :class="{ active: isActive('adminOrders') }" to="/admin/orders" @click="closeNav"> Orders </RouterLink>
+        <RouterLink class="adminLink" :class="{ active: isActive('adminOrders') }" to="/admin/orders" @click="closeNav">
+          {{ t('shell.adminOrders') }}
+        </RouterLink>
         <RouterLink class="adminLink" :class="{ active: isActive('adminCustomers') }" to="/admin/customers" @click="closeNav">
-          Customers
+          {{ t('shell.adminCustomers') }}
         </RouterLink>
-        <RouterLink class="adminLink" :class="{ active: isActive('adminReports') }" to="/admin/reports" @click="closeNav"> Reports </RouterLink>
+        <RouterLink class="adminLink" :class="{ active: isActive('adminReports') }" to="/admin/reports" @click="closeNav">
+          {{ t('shell.adminReports') }}
+        </RouterLink>
       </nav>
 
       <div class="adminActions">
-        <div v-if="isAuthed" class="adminEmail">{{ auth.email }}</div>
-        <button v-if="isAuthed" class="adminLogout" type="button" @click="logout">Logout</button>
-        <RouterLink v-else class="adminLogout" to="/admin/login">Login</RouterLink>
-      </div>
-    </header>
-
-    <header v-else class="topbar">
-      <div class="brand" @click="$router.push({ name: 'home' })">
-        <img class="logo" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
-        <div class="brandText">
-          <div class="title">Al-Wakeel Al-Shamel</div>
-        </div>
-      </div>
-
-      <button
-        class="menuBtn"
-        type="button"
-        :aria-expanded="navOpen ? 'true' : 'false'"
-        aria-label="Toggle menu"
-        @click="navOpen = !navOpen"
-      >
-        {{ navOpen ? '✕' : '☰' }}
-      </button>
-
-      <nav class="nav" :class="{ open: navOpen }">
-        <RouterLink class="link" to="/" @click="closeNav">Home</RouterLink>
-        <RouterLink v-if="!isAuthed || role === 'Customer'" class="link" to="/products" @click="closeNav">Products</RouterLink>
-
-        <template v-if="isAuthed && role === 'Customer'">
-          <RouterLink class="link" to="/customer/orders" @click="closeNav">Orders</RouterLink>
-          <RouterLink class="link" to="/profile" @click="closeNav">Profile</RouterLink>
-        </template>
-
-        <template v-else-if="isAuthed && role === 'Retail Salesperson'">
-          <RouterLink class="link" to="/dashboard/sales" @click="closeNav">Sales</RouterLink>
-          <RouterLink class="link" to="/sales/orders" @click="closeNav">Orders</RouterLink>
-        </template>
-
-        <template v-else-if="isAuthed && role === 'Warehouse Manager'">
-          <RouterLink class="link" to="/products" @click="closeNav">Products</RouterLink>
-          <RouterLink class="link" to="/warehouse/inventory" @click="closeNav">Inventory</RouterLink>
-          <RouterLink class="link" to="/dashboard/warehouse" @click="closeNav">Dashboard</RouterLink>
-        </template>
-      </nav>
-
-      <div class="actions">
-        <RouterLink v-if="isAuthed && role === 'Customer'" class="iconBtn" to="/cart" aria-label="Cart">
-          <span class="cartIcon" aria-hidden="true">🛒</span>
-          <span v-if="cartCount > 0" class="badge">{{ cartCount }}</span>
-        </RouterLink>
-
-        <template v-if="!isAuthed">
-          <RouterLink class="btn btnGhost" to="/register">Sign Up</RouterLink>
-          <RouterLink class="btn btnPrimary" to="/login">
-            <span class="loginGlyph" aria-hidden="true">👤</span>
-            Login
-          </RouterLink>
-        </template>
-        <button v-else class="btn btnGhost" type="button" @click="logout">
-          <span class="loginGlyph" aria-hidden="true">⎋</span>
-          Logout
+        <button class="adminLang" type="button" :aria-label="t('shell.switchLanguage')" @click="toggleLocale">
+          <AppIcon name="globe" :size="18" />
+          {{ t('shell.otherLanguage') }}
         </button>
+        <div v-if="isAuthed" class="adminEmail">{{ auth.email }}</div>
+        <button v-if="isAuthed" class="adminLogout" type="button" @click="logout">{{ t('shell.logout') }}</button>
+        <RouterLink v-else class="adminLogout" to="/admin/login">{{ t('shell.login') }}</RouterLink>
       </div>
     </header>
 
-    <main class="content" :class="{ wide: isAdminShell }">
+    <template v-else>
+      <div v-if="showShopChrome" class="promo">{{ t('shell.promo') }}</div>
+
+      <header class="topbar">
+        <div class="topRow">
+          <RouterLink class="brand" :to="{ name: 'home' }">
+            <img class="logo" :src="siteLogoUrl" :alt="t('shell.name')" />
+            <span class="brandText">
+              <span class="title">{{ t('shell.name') }}</span>
+              <span class="subtitle">{{ t('shell.tagline') }}</span>
+            </span>
+          </RouterLink>
+
+          <form v-if="showShopChrome" class="search" role="search" @submit.prevent="submitSearch">
+            <label class="srOnly" for="siteSearch">{{ t('shell.searchLabel') }}</label>
+            <input id="siteSearch" v-model.trim="searchText" type="search" :placeholder="t('shell.searchPlaceholder')" />
+            <button type="submit" class="searchBtn" :aria-label="t('shell.search')">
+              <AppIcon name="search" />
+            </button>
+          </form>
+
+          <div class="actions">
+            <button class="ghostLink" type="button" :aria-label="t('shell.switchLanguage')" @click="toggleLocale">
+              <AppIcon name="globe" />
+              <span class="hideSm">{{ t('shell.otherLanguage') }}</span>
+            </button>
+
+            <template v-if="!isAuthed">
+              <RouterLink class="ghostLink hideSm" to="/register">{{ t('shell.signup') }}</RouterLink>
+              <RouterLink class="darkBtn" to="/login">
+                <AppIcon name="user" />
+                {{ t('shell.login') }}
+              </RouterLink>
+            </template>
+
+            <template v-else>
+              <RouterLink v-if="role === 'Customer'" class="ghostLink" to="/profile" :aria-label="t('shell.account')">
+                <AppIcon name="user" />
+                <span class="hideSm">{{ t('shell.account') }}</span>
+              </RouterLink>
+              <RouterLink v-if="role === 'Customer'" class="darkBtn" to="/cart" :aria-label="t('shell.cartLabel', { n: cartCount })">
+                <AppIcon name="cart" />
+                <span class="hideSm">{{ t('shell.cart') }}</span>
+                <span class="badge">{{ cartCount }}</span>
+              </RouterLink>
+              <button class="ghostLink" type="button" :aria-label="t('shell.logout')" @click="logout">
+                <AppIcon name="logout" />
+                <span class="hideSm">{{ t('shell.logout') }}</span>
+              </button>
+            </template>
+
+            <button
+              class="menuBtn"
+              type="button"
+              :aria-expanded="navOpen ? 'true' : 'false'"
+              :aria-label="t('shell.menu')"
+              @click="navOpen = !navOpen"
+            >
+              <AppIcon :name="navOpen ? 'close' : 'menu'" />
+            </button>
+          </div>
+        </div>
+
+        <nav class="nav" :class="{ open: navOpen }" :aria-label="t('shell.menu')">
+          <RouterLink class="pill" :class="{ on: route.name === 'home' }" to="/" @click="closeNav">{{ t('shell.home') }}</RouterLink>
+
+          <template v-if="showShopChrome">
+            <RouterLink class="pill" :class="{ on: route.name === 'products' && !route.query.cat }" to="/products" @click="closeNav">
+              {{ t('cats.all') }}
+            </RouterLink>
+            <RouterLink
+              v-for="c in shopCats"
+              :key="c"
+              class="pill"
+              :class="{ on: route.name === 'products' && route.query.cat === c }"
+              :to="{ name: 'products', query: { cat: c } }"
+              @click="closeNav"
+            >
+              {{ t(`cats.${c}`) }}
+            </RouterLink>
+          </template>
+
+          <template v-if="isAuthed && role === 'Customer'">
+            <RouterLink class="pill" to="/customer/orders" @click="closeNav">{{ t('shell.orders') }}</RouterLink>
+          </template>
+
+          <template v-else-if="isAuthed && role === 'Retail Salesperson'">
+            <RouterLink class="pill" to="/dashboard/sales" @click="closeNav">{{ t('shell.sales') }}</RouterLink>
+            <RouterLink class="pill" to="/sales/orders" @click="closeNav">{{ t('shell.salesOrders') }}</RouterLink>
+            <RouterLink class="pill" to="/profile" @click="closeNav">{{ t('shell.profile') }}</RouterLink>
+          </template>
+
+          <template v-else-if="isAuthed && role === 'Warehouse Manager'">
+            <RouterLink class="pill" to="/dashboard/warehouse" @click="closeNav">{{ t('shell.dashboard') }}</RouterLink>
+            <RouterLink class="pill" to="/warehouse/inventory" @click="closeNav">{{ t('shell.inventory') }}</RouterLink>
+            <RouterLink class="pill" to="/products" @click="closeNav">{{ t('shell.products') }}</RouterLink>
+            <RouterLink class="pill" to="/profile" @click="closeNav">{{ t('shell.profile') }}</RouterLink>
+          </template>
+        </nav>
+      </header>
+    </template>
+
+    <main class="content" :class="{ wide: isAdminShell || route.name === 'home' }">
       <RouterView />
     </main>
+
+    <footer v-if="!isAdminShell" class="footer">
+      <div class="footerInner">
+        <div class="footerCol">
+          <img class="footerLogo" :src="siteLogoUrl" :alt="t('shell.name')" />
+          <p class="footerAbout">{{ t('shell.footerAbout') }}</p>
+        </div>
+        <nav class="footerCol" :aria-label="t('shell.footerShop')">
+          <span class="footerHead">{{ t('shell.footerShop') }}</span>
+          <RouterLink v-for="c in shopCats" :key="c" :to="{ name: 'products', query: { cat: c } }">{{ t(`cats.${c}`) }}</RouterLink>
+        </nav>
+        <nav class="footerCol" :aria-label="t('shell.footerAccount')">
+          <span class="footerHead">{{ t('shell.footerAccount') }}</span>
+          <template v-if="isAuthed && role === 'Customer'">
+            <RouterLink to="/customer/orders">{{ t('shell.orders') }}</RouterLink>
+            <RouterLink to="/cart">{{ t('shell.cart') }}</RouterLink>
+            <RouterLink to="/profile">{{ t('shell.profile') }}</RouterLink>
+          </template>
+          <template v-else-if="!isAuthed">
+            <RouterLink to="/login">{{ t('shell.login') }}</RouterLink>
+            <RouterLink to="/register">{{ t('shell.signup') }}</RouterLink>
+          </template>
+          <RouterLink v-else to="/profile">{{ t('shell.profile') }}</RouterLink>
+        </nav>
+      </div>
+      <div class="footerBottom">
+        <span>{{ t('shell.rights', { year: new Date().getFullYear() }) }}</span>
+        <span>{{ t('shell.developedBy') }}</span>
+      </div>
+    </footer>
 
     <ChatBot v-if="!isAdminShell && route.name !== 'login' && route.name !== 'register' && route.name !== 'adminLogin'" />
   </div>
@@ -113,7 +194,11 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
 import { siteLogoUrl } from './utils/images'
+import { useI18n } from './i18n'
 import ChatBot from './components/ChatBot.vue'
+import AppIcon from './components/AppIcon.vue'
+
+const { t, toggleLocale } = useI18n()
 
 const auth = useAuthStore()
 auth.hydrate()
@@ -127,6 +212,8 @@ const router = useRouter()
 const isAuthed = computed(() => !!auth.token)
 const role = computed(() => auth.role)
 
+const shopCats = ['chargers', 'powerbanks', 'earphones', 'cases']
+
 const isAdminShell = computed(() => {
   if (!isAuthed.value) return false
   if (role.value !== 'Admin') return false
@@ -134,10 +221,14 @@ const isAdminShell = computed(() => {
   return route.name !== 'adminLogin'
 })
 
+// Search bar, category pills and the promo strip are for shoppers (guests and customers).
+const showShopChrome = computed(() => !isAuthed.value || role.value === 'Customer')
+
 const cartCount = computed(() => cart.items.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0))
 
 const navOpen = ref(false)
 const adminNavOpen = ref(false)
+const searchText = ref('')
 
 function closeNav() {
   navOpen.value = false
@@ -148,9 +239,17 @@ function isActive(name) {
   return route.name === name
 }
 
+function submitSearch() {
+  const q = searchText.value
+  router.push({ name: 'products', query: q ? { q } : {} }).catch(() => {})
+}
+
 watch(
   () => route.fullPath,
-  () => closeNav(),
+  () => {
+    closeNav()
+    if (route.name === 'products') searchText.value = String(route.query.q || '')
+  },
 )
 
 watch(
@@ -195,155 +294,256 @@ async function logout() {
   flex-direction: column;
 }
 
-.layout.admin {
-  background: #f8fafc;
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.promo {
+  background: var(--ink);
+  color: #e9d9b8;
+  font-size: 13px;
+  text-align: center;
+  padding: 8px 16px;
 }
 
 .topbar {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topRow {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 14px 0 10px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 22px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
+  gap: 18px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  cursor: pointer;
-  user-select: none;
-  min-width: 220px;
+  text-decoration: none;
+  color: var(--ink);
+  flex-shrink: 0;
 }
 .logo {
-  width: 38px;
-  height: 38px;
+  width: 52px;
+  height: 52px;
   border-radius: 12px;
-  object-fit: cover;
-  box-shadow: var(--shadow-sm);
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--border);
 }
 .brandText {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
 }
 .title {
-  color: var(--text-h);
+  font-family: var(--font-head);
   font-weight: 800;
-  letter-spacing: -0.2px;
-  line-height: 1.1;
+  font-size: 19px;
+  color: var(--ink);
 }
 .subtitle {
-  color: var(--muted);
   font-size: 12px;
-  font-weight: 600;
+  color: var(--text);
 }
 
-.nav {
+.search {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
+  background: var(--sand-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  overflow: hidden;
 }
-.link {
-  color: #334155;
-  text-decoration: none;
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  font-weight: 650;
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  height: 46px;
+  padding: 0 16px;
+  font-size: 15px;
+  color: var(--ink);
+  outline: none;
 }
-.link.router-link-active {
-  border-color: rgba(37, 99, 235, 0.22);
-  background: rgba(37, 99, 235, 0.08);
-  color: var(--brand-blue-2);
+.searchBtn {
+  width: 50px;
+  height: 46px;
+  border: 0;
+  background: var(--gold);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
 }
 
 .actions {
   display: flex;
-  gap: 10px;
   align-items: center;
-  justify-content: flex-end;
-  min-width: 220px;
+  gap: 6px;
+  margin-inline-start: auto;
 }
-
-.btn {
-  border: 0;
-  cursor: pointer;
-  padding: 10px 14px;
+.ghostLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 12px;
   border-radius: 12px;
-  font-weight: 800;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
   text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ghostLink:hover {
+  background: var(--sand-2);
+}
+.darkBtn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-.btnPrimary {
-  background: var(--brand-blue);
-  color: white;
-  box-shadow: var(--shadow-sm);
-}
-.btnGhost {
-  background: #ffffff;
-  color: var(--text-h);
-  border: 1px solid var(--border);
-}
-
-.loginGlyph {
-  font-size: 14px;
-  line-height: 1;
-}
-
-.iconBtn {
-  position: relative;
-  width: 42px;
-  height: 42px;
+  height: 44px;
+  padding: 0 16px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--ink);
+  color: #fff;
   text-decoration: none;
-  color: var(--text-h);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
 }
-.cartIcon {
-  font-size: 18px;
-  line-height: 1;
+.darkBtn:hover {
+  background: #2a2620;
 }
 .badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: white;
-  font-size: 11px;
-  font-weight: 900;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
   display: grid;
   place-items: center;
 }
 
-.content {
-  width: min(1120px, calc(100% - 40px));
+.nav {
+  width: min(1240px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 22px 0 44px;
+  padding: 0 0 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill {
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--sand-2);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.pill:hover {
+  background: var(--sand);
+}
+.pill.on,
+.pill.router-link-exact-active:not([href='/products']) {
+  background: var(--ink);
+  color: #fff;
+}
+
+.content {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 48px;
   flex: 1;
 }
 .content.wide {
-  width: min(1280px, calc(100% - 40px));
+  width: min(1280px, calc(100% - 32px));
+}
+
+/* Footer */
+.footer {
+  background: var(--ink);
+  color: #cfc7b8;
+  margin-top: 24px;
+}
+.footerInner {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 44px 0 28px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 28px;
+}
+.footerCol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+}
+.footerCol a {
+  color: #cfc7b8;
+  text-decoration: none;
+}
+.footerCol a:hover {
+  color: var(--gold-light);
+}
+.footerLogo {
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+  object-fit: contain;
+  background: #fff;
+}
+.footerAbout {
+  margin: 0;
+  line-height: 1.8;
+  max-width: 320px;
+}
+.footerHead {
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+}
+.footerBottom {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 16px 0 26px;
+  border-top: 1px solid #2e2a24;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: #a39a8a;
 }
 
 /* Admin shell */
+.layout.admin {
+  background: var(--bg);
+}
 .adminTopbar {
   position: sticky;
   top: 0;
@@ -352,10 +552,10 @@ async function logout() {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 18px;
+  padding: 12px 18px;
   background: var(--admin-bg);
   color: var(--admin-text);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  border-bottom: 1px solid #2e2a24;
 }
 .adminBrand {
   display: flex;
@@ -363,26 +563,27 @@ async function logout() {
   gap: 12px;
   cursor: pointer;
   user-select: none;
-  min-width: 240px;
+  min-width: 220px;
 }
 .adminLogo {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  object-fit: cover;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #fff;
 }
 .adminBrandTitle {
-  font-weight: 900;
-  letter-spacing: -0.2px;
+  font-family: var(--font-head);
+  font-weight: 800;
+  color: #fff;
 }
 .adminBrandSub {
   font-size: 12px;
   color: var(--admin-muted);
-  font-weight: 650;
 }
 .adminNav {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
@@ -390,149 +591,136 @@ async function logout() {
 .adminLink {
   text-decoration: none;
   color: var(--admin-muted);
-  padding: 10px 12px;
+  padding: 9px 14px;
   border-radius: 999px;
-  font-weight: 800;
-  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 14px;
 }
 .adminLink:hover {
-  color: #e2e8f0;
+  color: #fff;
 }
 .adminLink.active {
-  color: #ffffff;
-  background: rgba(37, 99, 235, 0.95);
-  border-color: rgba(37, 99, 235, 0.35);
+  color: var(--ink);
+  background: var(--gold);
 }
 .adminActions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   justify-content: flex-end;
-  min-width: 260px;
+  min-width: 240px;
 }
 .adminEmail {
   font-size: 12px;
   color: var(--admin-muted);
-  font-weight: 700;
-  max-width: 220px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.adminLang,
 .adminLogout {
-  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
   text-decoration: none;
-  background: rgba(148, 163, 184, 0.12);
-  color: #e2e8f0;
-  padding: 10px 12px;
+  background: #26221c;
+  color: var(--admin-text);
+  padding: 9px 12px;
   border-radius: 12px;
-  font-weight: 900;
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  font-weight: 600;
+  font-size: 13px;
+  border: 1px solid #3a342b;
 }
 
 .menuBtn {
   display: none;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: #fff;
-  color: var(--text-h);
-  font-size: 18px;
-  font-weight: 900;
+  color: var(--ink);
   cursor: pointer;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 .adminMenuBtn {
-  border-color: rgba(148, 163, 184, 0.25);
-  background: rgba(148, 163, 184, 0.1);
-  color: #e2e8f0;
+  border-color: #3a342b;
+  background: #26221c;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .topRow {
+    flex-wrap: wrap;
+  }
+  .search {
+    order: 3;
+    flex-basis: 100%;
+  }
 }
 
 @media (max-width: 768px) {
-  .topbar,
+  .hideSm {
+    display: none;
+  }
   .adminTopbar {
     flex-wrap: wrap;
     padding: 10px 12px;
     gap: 10px;
   }
-
-  .brand,
   .adminBrand {
     min-width: 0;
     flex: 1 1 auto;
   }
-
-  .subtitle,
-  .adminBrandSub {
-    display: none;
-  }
-
-  .title,
-  .adminBrandTitle {
-    font-size: 15px;
-  }
-
-  .actions,
-  .adminActions {
-    min-width: 0;
-    gap: 8px;
-  }
-
+  .adminBrandSub,
   .adminEmail {
     display: none;
   }
-
+  .adminActions {
+    min-width: 0;
+    gap: 6px;
+  }
   .menuBtn {
     display: inline-flex;
   }
-
   .nav,
   .adminNav {
     display: none;
-    flex-basis: 100%;
-    width: 100%;
     flex-direction: column;
     align-items: stretch;
-    gap: 4px;
-    padding-top: 6px;
-    border-top: 1px solid var(--border);
+    gap: 6px;
   }
-
   .adminNav {
-    border-top-color: rgba(148, 163, 184, 0.2);
+    flex-basis: 100%;
+    width: 100%;
+    padding-top: 6px;
+    border-top: 1px solid #2e2a24;
   }
-
   .nav.open,
   .adminNav.open {
     display: flex;
   }
-
-  .link,
+  .pill,
   .adminLink {
     text-align: center;
     border-radius: 12px;
     padding: 12px;
   }
-
-  .btn {
-    padding: 9px 11px;
-    font-size: 14px;
+  .logo {
+    width: 44px;
+    height: 44px;
   }
-
+  .title {
+    font-size: 16px;
+  }
   .content,
   .content.wide {
     width: calc(100% - 24px);
     padding: 16px 0 32px;
-  }
-}
-
-@media (max-width: 420px) {
-  .actions .btnGhost:not(.iconBtn) {
-    padding: 9px 10px;
   }
 }
 </style>

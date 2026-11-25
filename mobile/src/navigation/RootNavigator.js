@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { View } from 'react-native'
 import { Loading } from '../components/ui'
 import { ROLES, useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { colors } from '../theme'
+import { useI18n } from '../i18n'
+import { colors, fonts } from '../theme'
 
 import LoginScreen from '../screens/auth/LoginScreen'
 import RegisterScreen from '../screens/auth/RegisterScreen'
@@ -37,19 +39,35 @@ const Tab = createBottomTabNavigator()
 
 const stackOptions = {
   headerStyle: { backgroundColor: colors.surface },
-  headerTitleStyle: { fontWeight: '700', color: colors.text },
-  headerTintColor: colors.primary,
+  headerTitleStyle: { fontFamily: fonts.heading, color: colors.text },
+  headerTintColor: colors.ink,
+  headerShadowVisible: false,
   contentStyle: { backgroundColor: colors.bg },
 }
 
 const tabOptions = (icons) => ({ route }) => ({
   ...stackOptions,
-  tabBarActiveTintColor: colors.primary,
+  tabBarActiveTintColor: colors.ink,
   tabBarInactiveTintColor: colors.muted,
-  tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-  tabBarIcon: ({ color, size, focused }) => {
+  tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.medium },
+  tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, paddingTop: 6 },
+  tabBarBadgeStyle: { backgroundColor: colors.ink, color: '#fff', fontSize: 10 },
+  tabBarIcon: ({ color, focused }) => {
     const name = icons[route.name] || 'ellipse'
-    return <Ionicons name={focused ? name : `${name}-outline`} size={size} color={color} />
+    return (
+      <View
+        style={{
+          width: 52,
+          height: 30,
+          borderRadius: 15,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: focused ? colors.gold : 'transparent',
+        }}
+      >
+        <Ionicons name={focused ? name : `${name}-outline`} size={20} color={color} />
+      </View>
+    )
   },
 })
 
@@ -57,32 +75,34 @@ const tabOptions = (icons) => ({ route }) => ({
 
 function CustomerTabs() {
   const { count } = useCart()
+  const { t } = useI18n()
   return (
-    <Tab.Navigator screenOptions={tabOptions({ Shop: 'storefront', Cart: 'cart', MyOrders: 'receipt', Profile: 'person' })}>
-      <Tab.Screen name="Shop" component={ProductsScreen} options={{ title: 'Shop' }} />
+    <Tab.Navigator screenOptions={tabOptions({ Shop: 'home', Cart: 'cart', MyOrders: 'receipt', Profile: 'person' })}>
+      <Tab.Screen name="Shop" component={ProductsScreen} options={{ title: t('tabs.home'), headerShown: false }} />
       <Tab.Screen
         name="Cart"
         component={CartScreen}
-        options={{ title: 'Cart', tabBarBadge: count > 0 ? count : undefined }}
+        options={{ title: t('tabs.cart'), tabBarBadge: count > 0 ? count : undefined }}
       />
-      <Tab.Screen name="MyOrders" component={MyOrdersScreen} options={{ title: 'My Orders' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="MyOrders" component={MyOrdersScreen} options={{ title: t('tabs.orders') }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile') }} />
     </Tab.Navigator>
   )
 }
 
 function CustomerStack() {
+  const { t } = useI18n()
   return (
     <Stack.Navigator screenOptions={stackOptions}>
       <Stack.Screen name="CustomerHome" component={CustomerTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ title: 'Product' }} />
-      <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: 'Checkout' }} />
+      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: t('titles.checkout') }} />
       <Stack.Screen
         name="OrderConfirmation"
         component={OrderConfirmationScreen}
-        options={{ title: 'Order placed', headerBackVisible: false, gestureEnabled: false }}
+        options={{ title: t('titles.orderPlaced'), headerBackVisible: false, gestureEnabled: false }}
       />
-      <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ title: 'Invoice' }} />
+      <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ title: t('titles.invoice') }} />
     </Stack.Navigator>
   )
 }
@@ -90,11 +110,12 @@ function CustomerStack() {
 // ---------- Retail Salesperson ----------
 
 function SalesTabs() {
+  const { t } = useI18n()
   return (
     <Tab.Navigator screenOptions={tabOptions({ SalesDashboard: 'stats-chart', SalesOrders: 'receipt', Profile: 'person' })}>
-      <Tab.Screen name="SalesDashboard" component={SalesDashboardScreen} options={{ title: 'Dashboard' }} />
-      <Tab.Screen name="SalesOrders" component={OrdersManageScreen} options={{ title: 'Orders' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="SalesDashboard" component={SalesDashboardScreen} options={{ title: t('tabs.dashboard') }} />
+      <Tab.Screen name="SalesOrders" component={OrdersManageScreen} options={{ title: t('tabs.salesOrders') }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile') }} />
     </Tab.Navigator>
   )
 }
@@ -110,24 +131,26 @@ function SalesStack() {
 // ---------- Warehouse Manager ----------
 
 function WarehouseTabs() {
+  const { t } = useI18n()
   return (
     <Tab.Navigator
       screenOptions={tabOptions({ WarehouseDashboard: 'grid', Inventory: 'cube', Catalog: 'pricetags', Profile: 'person' })}
     >
-      <Tab.Screen name="WarehouseDashboard" component={WarehouseDashboardScreen} options={{ title: 'Dashboard' }} />
-      <Tab.Screen name="Inventory" component={InventoryScreen} />
-      <Tab.Screen name="Catalog" component={ProductsScreen} options={{ title: 'Products' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="WarehouseDashboard" component={WarehouseDashboardScreen} options={{ title: t('tabs.dashboard') }} />
+      <Tab.Screen name="Inventory" component={InventoryScreen} options={{ title: t('tabs.inventory') }} />
+      <Tab.Screen name="Catalog" component={ProductsScreen} options={{ title: t('tabs.products'), headerShown: false }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile') }} />
     </Tab.Navigator>
   )
 }
 
 function WarehouseStack() {
+  const { t } = useI18n()
   return (
     <Stack.Navigator screenOptions={stackOptions}>
       <Stack.Screen name="WarehouseHome" component={WarehouseTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ title: 'Product' }} />
-      <Stack.Screen name="InventoryAudit" component={InventoryAuditScreen} options={{ title: 'Stock history' }} />
+      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="InventoryAudit" component={InventoryAuditScreen} options={{ title: t('titles.stockHistory') }} />
     </Stack.Navigator>
   )
 }
@@ -135,6 +158,7 @@ function WarehouseStack() {
 // ---------- Admin ----------
 
 function AdminTabs() {
+  const { t } = useI18n()
   return (
     <Tab.Navigator
       screenOptions={tabOptions({
@@ -145,22 +169,23 @@ function AdminTabs() {
         Profile: 'person',
       })}
     >
-      <Tab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: 'Dashboard' }} />
-      <Tab.Screen name="AdminOrders" component={OrdersManageScreen} options={{ title: 'Orders' }} />
-      <Tab.Screen name="AdminProducts" component={AdminProductsScreen} options={{ title: 'Products' }} />
-      <Tab.Screen name="AdminCustomers" component={AdminCustomersScreen} options={{ title: 'Customers' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: t('tabs.dashboard') }} />
+      <Tab.Screen name="AdminOrders" component={OrdersManageScreen} options={{ title: t('tabs.salesOrders') }} />
+      <Tab.Screen name="AdminProducts" component={AdminProductsScreen} options={{ title: t('tabs.products') }} />
+      <Tab.Screen name="AdminCustomers" component={AdminCustomersScreen} options={{ title: t('tabs.customers') }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile') }} />
     </Tab.Navigator>
   )
 }
 
 function AdminStack() {
+  const { t } = useI18n()
   return (
     <Stack.Navigator screenOptions={stackOptions}>
       <Stack.Screen name="AdminHome" component={AdminTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: 'Product' }} />
-      <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{ title: 'Sales reports' }} />
-      <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ title: 'Order details' }} />
+      <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: t('titles.product') }} />
+      <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{ title: t('titles.salesReports') }} />
+      <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ title: t('titles.orderDetails') }} />
     </Stack.Navigator>
   )
 }
@@ -168,11 +193,12 @@ function AdminStack() {
 // ---------- Signed out ----------
 
 function AuthStack() {
+  const { t } = useI18n()
   return (
     <Stack.Navigator screenOptions={stackOptions}>
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Create account' }} />
-      <Stack.Screen name="VerifyPending" component={VerifyPendingScreen} options={{ title: 'Verify email' }} />
+      <Stack.Screen name="Register" component={RegisterScreen} options={{ title: t('titles.createAccount') }} />
+      <Stack.Screen name="VerifyPending" component={VerifyPendingScreen} options={{ title: t('titles.verifyEmail') }} />
     </Stack.Navigator>
   )
 }

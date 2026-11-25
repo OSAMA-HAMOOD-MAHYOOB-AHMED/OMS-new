@@ -4,44 +4,44 @@
 
     <div class="card">
       <div class="successIcon" aria-hidden="true">✓</div>
-      <h1 class="h1">Order placed successfully</h1>
+      <h1 class="h1">{{ tp('Order placed successfully') }}</h1>
       <p class="sub">
-        Thank you for your purchase. Your order is being prepared for FedEx Express delivery.
+        {{ tp('Thank you for your purchase. Your order is being prepared for FedEx Express delivery.') }}
       </p>
 
       <div class="details">
         <div class="row">
-          <span class="k">Order ID</span>
+          <span class="k">{{ tp('Order ID') }}</span>
           <span class="v mono">{{ order?.orderID }}</span>
         </div>
         <div class="row">
-          <span class="k">Amount paid</span>
+          <span class="k">{{ tp('Amount paid') }}</span>
           <span class="v">{{ format(order?.total || 0) }}</span>
         </div>
         <div class="row">
-          <span class="k">Payment method</span>
+          <span class="k">{{ tp('Payment method') }}</span>
           <span class="v">{{ methodLabel }}</span>
         </div>
         <div v-if="order?.transactionId" class="row">
-          <span class="k">Transaction ID</span>
+          <span class="k">{{ tp('Transaction ID') }}</span>
           <span class="v mono small">{{ order.transactionId }}</span>
         </div>
         <div class="row">
-          <span class="k">Shipping</span>
+          <span class="k">{{ tp('Shipping') }}</span>
           <span class="v">{{ shippingLabel }}</span>
         </div>
         <div class="row">
-          <span class="k">Delivery</span>
+          <span class="k">{{ tp('Delivery') }}</span>
           <span class="v">{{ deliveryEta }}</span>
         </div>
         <div v-if="trackingNumber" class="row">
-          <span class="k">FedEx tracking</span>
+          <span class="k">{{ tp('FedEx tracking') }}</span>
           <span class="v mono small">{{ trackingNumber }}</span>
         </div>
       </div>
 
       <p class="notice">
-        A confirmation email with your invoice has been sent to your registered email address.
+        {{ tp('A confirmation email with your invoice has been sent to your registered email address.') }}
       </p>
 
       <CheckoutReturnPanel
@@ -56,6 +56,7 @@
 </template>
 
 <script setup>
+import { useI18n } from '../../i18n'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CheckoutSteps from '../../components/CheckoutSteps.vue'
@@ -64,6 +65,8 @@ import { useReturnTimer } from '../../composables/useReturnTimer'
 import { loadCompletedOrder, paymentMethodLabel } from '../../stores/checkout'
 import { SHIPPING, trackingNumber as buildTracking } from '../../utils/shipping'
 import { useCurrency } from '../../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -153,8 +156,8 @@ onMounted(() => {
   padding: 12px 14px;
   display: grid;
   gap: 10px;
-  background: #f8fafc;
-  text-align: left;
+  background: #FAF8F4;
+  text-align: start;
 }
 .row {
   display: flex;
@@ -170,7 +173,7 @@ onMounted(() => {
 .v {
   color: var(--text-h);
   font-weight: 950;
-  text-align: right;
+  text-align: end;
 }
 .mono {
   font-family: ui-monospace, Consolas, monospace;

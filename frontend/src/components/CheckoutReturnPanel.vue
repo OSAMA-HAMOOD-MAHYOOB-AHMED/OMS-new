@@ -14,7 +14,7 @@
       <div class="timerValue">{{ secondsLeft }}</div>
     </div>
 
-    <p class="message">{{ message }}</p>
+    <p class="message">{{ tp(message) }}</p>
     <p class="hint">{{ hint }}</p>
 
     <button class="returnBtn" type="button" @click="$emit('proceed')">
@@ -63,7 +63,7 @@ const progressOffset = computed(() => {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 18px 16px;
-  background: #f8fafc;
+  background: #FAF8F4;
   display: grid;
   gap: 12px;
   justify-items: center;
@@ -81,7 +81,7 @@ const progressOffset = computed(() => {
 }
 .track {
   fill: none;
-  stroke: #e2e8f0;
+  stroke: #E4DCCB;
   stroke-width: 5;
 }
 .progress {

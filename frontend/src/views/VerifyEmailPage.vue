@@ -6,19 +6,22 @@
       <div v-else class="icon err">✕</div>
 
       <h2 class="h2">{{ title }}</h2>
-      <p class="sub">{{ message }}</p>
+      <p class="sub">{{ tp(message) }}</p>
 
-      <RouterLink v-if="!loading && success" class="btn" to="/login">Sign in to your account</RouterLink>
-      <RouterLink v-else-if="!loading" class="btn" to="/login">Go to Sign In</RouterLink>
+      <RouterLink v-if="!loading && success" class="btn" to="/login">{{ tp('Sign in to your account') }}</RouterLink>
+      <RouterLink v-else-if="!loading" class="btn" to="/login">{{ tp('Go to Sign In') }}</RouterLink>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { ref, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
+
+const { tp } = useI18n()
 
 const route = useRoute()
 const auth = useAuthStore()

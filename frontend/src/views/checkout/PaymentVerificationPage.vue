@@ -39,17 +39,18 @@
         @proceed="proceedToConfirmation"
       />
 
-      <p v-if="error" class="error" role="alert">{{ error }}</p>
+      <p v-if="error" class="error" role="alert">{{ tp(error) }}</p>
 
       <div v-if="error" class="actions">
-        <RouterLink class="btnGhost" :to="{ name: 'cart' }">Back to cart</RouterLink>
-        <button class="btnPrimary" type="button" @click="retry">Try again</button>
+        <RouterLink class="btnGhost" :to="{ name: 'cart' }">{{ tp('Back to cart') }}</RouterLink>
+        <button class="btnPrimary" type="button" @click="retry">{{ tp('Try again') }}</button>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
+import { useI18n } from '../../i18n'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import CheckoutSteps from '../../components/CheckoutSteps.vue'
@@ -63,6 +64,8 @@ import {
   saveCompletedOrder,
 } from '../../stores/checkout'
 import { useCurrency } from '../../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const router = useRouter()
 const { format } = useCurrency()
@@ -224,7 +227,7 @@ onMounted(() => {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 4px solid #e2e8f0;
+  border: 4px solid #E4DCCB;
   border-top-color: var(--brand-blue);
   animation: spin 0.85s linear infinite;
 }
@@ -259,7 +262,7 @@ onMounted(() => {
   max-width: 420px;
   display: grid;
   gap: 8px;
-  text-align: left;
+  text-align: start;
   margin-top: 4px;
 }
 .progressItem {
@@ -269,14 +272,14 @@ onMounted(() => {
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: #f8fafc;
+  background: #FAF8F4;
   color: var(--muted);
   font-weight: 750;
   font-size: 13px;
 }
 .progressItem.active {
-  border-color: rgba(37, 99, 235, 0.35);
-  background: rgba(37, 99, 235, 0.06);
+  border-color: rgba(184, 145, 79, 0.35);
+  background: rgba(184, 145, 79, 0.06);
   color: var(--text-h);
 }
 .progressItem.done {

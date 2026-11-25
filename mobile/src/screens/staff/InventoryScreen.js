@@ -7,6 +7,7 @@ import { Button, Card, Empty, ErrorBox, InfoBox, Input, Loading } from '../../co
 import { colors, radius } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
 import { formatDate } from '../../utils/format'
+import { tp } from '../../i18n'
 
 export default function InventoryScreen({ navigation }) {
   const { data, error, loading, refreshing, refresh, reload } = useApi('/api/inventory', { initial: [] })
@@ -61,7 +62,7 @@ export default function InventoryScreen({ navigation }) {
     }
   }
 
-  if (loading) return <Loading label="Loading inventory…" />
+  if (loading) return <Loading label={tp('Loading inventory…')} />
 
   const header = (
     <View>
@@ -70,7 +71,7 @@ export default function InventoryScreen({ navigation }) {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search product or location"
+          placeholder={tp('Search product or location')}
           placeholderTextColor={colors.muted}
           style={styles.searchInput}
         />
@@ -90,7 +91,7 @@ export default function InventoryScreen({ navigation }) {
         ListHeaderComponent={header}
         refreshing={refreshing}
         onRefresh={refresh}
-        ListEmptyComponent={!error ? <Empty icon="cube-outline" title="No inventory records" /> : null}
+        ListEmptyComponent={!error ? <Empty icon="cube-outline" title={tp('No inventory records')} /> : null}
         renderItem={({ item: r }) => {
           const low = r.quantityAvailable <= 10
           return (
@@ -106,22 +107,22 @@ export default function InventoryScreen({ navigation }) {
                   <Text style={[styles.statValue, low && { color: r.quantityAvailable === 0 ? colors.danger : colors.warning }]}>
                     {r.quantityAvailable}
                   </Text>
-                  <Text style={styles.statLabel}>Available</Text>
+                  <Text style={styles.statLabel}>{tp('Available')}</Text>
                 </View>
                 <View style={styles.stat}>
                   <Text style={styles.statValue}>{r.quantityReserved}</Text>
-                  <Text style={styles.statLabel}>Reserved</Text>
+                  <Text style={styles.statLabel}>{tp('Reserved')}</Text>
                 </View>
                 <View style={[styles.stat, { flex: 1.6 }]}>
                   <Text style={[styles.statValue, { fontSize: 13 }]}>{r.lastCheckupDate ? formatDate(r.lastCheckupDate) : 'Never'}</Text>
-                  <Text style={styles.statLabel}>Last check</Text>
+                  <Text style={styles.statLabel}>{tp('Last check')}</Text>
                 </View>
               </View>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-                <Button title="Receive" icon="add-circle-outline" small style={{ flex: 1 }} onPress={() => openModal('receive', r)} />
-                <Button title="Check" icon="clipboard-outline" small variant="secondary" style={{ flex: 1 }} onPress={() => openModal('checkup', r)} />
+                <Button title={tp('Receive')} icon="add-circle-outline" small style={{ flex: 1 }} onPress={() => openModal('receive', r)} />
+                <Button title={tp('Check')} icon="clipboard-outline" small variant="secondary" style={{ flex: 1 }} onPress={() => openModal('checkup', r)} />
                 <Button
-                  title="History"
+                  title={tp('History')}
                   icon="time-outline"
                   small
                   variant="secondary"
@@ -139,20 +140,20 @@ export default function InventoryScreen({ navigation }) {
           <Pressable style={{ flex: 1 }} onPress={() => setModal(null)} />
           {modal ? (
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>{modal.mode === 'receive' ? 'Receive stock' : 'Record stock check'}</Text>
+              <Text style={styles.sheetTitle}>{tp(modal.mode === 'receive' ? 'Receive Stock' : 'Record stock check')}</Text>
               <Text style={[styles.soft, { marginBottom: 16 }]}>{modal.row.productName}</Text>
               <ErrorBox message={modalError} />
               {modal.mode === 'receive' ? (
-                <Input label="Quantity received" value={qty} onChangeText={(v) => setQty(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="e.g. 25" autoFocus />
+                <Input label={tp('Quantity received')} value={qty} onChangeText={(v) => setQty(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder={tp('e.g. 25')} autoFocus />
               ) : (
                 <Text style={[styles.soft, { marginBottom: 12 }]}>
                   Confirms a physical count matches the system ({modal.row.quantityAvailable} available).
                 </Text>
               )}
-              <Input label="Note (optional)" value={note} onChangeText={setNote} placeholder="Supplier, batch, remarks…" autoCapitalize="sentences" />
+              <Input label={tp('Note (optional)')} value={note} onChangeText={setNote} placeholder={tp('Supplier, batch, remarks…')} autoCapitalize="sentences" />
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Button title="Cancel" variant="secondary" style={{ flex: 1 }} onPress={() => setModal(null)} />
-                <Button title="Save" style={{ flex: 1 }} onPress={submit} loading={saving} />
+                <Button title={tp('Cancel')} variant="secondary" style={{ flex: 1 }} onPress={() => setModal(null)} />
+                <Button title={tp('Save')} style={{ flex: 1 }} onPress={submit} loading={saving} />
               </View>
             </View>
           ) : null}
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-  searchInput: { flex: 1, minHeight: 44, marginLeft: 8, fontSize: 15, color: colors.text },
+  searchInput: { flex: 1, minHeight: 44, marginStart: 8, fontSize: 15, color: colors.text },
   name: { fontWeight: '800', color: colors.text, fontSize: 15 },
   soft: { color: colors.textSoft, marginTop: 2, fontSize: 13 },
   statsRow: { flexDirection: 'row', marginTop: 12, backgroundColor: colors.bg, borderRadius: radius.sm, padding: 10 },

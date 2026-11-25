@@ -1,38 +1,38 @@
 <template>
   <section class="page">
-    <h1 class="h1">My Profile</h1>
+    <h1 class="h1">{{ tp('My Profile') }}</h1>
 
     <div class="brandBar">
-      <img class="storeLogo" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
+      <img class="storeLogo" :src="siteLogoUrl" :alt="tp('Al-Wakeel Al-Shamel')" />
       <div>
-        <div class="storeName">Al-Wakeel Al-Shamel</div>
-        <div class="storeTag">Premium phone accessories</div>
+        <div class="storeName">{{ tp('Al-Wakeel Al-Shamel') }}</div>
+        <div class="storeTag">{{ tp('Premium phone accessories') }}</div>
       </div>
     </div>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else class="stack">
       <div v-if="!auth.emailVerified" class="verifyBanner">
-        <p>Your email is not verified yet. Check your inbox or resend the verification link.</p>
+        <p>{{ tp('Your email is not verified yet. Check your inbox or resend the verification link.') }}</p>
         <p v-if="showDevInbox" class="devInbox">
-          Local testing: open <a href="http://localhost:8025" target="_blank" rel="noopener">Mailpit inbox</a> to read verification emails.
+          {{ tp('Local testing: open') }} <a href="http://localhost:8025" target="_blank" rel="noopener">{{ tp('Mailpit inbox') }}</a> {{ tp('to read verification emails.') }}
         </p>
         <button class="btnVerify" type="button" :disabled="resending" @click="resend">
-          {{ resending ? 'Sending...' : 'Resend verification email' }}
+          {{ tp(resending ? 'Sending...' : 'Resend verification email') }}
         </button>
       </div>
 
       <div class="card topCard">
         <div class="profileRow">
           <div class="avatarWrap">
-            <img v-if="avatarUrl" :src="avatarUrl" class="avatarImg" alt="Profile photo" />
+            <img v-if="avatarUrl" :src="avatarUrl" class="avatarImg" :alt="tp('Profile photo')" />
             <div v-else class="avatar" aria-hidden="true">{{ initials }}</div>
-            <button class="avatarEditBtn" type="button" :disabled="uploadingAvatar" title="Change photo" @click="avatarFileInput.click()">
-              {{ uploadingAvatar ? '…' : '📷' }}
+            <button class="avatarEditBtn" type="button" :disabled="uploadingAvatar" :title="tp('Change photo')" @click="avatarFileInput.click()">
+              {{ tp(uploadingAvatar ? '…' : '📷') }}
             </button>
-            <button v-if="avatarUrl" class="avatarDelBtn" type="button" title="Remove photo" @click="removeAvatar">✕</button>
+            <button v-if="avatarUrl" class="avatarDelBtn" type="button" :title="tp('Remove photo')" @click="removeAvatar">✕</button>
           </div>
           <input ref="avatarFileInput" type="file" accept="image/*" class="hiddenInput" @change="onAvatarFile" />
           <div>
@@ -45,28 +45,28 @@
           <div class="info">
             <div class="icon blue" aria-hidden="true">✉</div>
             <div>
-              <div class="lbl">Email</div>
+              <div class="lbl">{{ tp('Email') }}</div>
               <div class="val mono">{{ email }}</div>
             </div>
           </div>
           <div class="info">
             <div class="icon green" aria-hidden="true">📞</div>
             <div>
-              <div class="lbl">Phone</div>
+              <div class="lbl">{{ tp('Phone') }}</div>
               <div class="val">{{ form.phoneNumber || '—' }}</div>
             </div>
           </div>
           <div class="info">
             <div class="icon purple" aria-hidden="true">📍</div>
             <div>
-              <div class="lbl">Address</div>
+              <div class="lbl">{{ tp('Address') }}</div>
               <div class="val">{{ form.address || '—' }}</div>
             </div>
           </div>
           <div class="info">
             <div class="icon orange" aria-hidden="true">▦</div>
             <div>
-              <div class="lbl">Member Since</div>
+              <div class="lbl">{{ tp('Member Since') }}</div>
               <div class="val">{{ memberSince }}</div>
             </div>
           </div>
@@ -76,19 +76,19 @@
       <div class="card stats">
         <div class="stat a">
           <div class="sNum">{{ stats.totalOrders }}</div>
-          <div class="sLbl">Total Orders</div>
+          <div class="sLbl">{{ tp('Total Orders') }}</div>
         </div>
         <div class="stat b">
           <div class="sNum">{{ format(stats.totalSpent) }}</div>
-          <div class="sLbl">Total Spent</div>
+          <div class="sLbl">{{ tp('Total Spent') }}</div>
         </div>
         <div class="stat c">
           <div class="sNum">{{ stats.completed }}</div>
-          <div class="sLbl">Completed</div>
+          <div class="sLbl">{{ tp('Completed') }}</div>
         </div>
         <div class="stat d">
           <div class="sNum">{{ stats.pending }}</div>
-          <div class="sLbl">Pending</div>
+          <div class="sLbl">{{ tp('Pending') }}</div>
         </div>
       </div>
 
@@ -96,84 +96,85 @@
         <div class="card">
           <div class="cardHeader">
             <div>
-              <h3 class="h3">Personal info</h3>
-              <p class="muted">{{ editingProfile ? 'Update your account information.' : 'Your account information.' }}</p>
+              <h3 class="h3">{{ tp('Personal info') }}</h3>
+              <p class="muted">{{ tp(editingProfile ? 'Update your account information.' : 'Your account information.') }}</p>
             </div>
-            <button v-if="!editingProfile" class="btnEdit" type="button" @click="startEditProfile">Edit</button>
+            <button v-if="!editingProfile" class="btnEdit" type="button" @click="startEditProfile">{{ tp('Edit') }}</button>
           </div>
           <div v-if="!editingProfile" class="infoList">
-            <div class="infoRow"><span class="infoLbl">Name</span><span class="infoVal">{{ form.name || '—' }}</span></div>
-            <div class="infoRow"><span class="infoLbl">Phone</span><span class="infoVal">{{ form.phoneNumber || '—' }}</span></div>
-            <div class="infoRow"><span class="infoLbl">Address</span><span class="infoVal">{{ form.address || '—' }}</span></div>
+            <div class="infoRow"><span class="infoLbl">{{ tp('Name') }}</span><span class="infoVal">{{ form.name || '—' }}</span></div>
+            <div class="infoRow"><span class="infoLbl">{{ tp('Phone') }}</span><span class="infoVal">{{ form.phoneNumber || '—' }}</span></div>
+            <div class="infoRow"><span class="infoLbl">{{ tp('Address') }}</span><span class="infoVal">{{ form.address || '—' }}</span></div>
           </div>
           <div v-else class="form">
             <label class="field">
-              <span class="lbl">Name</span>
+              <span class="lbl">{{ tp('Name') }}</span>
               <input v-model.trim="form.name" />
             </label>
             <label class="field">
-              <span class="lbl">Phone</span>
+              <span class="lbl">{{ tp('Phone') }}</span>
               <input v-model.trim="form.phoneNumber" />
             </label>
             <label class="field">
-              <span class="lbl">Address</span>
+              <span class="lbl">{{ tp('Address') }}</span>
               <input v-model.trim="form.address" />
             </label>
             <div class="btnRow">
               <button class="btnPrimary" type="button" :disabled="saving" @click="saveProfile">
-                {{ saving ? 'Saving...' : 'Save profile' }}
+                {{ tp(saving ? 'Saving...' : 'Save profile') }}
               </button>
-              <button class="btnGhost" type="button" :disabled="saving" @click="cancelEditProfile">Cancel</button>
+              <button class="btnGhost" type="button" :disabled="saving" @click="cancelEditProfile">{{ tp('Cancel') }}</button>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <h3 class="h3">Change password</h3>
-          <p class="muted">Use a strong password for your demo account.</p>
+          <h3 class="h3">{{ tp('Change password') }}</h3>
+          <p class="muted">{{ tp('Use a strong password for your demo account.') }}</p>
           <div class="form">
             <label class="field">
-              <span class="lbl">Current password</span>
+              <span class="lbl">{{ tp('Current password') }}</span>
               <input v-model="pw.currentPassword" type="password" autocomplete="current-password" />
             </label>
             <label class="field">
-              <span class="lbl">New password</span>
+              <span class="lbl">{{ tp('New password') }}</span>
               <input v-model="pw.newPassword" type="password" autocomplete="new-password" />
             </label>
             <button class="btnGhost" type="button" :disabled="saving" @click="changePassword">
-              {{ saving ? 'Updating...' : 'Update password' }}
+              {{ tp(saving ? 'Updating...' : 'Update password') }}
             </button>
           </div>
         </div>
       </div>
 
       <div v-if="!isDemoAccount" class="card danger">
-        <h3 class="h3 dangerTitle">Delete account</h3>
+        <h3 class="h3 dangerTitle">{{ tp('Delete account') }}</h3>
         <p class="muted">
-          Permanently remove your account, profile details, and order history. This action cannot be undone.
+          {{ tp('Permanently remove your account, profile details, and order history. This action cannot be undone.') }}
         </p>
         <div class="form">
           <label class="field">
-            <span class="lbl">Confirm with your password</span>
+            <span class="lbl">{{ tp('Confirm with your password') }}</span>
             <input
               v-model="deletePassword"
               type="password"
               autocomplete="current-password"
-              placeholder="Enter your password"
+              :placeholder="tp('Enter your password')"
             />
           </label>
           <button class="btnDanger" type="button" :disabled="deleting" @click="deleteAccount">
-            {{ deleting ? 'Deleting...' : 'Delete my account' }}
+            {{ tp(deleting ? 'Deleting...' : 'Delete my account') }}
           </button>
         </div>
       </div>
     </div>
 
-    <p v-if="ok" class="success">{{ ok }}</p>
+    <p v-if="ok" class="success">{{ tp(ok) }}</p>
   </section>
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../api/client'
@@ -182,6 +183,8 @@ import { useCartStore } from '../stores/cart'
 import { formatApiError } from '../utils/apiError'
 import { siteLogoUrl } from '../utils/images'
 import { useCurrency } from '../composables/useCurrency'
+
+const { tp } = useI18n()
 
 const auth = useAuthStore()
 const cart = useCartStore()
@@ -594,7 +597,7 @@ onMounted(load)
 }
 .icon.blue {
   color: var(--brand-blue);
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(184, 145, 79, 0.08);
 }
 .icon.green {
   color: #047857;
@@ -638,7 +641,7 @@ onMounted(load)
   border: 1px solid var(--border);
 }
 .stat.a {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(184, 145, 79, 0.08);
 }
 .stat.b {
   background: rgba(16, 185, 129, 0.10);
@@ -656,7 +659,7 @@ onMounted(load)
   color: var(--text-h);
 }
 .stat.a .sNum {
-  color: #1d4ed8;
+  color: #85652A;
 }
 .stat.b .sNum {
   color: #047857;
@@ -671,7 +674,7 @@ onMounted(load)
   margin-top: 6px;
   font-size: 12px;
   font-weight: 900;
-  color: #334155;
+  color: #3A352D;
 }
 
 .cardHeader {
@@ -702,7 +705,7 @@ onMounted(load)
   align-items: center;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #f8fafc;
+  background: #FAF8F4;
   border: 1px solid var(--border);
 }
 .infoLbl {
@@ -750,7 +753,7 @@ onMounted(load)
 .lbl {
   font-size: 12px;
   font-weight: 900;
-  color: #334155;
+  color: #3A352D;
 }
 input {
   width: 100%;
@@ -799,18 +802,18 @@ input {
 }
 .verifyBanner p {
   margin: 0;
-  color: #175cd3;
+  color: #85652A;
   font-weight: 700;
   font-size: 14px;
 }
 .devInbox {
   margin: 0;
-  color: #334155 !important;
+  color: #3A352D !important;
   font-weight: 650 !important;
   font-size: 13px !important;
 }
 .devInbox a {
-  color: #175cd3;
+  color: #85652A;
   font-weight: 900;
 }
 .btnVerify {

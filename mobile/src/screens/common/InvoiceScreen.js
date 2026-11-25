@@ -9,6 +9,7 @@ import { API_URL } from '../../config'
 import { useCurrency } from '../../context/CurrencyContext'
 import { colors } from '../../theme'
 import { formatDate, paymentMethodLabel } from '../../utils/format'
+import { tp } from '../../i18n'
 
 export default function InvoiceScreen({ route }) {
   const orderID = route.params?.orderID
@@ -36,7 +37,7 @@ export default function InvoiceScreen({ route }) {
     }
   }
 
-  if (loading) return <Loading label="Loading invoice…" />
+  if (loading) return <Loading label={tp('Loading invoice…')} />
   if (!inv) return <Screen><ErrorBox message={error || 'Invoice not found.'} onRetry={reload} /></Screen>
 
   return (
@@ -45,21 +46,21 @@ export default function InvoiceScreen({ route }) {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 12, color: colors.textSoft }}>INVOICE #{inv.invoiceId}</Text>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Order {inv.orderId}</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>{tp('Order')} {inv.orderId}</Text>
           </View>
           <StatusBadge status={inv.orderStatus} />
         </View>
         <Divider />
-        <Row label="Date" value={formatDate(inv.orderDate, true)} />
-        <Row label="Customer" value={inv.customerName} />
-        <Row label="Email" value={inv.email} />
-        <Row label="Payment" value={paymentMethodLabel(inv.paymentMethod)} />
-        {inv.paymentStatus ? <Row label="Payment status" value={inv.paymentStatus} /> : null}
-        {inv.transactionReference ? <Row label="Transaction" value={inv.transactionReference} /> : null}
+        <Row label={tp('Date')} value={formatDate(inv.orderDate, true)} />
+        <Row label={tp('Customer')} value={inv.customerName} />
+        <Row label={tp('Email')} value={inv.email} />
+        <Row label={tp('Payment')} value={tp(paymentMethodLabel(inv.paymentMethod))} />
+        {inv.paymentStatus ? <Row label={tp('Payment status')} value={inv.paymentStatus} /> : null}
+        {inv.transactionReference ? <Row label={tp('Transaction')} value={inv.transactionReference} /> : null}
       </Card>
 
       <Card>
-        <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 6 }}>Items</Text>
+        <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 6 }}>{tp('Items')}</Text>
         {(inv.items || []).map((it) => (
           <View key={it.productId} style={{ paddingVertical: 6 }}>
             <Text style={{ color: colors.text, fontWeight: '600' }}>{it.name}</Text>
@@ -72,19 +73,19 @@ export default function InvoiceScreen({ route }) {
           </View>
         ))}
         <Divider />
-        <Row label="Shipping" value={inv.shippingCostLabel} />
-        <Row label="Total" value={format(inv.totalPrice)} bold />
+        <Row label={tp('Shipping')} value={inv.shippingCostLabel} />
+        <Row label={tp('Total')} value={format(inv.totalPrice)} bold />
       </Card>
 
       <Card>
-        <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 6 }}>Shipping</Text>
-        <Row label="Service" value={inv.shippingService} />
-        <Row label="Estimated delivery" value={inv.shippingEstimatedDelivery} />
-        <Row label="Tracking number" value={inv.shippingTrackingNumber} />
+        <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 6 }}>{tp('Shipping')}</Text>
+        <Row label={tp('Service')} value={inv.shippingService} />
+        <Row label={tp('Estimated delivery')} value={inv.shippingEstimatedDelivery} />
+        <Row label={tp('Tracking number')} value={inv.shippingTrackingNumber} />
       </Card>
 
       <ErrorBox message={pdfError} />
-      <Button title="Download / share PDF" icon="share-outline" onPress={sharePdf} loading={pdfBusy} />
+      <Button title={tp('Download / share PDF')} icon="share-outline" onPress={sharePdf} loading={pdfBusy} />
     </Screen>
   )
 }

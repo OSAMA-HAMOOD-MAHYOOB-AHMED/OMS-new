@@ -4,6 +4,7 @@ import { Text, View } from 'react-native'
 import { Button, Card, ErrorBox, InfoBox, Screen, Subtitle, Title } from '../../components/ui'
 import { useAuth } from '../../context/AuthContext'
 import { colors } from '../../theme'
+import { tp } from '../../i18n'
 
 export default function VerifyPendingScreen({ navigation, route }) {
   const { resendVerification } = useAuth()
@@ -34,11 +35,9 @@ export default function VerifyPendingScreen({ navigation, route }) {
       <Card>
         <InfoBox tone="info" message={info} />
         <ErrorBox message={error} />
-        <Text style={{ color: colors.textSoft, marginBottom: 16 }}>
-          Open the link in the email (on this phone or any device), then come back and sign in.
-        </Text>
-        <Button title="Back to sign in" onPress={() => navigation.navigate('Login')} />
-        <Button title="Resend verification email" variant="ghost" onPress={onResend} loading={loading} style={{ marginTop: 8 }} />
+        <Text style={{ color: colors.textSoft, marginBottom: 16 }}>{tp('Open the link in the email (on this phone or any device), then come back and sign in.')}</Text>
+        <Button title={tp('Back to sign in')} onPress={() => navigation.navigate('Login')} />
+        <Button title={tp('Resend verification email')} variant="ghost" onPress={onResend} loading={loading} style={{ marginTop: 8 }} />
       </Card>
     </Screen>
   )

@@ -1,15 +1,15 @@
 <template>
   <section class="card">
-    <h2>Warehouse Dashboard</h2>
-    <p class="muted">Low stock alerts + recent inventory activity.</p>
+    <h2>{{ tp('Warehouse Dashboard') }}</h2>
+    <p class="muted">{{ tp('Low stock alerts + recent inventory activity.') }}</p>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else class="grid">
       <div class="panel">
-        <h3 class="h3">Low Stock</h3>
-        <div v-if="data.lowStock.length === 0" class="muted">No low stock items.</div>
+        <h3 class="h3">{{ tp('Low Stock') }}</h3>
+        <div v-if="data.lowStock.length === 0" class="muted">{{ tp('No low stock items.') }}</div>
         <ul v-else class="list">
           <li v-for="p in data.lowStock" :key="p.productID" class="li">
             <span class="name">{{ p.name }}</span>
@@ -19,16 +19,16 @@
       </div>
 
       <div class="panel">
-        <h3 class="h3">Recent Activity</h3>
+        <h3 class="h3">{{ tp('Recent Activity') }}</h3>
         <div class="tableWrap">
           <table class="table">
             <thead>
               <tr>
-                <th>When</th>
-                <th>Product</th>
-                <th>Action</th>
+                <th>{{ tp('When') }}</th>
+                <th>{{ tp('Product') }}</th>
+                <th>{{ tp('Action') }}</th>
                 <th>Δ</th>
-                <th>Note</th>
+                <th>{{ tp('Note') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -48,8 +48,11 @@
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { onMounted, ref } from 'vue'
 import { api } from '../api/client'
+
+const { tp } = useI18n()
 
 const data = ref({ lowStock: [], recentInventoryActivity: [] })
 const loading = ref(false)
@@ -144,7 +147,7 @@ onMounted(load)
 }
 th,
 td {
-  text-align: left;
+  text-align: start;
   padding: 12px;
   border-bottom: 1px solid rgba(17, 24, 39, 0.08);
 }

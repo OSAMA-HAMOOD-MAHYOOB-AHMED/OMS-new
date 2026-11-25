@@ -4,6 +4,7 @@ import { useApi } from '../../api/useApi'
 import { Button, Card, Empty, ErrorBox, Loading, Screen, SectionTitle, StatCard } from '../../components/ui'
 import { colors } from '../../theme'
 import { formatDate } from '../../utils/format'
+import { tp } from '../../i18n'
 
 export function ActivityItem({ a }) {
   const positive = a.deltaQuantity > 0
@@ -21,7 +22,7 @@ export function ActivityItem({ a }) {
       >
         <Ionicons name={positive ? 'arrow-down' : 'clipboard-outline'} size={18} color={positive ? colors.success : colors.primary} />
       </View>
-      <View style={{ flex: 1, marginLeft: 12 }}>
+      <View style={{ flex: 1, marginStart: 12 }}>
         <Text style={{ fontWeight: '700', color: colors.text }} numberOfLines={1}>
           {a.productName || a.action}
         </Text>
@@ -56,22 +57,22 @@ export default function WarehouseDashboardScreen({ navigation }) {
       {data ? (
         <>
           <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
-            <StatCard icon="alert-circle-outline" label="Low stock items" value={String(low.length)} tint={low.length ? colors.warning : colors.success} />
-            <StatCard icon="swap-vertical-outline" label="Recent movements" value={String(activity.length)} />
+            <StatCard icon="alert-circle-outline" label={tp('Low stock items')} value={String(low.length)} tint={low.length ? colors.warning : colors.success} />
+            <StatCard icon="swap-vertical-outline" label={tp('Recent movements')} value={String(activity.length)} />
           </View>
 
-          <SectionTitle right={<Button title="Inventory" small variant="ghost" onPress={() => navigation.navigate('Inventory')} />}>
-            Low stock
+          <SectionTitle right={<Button title={tp('Inventory')} small variant="ghost" onPress={() => navigation.navigate('Inventory')} />}>
+            {tp('Low Stock')}
           </SectionTitle>
           {low.length === 0 ? (
             <Card>
-              <Text style={{ color: colors.success, fontWeight: '600' }}>All products are well stocked.</Text>
+              <Text style={{ color: colors.success, fontWeight: '600' }}>{tp('All products are well stocked.')}</Text>
             </Card>
           ) : (
             low.map((p) => (
               <Card key={p.productID} style={{ padding: 12, flexDirection: 'row', alignItems: 'center' }}>
                 <Ionicons name="warning" size={20} color={p.stockLevel === 0 ? colors.danger : colors.warning} />
-                <View style={{ flex: 1, marginLeft: 10 }}>
+                <View style={{ flex: 1, marginStart: 10 }}>
                   <Text style={{ fontWeight: '700', color: colors.text }} numberOfLines={1}>
                     {p.name}
                   </Text>
@@ -85,7 +86,7 @@ export default function WarehouseDashboardScreen({ navigation }) {
           )}
 
           <SectionTitle>Recent inventory activity</SectionTitle>
-          {activity.length === 0 ? <Empty icon="time-outline" title="No activity yet" /> : activity.map((a) => <ActivityItem key={a.auditID} a={a} />)}
+          {activity.length === 0 ? <Empty icon="time-outline" title={tp('No activity yet')} /> : activity.map((a) => <ActivityItem key={a.auditID} a={a} />)}
         </>
       ) : null}
     </Screen>

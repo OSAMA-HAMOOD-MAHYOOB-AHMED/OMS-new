@@ -8,6 +8,7 @@ import { useCurrency } from '../../context/CurrencyContext'
 import { colors, radius } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
 import { productImageSource } from '../../utils/images'
+import { tp } from '../../i18n'
 
 export default function AdminProductsScreen({ navigation }) {
   const { format } = useCurrency()
@@ -19,7 +20,7 @@ export default function AdminProductsScreen({ navigation }) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={() => navigation.navigate('ProductForm')} hitSlop={10} style={{ marginRight: 16 }} accessibilityLabel="Add product">
+        <Pressable onPress={() => navigation.navigate('ProductForm')} hitSlop={10} style={{ marginEnd: 16 }} accessibilityLabel={tp('Add product')}>
           <Ionicons name="add-circle" size={28} color={colors.primary} />
         </Pressable>
       ),
@@ -32,8 +33,8 @@ export default function AdminProductsScreen({ navigation }) {
   }, [data, query])
 
   function confirmDelete(p) {
-    Alert.alert('Delete product?', `"${p.name}" will be removed from the catalog.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tp('Delete product?'), `"${p.name}" ${tp('will be removed from the catalog.')}`, [
+      { text: tp('Cancel'), style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
@@ -51,7 +52,7 @@ export default function AdminProductsScreen({ navigation }) {
     ])
   }
 
-  if (loading) return <Loading label="Loading products…" />
+  if (loading) return <Loading label={tp('Loading products…')} />
 
   return (
     <FlatList
@@ -68,7 +69,7 @@ export default function AdminProductsScreen({ navigation }) {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search products"
+              placeholder={tp('Search products')}
               placeholderTextColor={colors.muted}
               style={styles.searchInput}
             />
@@ -78,11 +79,11 @@ export default function AdminProductsScreen({ navigation }) {
           <InfoBox tone="success" message={message} />
         </View>
       }
-      ListEmptyComponent={!error ? <Empty icon="pricetags-outline" title="No products" /> : null}
+      ListEmptyComponent={!error ? <Empty icon="pricetags-outline" title={tp('No products')} /> : null}
       renderItem={({ item: p }) => (
         <Card style={{ padding: 12, flexDirection: 'row', alignItems: 'center' }} onPress={() => navigation.navigate('ProductForm', { product: p })}>
           <Image source={productImageSource(p)} style={styles.thumb} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={{ flex: 1, marginStart: 12 }}>
             <Text style={styles.name} numberOfLines={2}>
               {p.name}
             </Text>
@@ -91,10 +92,10 @@ export default function AdminProductsScreen({ navigation }) {
             </Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
               <Text style={{ fontWeight: '800', color: colors.text }}>{format(p.price)}</Text>
-              <Text style={{ fontWeight: '700', color: p.stockLevel <= 10 ? colors.warning : colors.success }}>Stock {p.stockLevel}</Text>
+              <Text style={{ fontWeight: '700', color: p.stockLevel <= 10 ? colors.warning : colors.success }}>{tp('Stock')} {p.stockLevel}</Text>
             </View>
           </View>
-          <Pressable onPress={() => confirmDelete(p)} hitSlop={10} style={{ marginLeft: 10 }} accessibilityLabel={`Delete ${p.name}`}>
+          <Pressable onPress={() => confirmDelete(p)} hitSlop={10} style={{ marginStart: 10 }} accessibilityLabel={`Delete ${p.name}`}>
             <Ionicons name="trash-outline" size={20} color={colors.danger} />
           </Pressable>
         </Card>
@@ -114,8 +115,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-  searchInput: { flex: 1, minHeight: 44, marginLeft: 8, fontSize: 15, color: colors.text },
-  thumb: { width: 60, height: 60, borderRadius: 10, backgroundColor: '#eef2f7' },
+  searchInput: { flex: 1, minHeight: 44, marginStart: 8, fontSize: 15, color: colors.text },
+  thumb: { width: 60, height: 60, borderRadius: 10, backgroundColor: '#F4F0E8' },
   name: { fontWeight: '700', color: colors.text },
   soft: { color: colors.textSoft, fontSize: 12, marginTop: 2 },
 })

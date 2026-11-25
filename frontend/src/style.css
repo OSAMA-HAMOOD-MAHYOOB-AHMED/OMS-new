@@ -1,31 +1,45 @@
 :root {
-  /* Brand / UI tokens (aligned to mockups) */
-  --brand-blue: #2563eb;
-  --brand-blue-2: #1d4ed8;
-  --brand-teal: #14b8a6;
+  /* Brand tokens — taken from the Al-Wakeel Al-Shamel logo (gold + black). */
+  --ink: #141414;
+  --gold: #b8914f;
+  --gold-light: #d4b27a;
+  --gold-text: #85652a; /* gold that passes 4.5:1 on light backgrounds */
+  --sand: #f6efe1;
+  --sand-2: #f4f0e8;
 
-  --text: #64748b;
-  --text-h: #0f172a;
-  --muted: #94a3b8;
+  /* Legacy names kept so every page picks up the new palette. */
+  --brand-blue: #141414; /* primary actions are black */
+  --brand-blue-2: #85652a; /* active / hover text */
+  --brand-teal: #b8914f;
 
-  --bg: #f8fafc;
+  --text: #6b6459;
+  --text-h: #141414;
+  --muted: #8a8273;
+
+  --bg: #faf8f4;
   --surface: #ffffff;
-  --border: #e5e7eb;
+  --border: #ece6da;
+  --border-strong: #e4dccb;
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --success: #1f7a4d;
+  --danger: #9a2a16;
+
+  --shadow-sm: 0 1px 2px rgba(20, 20, 20, 0.05);
+  --shadow-md: 0 12px 32px rgba(20, 20, 20, 0.08);
 
   --radius-sm: 10px;
   --radius-md: 14px;
-  --radius-lg: 18px;
+  --radius-lg: 22px;
 
-  --admin-bg: #0f172a;
-  --admin-surface: #111c33;
-  --admin-text: #e2e8f0;
-  --admin-muted: #94a3b8;
+  --admin-bg: #141414;
+  --admin-surface: #1e1b17;
+  --admin-text: #e9e2d4;
+  --admin-muted: #b3aa99;
 
-  font: 16px/150% Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji',
-    'Segoe UI Emoji';
+  --font-body: 'IBM Plex Sans Arabic', 'Cairo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-head: 'Cairo', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+
+  font: 16px/160% var(--font-body);
   letter-spacing: 0.1px;
   color: var(--text);
   background: var(--bg);
@@ -37,17 +51,32 @@
 
 body {
   margin: 0;
+  /* Never scroll sideways (in RTL a stray overflow shifted the whole page). `clip` keeps the sticky header working. */
+  overflow-x: clip;
 }
 
 h1,
 h2,
 h3 {
   color: var(--text-h);
-  letter-spacing: -0.35px;
+  font-family: var(--font-head);
+  letter-spacing: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 a {
-  color: var(--brand-blue);
+  color: var(--gold-text);
 }
 
 * {

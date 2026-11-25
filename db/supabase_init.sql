@@ -29,6 +29,14 @@ CREATE TABLE IF NOT EXISTS product (
   imageurl VARCHAR(512) NULL
 );
 
+-- Product photos uploaded by the admin (served at /api/products/{id}/image).
+CREATE TABLE IF NOT EXISTS product_image (
+  productid VARCHAR(50) PRIMARY KEY REFERENCES product(productid) ON DELETE CASCADE,
+  contenttype VARCHAR(50) NOT NULL,
+  data BYTEA NOT NULL,
+  updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS "Order" (
   orderid VARCHAR(50) PRIMARY KEY,
   email VARCHAR(255) NOT NULL,

@@ -1,20 +1,20 @@
 <template>
   <div class="wrap">
     <div class="card">
-      <img class="avatar" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
-      <h2 class="h2">Admin Login</h2>
-      <p class="sub">Sign in with an Admin account</p>
+      <img class="avatar" :src="siteLogoUrl" :alt="tp('Al-Wakeel Al-Shamel')" />
+      <h2 class="h2">{{ tp('Admin Login') }}</h2>
+      <p class="sub">{{ tp('Sign in with an Admin account') }}</p>
 
       <form class="form" @submit.prevent="submit">
         <label class="field">
-          <span class="lbl">Email Address</span>
+          <span class="lbl">{{ tp('Email Address') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">✉</span>
             <input v-model.trim="email" type="email" autocomplete="username" required />
           </div>
         </label>
         <label class="field">
-          <span class="lbl">Password</span>
+          <span class="lbl">{{ tp('Password') }}</span>
           <div class="input">
             <span class="glyph" aria-hidden="true">🔒</span>
             <input v-model="password" type="password" autocomplete="current-password" required />
@@ -22,25 +22,28 @@
         </label>
 
         <button class="btn" type="submit" :disabled="auth.loading">
-          {{ auth.loading ? 'Signing in...' : 'Sign In' }}
+          {{ tp(auth.loading ? 'Signing in...' : 'Sign In') }}
         </button>
       </form>
 
-      <p v-if="auth.error" class="error">{{ auth.error }}</p>
+      <p v-if="auth.error" class="error">{{ tp(auth.error) }}</p>
 
       <p class="hint">
-        Not an admin?
-        <RouterLink class="link" to="/login">Customer login</RouterLink>
+        {{ tp('Not an admin?') }}
+        <RouterLink class="link" to="/login">{{ tp('Customer login') }}</RouterLink>
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useI18n } from '../../i18n'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { siteLogoUrl } from '../../utils/images'
+
+const { tp } = useI18n()
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -100,7 +103,7 @@ async function submit() {
   display: grid;
   gap: 12px;
   margin-top: 16px;
-  text-align: left;
+  text-align: start;
 }
 .field {
   display: grid;
@@ -109,7 +112,7 @@ async function submit() {
 .lbl {
   font-size: 12px;
   font-weight: 900;
-  color: #334155;
+  color: #3A352D;
 }
 .input {
   display: flex;
@@ -137,7 +140,7 @@ input {
 .btn {
   border: 0;
   cursor: pointer;
-  background: #0f172a;
+  background: #141414;
   color: white;
   padding: 12px 14px;
   border-radius: 12px;
@@ -152,7 +155,7 @@ input {
   border: 1px solid rgba(180, 35, 24, 0.2);
   padding: 8px 10px;
   border-radius: 12px;
-  text-align: left;
+  text-align: start;
 }
 .hint {
   margin-top: 12px;

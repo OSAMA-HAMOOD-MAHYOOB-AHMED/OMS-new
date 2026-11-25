@@ -4,6 +4,7 @@ import { FlatList, Linking, StyleSheet, Text, TextInput, View } from 'react-nati
 import { useApi } from '../../api/useApi'
 import { Card, Empty, ErrorBox, Loading } from '../../components/ui'
 import { colors, radius } from '../../theme'
+import { tp } from '../../i18n'
 
 export default function AdminCustomersScreen() {
   const { data, error, loading, refreshing, refresh, reload } = useApi('/api/admin/customers', { initial: [] })
@@ -34,7 +35,7 @@ export default function AdminCustomersScreen() {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search name, email or phone"
+              placeholder={tp('Search name, email or phone')}
               placeholderTextColor={colors.muted}
               style={styles.searchInput}
               autoCapitalize="none"
@@ -44,7 +45,7 @@ export default function AdminCustomersScreen() {
           <Text style={{ color: colors.textSoft, marginBottom: 8, fontSize: 13 }}>{rows.length} customer{rows.length === 1 ? '' : 's'}</Text>
         </View>
       }
-      ListEmptyComponent={!error ? <Empty icon="people-outline" title="No customers found" /> : null}
+      ListEmptyComponent={!error ? <Empty icon="people-outline" title={tp('No customers found')} /> : null}
       renderItem={({ item: u }) => (
         <Card style={{ padding: 14 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -81,8 +82,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-  searchInput: { flex: 1, minHeight: 44, marginLeft: 8, fontSize: 15, color: colors.text },
-  name: { fontWeight: '800', color: colors.text, fontSize: 15, flex: 1, marginRight: 8 },
+  searchInput: { flex: 1, minHeight: 44, marginStart: 8, fontSize: 15, color: colors.text },
+  name: { fontWeight: '800', color: colors.text, fontSize: 15, flex: 1, marginEnd: 8 },
   role: { backgroundColor: colors.primarySoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   link: { color: colors.primary, marginTop: 4 },
   soft: { color: colors.textSoft, marginTop: 4, fontSize: 13 },

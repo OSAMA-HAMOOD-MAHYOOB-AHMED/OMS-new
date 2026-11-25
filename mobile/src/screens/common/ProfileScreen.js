@@ -7,6 +7,7 @@ import { useApi } from '../../api/useApi'
 import { Button, Card, ErrorBox, InfoBox, Input, Loading, Row, Screen, SectionTitle } from '../../components/ui'
 import { API_URL } from '../../config'
 import { useAuth } from '../../context/AuthContext'
+import { useI18n, tp } from '../../i18n'
 import { colors } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
 import { formatDate } from '../../utils/format'
@@ -14,6 +15,7 @@ import { validateAddress, validateName, validatePassword, validatePhone } from '
 
 export default function ProfileScreen() {
   const { logout, role } = useAuth()
+  const { t, lang, setLanguage } = useI18n()
   const { data: profile, error, loading, refreshing, refresh, reload, setData } = useApi('/api/profile')
 
   const [editing, setEditing] = useState(false)
@@ -127,9 +129,9 @@ export default function ProfileScreen() {
   }
 
   function confirmLogout() {
-    Alert.alert('Sign out?', 'You will need to sign in again.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: logout },
+    Alert.alert(tp('Sign out?'), tp('You will need to sign in again.'), [
+      { text: tp('Cancel'), style: 'cancel' },
+      { text: tp('Sign out'), style: 'destructive', onPress: logout },
     ])
   }
 
@@ -168,7 +170,7 @@ export default function ProfileScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
       <View style={{ alignItems: 'center', marginBottom: 16 }}>
-        <Pressable onPress={pickAvatar} disabled={avatarBusy} accessibilityLabel="Change profile picture">
+        <Pressable onPress={pickAvatar} disabled={avatarBusy} accessibilityLabel={tp('Change profile picture')}>
           {profile.avatarUrl ? (
             <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
           ) : (
@@ -181,14 +183,12 @@ export default function ProfileScreen() {
           </View>
         </Pressable>
         {profile.avatarUrl ? (
-          <Text onPress={removeAvatar} style={{ color: colors.textSoft, fontSize: 12, marginTop: 6 }}>
-            Remove picture
-          </Text>
+          <Text onPress={removeAvatar} style={{ color: colors.textSoft, fontSize: 12, marginTop: 6 }}>{tp('Remove picture')}</Text>
         ) : null}
         <Text style={styles.name}>{profile.name}</Text>
         <Text style={{ color: colors.textSoft }}>{profile.email}</Text>
         <View style={styles.roleBadge}>
-          <Text style={{ color: colors.primaryDark, fontWeight: '700', fontSize: 12 }}>{role}</Text>
+          <Text style={{ color: colors.primaryDark, fontWeight: '700', fontSize: 12 }}>{tp(role)}</Text>
         </View>
       </View>
 
@@ -199,7 +199,7 @@ export default function ProfileScreen() {
         right={
           !editing ? (
             <Text style={styles.link} onPress={() => { setEditing(true); setMessage(null) }}>
-              Edit
+              {tp('Edit')}
             </Text>
           ) : null
         }
@@ -209,58 +209,74 @@ export default function ProfileScreen() {
       <Card>
         {editing ? (
           <>
-            <Input label="Full name" value={form.name} onChangeText={(v) => setForm((f) => ({ ...f, name: v }))} autoCapitalize="words" error={formErrors.name} />
-            <Input label="Phone" value={form.phoneNumber} onChangeText={(v) => setForm((f) => ({ ...f, phoneNumber: v }))} keyboardType="phone-pad" error={formErrors.phoneNumber} />
-            <Input label="Address" value={form.address} onChangeText={(v) => setForm((f) => ({ ...f, address: v }))} multiline autoCapitalize="sentences" error={formErrors.address} />
+            <Input label={tp('Full name')} value={form.name} onChangeText={(v) => setForm((f) => ({ ...f, name: v }))} autoCapitalize="words" error={formErrors.name} />
+            <Input label={tp('Phone')} value={form.phoneNumber} onChangeText={(v) => setForm((f) => ({ ...f, phoneNumber: v }))} keyboardType="phone-pad" error={formErrors.phoneNumber} />
+            <Input label={tp('Address')} value={form.address} onChangeText={(v) => setForm((f) => ({ ...f, address: v }))} multiline autoCapitalize="sentences" error={formErrors.address} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Button title="Cancel" variant="secondary" style={{ flex: 1 }} onPress={() => { setEditing(false); setFormErrors({}) }} />
-              <Button title="Save" style={{ flex: 1 }} onPress={saveProfile} loading={saving} />
+              <Button title={tp('Cancel')} variant="secondary" style={{ flex: 1 }} onPress={() => { setEditing(false); setFormErrors({}) }} />
+              <Button title={tp('Save')} style={{ flex: 1 }} onPress={saveProfile} loading={saving} />
             </View>
           </>
         ) : (
           <>
-            <Row label="Phone" value={profile.phoneNumber} />
-            <Row label="Address" value={profile.address} />
-            <Row label="Email verified" value={profile.emailVerified ? 'Yes' : 'No'} />
-            <Row label="Member since" value={formatDate(profile.createdAt)} />
+            <Row label={tp('Phone')} value={profile.phoneNumber} />
+            <Row label={tp('Address')} value={profile.address} />
+            <Row label={tp('Email verified')} value={tp(profile.emailVerified ? 'Yes' : 'No')} />
+            <Row label={tp('Member since')} value={formatDate(profile.createdAt)} />
           </>
         )}
+      </Card>
+
+      <SectionTitle>{t('profile.language')}</SectionTitle>
+      <Card>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Button
+            title={t('profile.arabic')}
+            variant={lang === 'ar' ? 'primary' : 'secondary'}
+            style={{ flex: 1 }}
+            onPress={() => setLanguage('ar')}
+          />
+          <Button
+            title={t('profile.english')}
+            variant={lang === 'en' ? 'primary' : 'secondary'}
+            style={{ flex: 1 }}
+            onPress={() => setLanguage('en')}
+          />
+        </View>
       </Card>
 
       <SectionTitle>Security</SectionTitle>
       <Card>
         {pwOpen ? (
           <>
-            <Input label="Current password" value={pw.current} onChangeText={(v) => setPw((p) => ({ ...p, current: v }))} secure error={pwErrors.current} />
-            <Input label="New password" value={pw.next} onChangeText={(v) => setPw((p) => ({ ...p, next: v }))} secure error={pwErrors.next} />
-            <Input label="Confirm new password" value={pw.confirm} onChangeText={(v) => setPw((p) => ({ ...p, confirm: v }))} secure error={pwErrors.confirm} />
+            <Input label={tp('Current password')} value={pw.current} onChangeText={(v) => setPw((p) => ({ ...p, current: v }))} secure error={pwErrors.current} />
+            <Input label={tp('New password')} value={pw.next} onChangeText={(v) => setPw((p) => ({ ...p, next: v }))} secure error={pwErrors.next} />
+            <Input label={tp('Confirm new password')} value={pw.confirm} onChangeText={(v) => setPw((p) => ({ ...p, confirm: v }))} secure error={pwErrors.confirm} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Button title="Cancel" variant="secondary" style={{ flex: 1 }} onPress={() => { setPwOpen(false); setPwErrors({}) }} />
-              <Button title="Update" style={{ flex: 1 }} onPress={changePassword} loading={pwSaving} />
+              <Button title={tp('Cancel')} variant="secondary" style={{ flex: 1 }} onPress={() => { setPwOpen(false); setPwErrors({}) }} />
+              <Button title={tp('Update')} style={{ flex: 1 }} onPress={changePassword} loading={pwSaving} />
             </View>
           </>
         ) : (
-          <Button title="Change password" icon="key-outline" variant="secondary" onPress={() => { setPwOpen(true); setMessage(null) }} />
+          <Button title={tp('Change password')} icon="key-outline" variant="secondary" onPress={() => { setPwOpen(true); setMessage(null) }} />
         )}
       </Card>
 
-      <Button title="Sign out" icon="log-out-outline" variant="secondary" onPress={confirmLogout} />
+      <Button title={tp('Sign out')} icon="log-out-outline" variant="secondary" onPress={confirmLogout} />
 
       <View style={{ marginTop: 24 }}>
         {deleteOpen ? (
           <Card style={{ borderColor: '#fecaca' }}>
-            <Text style={{ color: colors.danger, fontWeight: '700', marginBottom: 8 }}>Delete account permanently</Text>
-            <Text style={{ color: colors.textSoft, marginBottom: 12 }}>This cannot be undone. Enter your password to confirm.</Text>
-            <Input label="Password" value={deletePw} onChangeText={setDeletePw} secure />
+            <Text style={{ color: colors.danger, fontWeight: '700', marginBottom: 8 }}>{tp('Delete account permanently')}</Text>
+            <Text style={{ color: colors.textSoft, marginBottom: 12 }}>{tp('This cannot be undone. Enter your password to confirm.')}</Text>
+            <Input label={tp('Password')} value={deletePw} onChangeText={setDeletePw} secure />
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Button title="Cancel" variant="secondary" style={{ flex: 1 }} onPress={() => { setDeleteOpen(false); setDeletePw('') }} />
-              <Button title="Delete" variant="danger" style={{ flex: 1 }} onPress={() => doDelete(deletePw)} loading={deleting} disabled={!deletePw} />
+              <Button title={tp('Cancel')} variant="secondary" style={{ flex: 1 }} onPress={() => { setDeleteOpen(false); setDeletePw('') }} />
+              <Button title={tp('Delete')} variant="danger" style={{ flex: 1 }} onPress={() => doDelete(deletePw)} loading={deleting} disabled={!deletePw} />
             </View>
           </Card>
         ) : (
-          <Text style={styles.danger} onPress={deleteAccount}>
-            Delete my account
-          </Text>
+          <Text style={styles.danger} onPress={deleteAccount}>{tp('Delete my account')}</Text>
         )}
       </View>
 

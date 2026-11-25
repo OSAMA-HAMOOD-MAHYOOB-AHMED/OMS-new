@@ -6,7 +6,7 @@ namespace Oms.Api.Catalog;
 
 [ApiController]
 [Route("api/products")]
-public sealed class ProductsController(ProductRepository products) : ControllerBase
+public sealed class ProductsController(ProductRepository products, ProductImageRepository images) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -23,5 +23,15 @@ public sealed class ProductsController(ProductRepository products) : ControllerB
         var row = await products.Get(productID);
         return row is null ? NotFound() : Ok(row);
     }
-}
 
+    /// <summary>Product photo uploaded by the admin (public, cacheable; the URL carries a version).</summary>
+    [HttpGet("{productID}/image")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Image([FromRoute] string productID)
+    {
+        var img = await images.Get(productID);
+        if (img is null) return NotFound();
+        Response.Headers.CacheControl = "public, max-age=604800";
+        return File(img.Value.Data, img.Value.ContentType);
+    }
+}

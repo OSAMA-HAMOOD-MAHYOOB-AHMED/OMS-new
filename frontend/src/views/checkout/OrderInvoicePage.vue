@@ -4,62 +4,62 @@
 
     <div class="head">
       <div class="headLeft">
-        <img class="logo" :src="siteLogoUrl" alt="Al-Wakeel Al-Shamel" />
+        <img class="logo" :src="siteLogoUrl" :alt="tp('Al-Wakeel Al-Shamel')" />
         <div>
-          <h1 class="h1">Your invoice</h1>
+          <h1 class="h1">{{ tp('Your invoice') }}</h1>
           <p class="sub">Order {{ orderId }} — official PDF invoice with full order details.</p>
         </div>
       </div>
       <div v-if="invoice" class="headActions">
         <button class="btnPrimary" type="button" :disabled="downloading" @click="download">
-          {{ downloading ? 'Preparing PDF…' : 'Download PDF' }}
+          {{ tp(downloading ? 'Preparing PDF…' : 'Download PDF') }}
         </button>
       </div>
     </div>
 
-    <div v-if="loading" class="muted">Loading invoice…</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading invoice…') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else-if="invoice" class="layout">
       <aside class="summaryCard">
-        <div class="stamp">PAID</div>
+        <div class="stamp">{{ tp('PAID') }}</div>
         <div class="sumTitle">{{ invoice.subject }}</div>
 
         <div class="block">
-          <div class="blockTitle">Order</div>
-          <div class="detail"><span>Order number</span><strong class="mono">{{ invoice.orderId }}</strong></div>
-          <div class="detail"><span>Order date</span><strong>{{ formatDate(invoice.orderDate) }}</strong></div>
-          <div class="detail"><span>Status</span><strong>{{ invoice.orderStatus }}</strong></div>
+          <div class="blockTitle">{{ tp('Order') }}</div>
+          <div class="detail"><span>{{ tp('Order number') }}</span><strong class="mono">{{ invoice.orderId }}</strong></div>
+          <div class="detail"><span>{{ tp('Order date') }}</span><strong>{{ formatDate(invoice.orderDate) }}</strong></div>
+          <div class="detail"><span>{{ tp('Status') }}</span><strong>{{ tp(invoice.orderStatus) }}</strong></div>
         </div>
 
         <div class="block">
-          <div class="blockTitle">Customer</div>
-          <div class="detail"><span>Name</span><strong>{{ invoice.customerName }}</strong></div>
-          <div class="detail"><span>Email</span><strong>{{ invoice.email }}</strong></div>
+          <div class="blockTitle">{{ tp('Customer') }}</div>
+          <div class="detail"><span>{{ tp('Name') }}</span><strong>{{ invoice.customerName }}</strong></div>
+          <div class="detail"><span>{{ tp('Email') }}</span><strong>{{ invoice.email }}</strong></div>
         </div>
 
         <div class="block">
-          <div class="blockTitle">Shipping</div>
-          <div class="detail"><span>Carrier</span><strong>{{ invoice.shippingCarrier }}</strong></div>
-          <div class="detail"><span>Service</span><strong>{{ invoice.shippingService }}</strong></div>
-          <div class="detail"><span>Cost</span><strong>{{ invoice.shippingCostLabel }}</strong></div>
-          <div class="detail"><span>Delivery</span><strong>{{ invoice.shippingEstimatedDelivery }}</strong></div>
+          <div class="blockTitle">{{ tp('Shipping') }}</div>
+          <div class="detail"><span>{{ tp('Carrier') }}</span><strong>{{ invoice.shippingCarrier }}</strong></div>
+          <div class="detail"><span>{{ tp('Service') }}</span><strong>{{ invoice.shippingService }}</strong></div>
+          <div class="detail"><span>{{ tp('Cost') }}</span><strong>{{ invoice.shippingCostLabel }}</strong></div>
+          <div class="detail"><span>{{ tp('Delivery') }}</span><strong>{{ invoice.shippingEstimatedDelivery }}</strong></div>
           <div class="detail">
-            <span>Tracking</span><strong class="mono small">{{ invoice.shippingTrackingNumber }}</strong>
+            <span>{{ tp('Tracking') }}</span><strong class="mono small">{{ invoice.shippingTrackingNumber }}</strong>
           </div>
         </div>
 
         <div class="block">
-          <div class="blockTitle">Payment</div>
-          <div class="detail"><span>Method</span><strong>{{ paymentLabel }}</strong></div>
-          <div class="detail"><span>Status</span><strong>{{ invoice.paymentStatus || '—' }}</strong></div>
+          <div class="blockTitle">{{ tp('Payment') }}</div>
+          <div class="detail"><span>{{ tp('Method') }}</span><strong>{{ paymentLabel }}</strong></div>
+          <div class="detail"><span>{{ tp('Status') }}</span><strong>{{ invoice.paymentStatus || '—' }}</strong></div>
           <div v-if="invoice.transactionReference" class="detail">
-            <span>Transaction</span><strong class="mono small">{{ invoice.transactionReference }}</strong>
+            <span>{{ tp('Transaction') }}</span><strong class="mono small">{{ invoice.transactionReference }}</strong>
           </div>
         </div>
 
         <div class="itemsBlock">
-          <div class="blockTitle">Items</div>
+          <div class="blockTitle">{{ tp('Items') }}</div>
           <div v-for="it in invoice.items" :key="it.productId" class="itemRow">
             <div class="itemName">{{ it.name }}</div>
             <div class="itemMeta">{{ it.productId }} · Qty {{ it.quantity }} × {{ format(it.unitPrice) }}</div>
@@ -68,25 +68,25 @@
         </div>
 
         <div class="totalRow">
-          <span>Total paid</span>
+          <span>{{ tp('Total paid') }}</span>
           <strong>{{ format(invoice.totalPrice) }}</strong>
         </div>
       </aside>
 
       <div class="previewCard">
         <div class="previewHead">
-          <div class="previewTitle">PDF Preview</div>
-          <button class="btnGhost" type="button" :disabled="downloading" @click="download">Download PDF</button>
+          <div class="previewTitle">{{ tp('PDF Preview') }}</div>
+          <button class="btnGhost" type="button" :disabled="downloading" @click="download">{{ tp('Download PDF') }}</button>
         </div>
-        <iframe v-if="pdfUrl && !isMobile" class="pdfFrame" :src="pdfUrl" title="Invoice PDF preview" />
+        <iframe v-if="pdfUrl && !isMobile" class="pdfFrame" :src="pdfUrl" :title="tp('Invoice PDF preview')" />
         <div v-else-if="isMobile && invoice" class="mobilePdf">
           <div class="pdfFileIcon">📄</div>
-          <p class="mobilePdfMsg">Tap the button below to download your PDF invoice.</p>
+          <p class="mobilePdfMsg">{{ tp('Tap the button below to download your PDF invoice.') }}</p>
           <button class="btnPrimary mobilePdfBtn" type="button" :disabled="downloading" @click="download">
-            {{ downloading ? 'Preparing…' : 'Download PDF Invoice' }}
+            {{ tp(downloading ? 'Preparing…' : 'Download PDF Invoice') }}
           </button>
         </div>
-        <div v-else class="pdfLoading">Generating PDF preview…</div>
+        <div v-else class="pdfLoading">{{ tp('Generating PDF preview…') }}</div>
       </div>
 
       <CheckoutReturnPanel
@@ -102,6 +102,7 @@
 </template>
 
 <script setup>
+import { useI18n } from '../../i18n'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 const isMobile = ref(window.innerWidth < 768)
@@ -120,6 +121,8 @@ import {
 import { siteLogoUrl } from '../../utils/images'
 import { useCurrency } from '../../composables/useCurrency'
 import { clearCompletedOrder, loadCompletedOrder } from '../../stores/checkout'
+
+const { tp } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -320,7 +323,7 @@ onUnmounted(() => {
 .detail strong {
   color: var(--text-h);
   font-weight: 900;
-  text-align: right;
+  text-align: end;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -380,7 +383,7 @@ onUnmounted(() => {
   gap: 10px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
-  background: #f8fafc;
+  background: #FAF8F4;
 }
 .previewTitle {
   font-weight: 950;

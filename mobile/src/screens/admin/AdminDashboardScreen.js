@@ -7,6 +7,7 @@ import { useCurrency } from '../../context/CurrencyContext'
 import { colors } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
 import { RecentOrdersList } from '../staff/SalesDashboardScreen'
+import { tp } from '../../i18n'
 
 export default function AdminDashboardScreen({ navigation }) {
   const { format } = useCurrency()
@@ -43,23 +44,23 @@ export default function AdminDashboardScreen({ navigation }) {
       {dash ? (
         <>
           <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
-            <StatCard icon="receipt-outline" label="Orders" value={String(dash.totalOrders)} />
-            <StatCard icon="people-outline" label="Customers" value={String(customers)} tint={colors.teal} />
+            <StatCard icon="receipt-outline" label={tp('Orders')} value={String(dash.totalOrders)} />
+            <StatCard icon="people-outline" label={tp('Customers')} value={String(customers)} tint={colors.teal} />
           </View>
           <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
-            <StatCard icon="pricetags-outline" label="Products" value={String(products.length)} tint="#7c3aed" />
-            <StatCard icon="wallet-outline" label="Cash revenue" value={format(dash.cashRevenue)} tint={colors.success} />
+            <StatCard icon="pricetags-outline" label={tp('Products')} value={String(products.length)} tint="#7c3aed" />
+            <StatCard icon="wallet-outline" label={tp('Cash revenue')} value={format(dash.cashRevenue)} tint={colors.success} />
           </View>
 
-          <Button title="Sales reports" icon="bar-chart-outline" variant="secondary" onPress={() => navigation.navigate('AdminReports')} style={{ marginBottom: 8 }} />
+          <Button title={tp('Sales reports')} icon="bar-chart-outline" variant="secondary" onPress={() => navigation.navigate('AdminReports')} style={{ marginBottom: 8 }} />
 
           {lowStock.length > 0 ? (
             <>
-              <SectionTitle>Low stock ({lowStock.length})</SectionTitle>
+              <SectionTitle>{`${tp('Low Stock')} (${lowStock.length})`}</SectionTitle>
               <Card>
                 {lowStock.slice(0, 6).map((p) => (
                   <View key={p.productID} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}>
-                    <Text style={{ color: colors.text, flex: 1, marginRight: 8 }} numberOfLines={1}>
+                    <Text style={{ color: colors.text, flex: 1, marginEnd: 8 }} numberOfLines={1}>
                       {p.name}
                     </Text>
                     <Text style={{ fontWeight: '800', color: p.stockLevel === 0 ? colors.danger : colors.warning }}>{p.stockLevel}</Text>
@@ -69,8 +70,8 @@ export default function AdminDashboardScreen({ navigation }) {
             </>
           ) : null}
 
-          <SectionTitle right={<Button title="All orders" small variant="ghost" onPress={() => navigation.navigate('AdminOrders')} />}>
-            Recent orders
+          <SectionTitle right={<Button title={tp('All orders')} small variant="ghost" onPress={() => navigation.navigate('AdminOrders')} />}>
+            {tp('Recent Orders')}
           </SectionTitle>
           <RecentOrdersList
             orders={dash.recentOrders}

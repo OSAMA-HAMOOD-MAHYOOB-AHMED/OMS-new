@@ -38,6 +38,7 @@ builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddSingleton<Oms.Api.Auth.UserRepository>();
 builder.Services.AddSingleton<Oms.Api.Auth.TokenService>();
 builder.Services.AddSingleton<Oms.Api.Catalog.ProductRepository>();
+builder.Services.AddSingleton<Oms.Api.Catalog.ProductImageRepository>();
 builder.Services.AddSingleton<Oms.Api.Orders.OrderRepository>();
 builder.Services.AddSingleton<Oms.Api.Inventory.InventoryRepository>();
 builder.Services.AddSingleton<Oms.Api.Dashboards.DashboardRepository>();
@@ -90,6 +91,7 @@ var app = builder.Build();
 var demoSeedEnabled = builder.Configuration.GetValue("DemoSeed:Enabled", true);
 await DemoUserSeeder.SeedAsync(app, demoSeedEnabled);
 await Oms.Api.Catalog.ProductSeeder.SeedAsync(app);
+await Oms.Api.Catalog.ProductImageRepository.EnsureSchemaAsync(app);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

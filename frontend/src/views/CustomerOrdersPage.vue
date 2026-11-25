@@ -1,62 +1,82 @@
 <template>
   <section class="page">
     <div class="head">
-      <h1 class="h1">Order History</h1>
+      <h1 class="h1">{{ t('orders.title') }}</h1>
       <div class="filters">
-        <select v-model="statusFilter" class="select">
-          <option value="">All statuses</option>
-          <option>Placed</option>
-          <option>Shipped</option>
-          <option>Delivered</option>
-          <option>Cancelled</option>
+        <label class="srOnly" for="statusFilter">{{ t('orders.allStatuses') }}</label>
+        <select id="statusFilter" v-model="statusFilter" class="select">
+          <option value="">{{ t('orders.allStatuses') }}</option>
+          <option v-for="s in statusOptions" :key="s" :value="s">{{ statusLabel(s) }}</option>
         </select>
-        <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
+        <button class="btnGhost" type="button" :disabled="loading" @click="load">
+          <AppIcon name="refresh" :size="18" />
+          {{ t('orders.refresh') }}
+        </button>
       </div>
     </div>
 
-    <div v-if="loading" class="muted">Loading...</div>
+    <div v-if="loading" class="muted">{{ t('common.loading') }}</div>
     <div v-else-if="error" class="error">{{ error }}</div>
+
+    <div v-else-if="!orders.length" class="emptyBox">
+      <AppIcon name="receipt" :size="40" />
+      <p>{{ t('orders.empty') }}</p>
+      <RouterLink class="btnPrimary" :to="{ name: 'products' }">{{ t('orders.startShopping') }}</RouterLink>
+    </div>
 
     <div v-else class="list">
       <article v-for="o in orders" :key="o.orderID" class="order">
         <div class="top">
-          <div>
-            <div class="id">Order {{ o.orderID }}</div>
-            <div class="when">Placed on {{ formatDate(o.orderDate) }}</div>
+          <div class="topLeft">
+            <div class="id" dir="ltr">{{ t('orders.order', { id: shortId(o.orderID) }) }}</div>
+            <div class="when">{{ t('orders.placedOn', { date: formatDate(o.orderDate) }) }}</div>
           </div>
 
           <div class="rightTop">
-            <span class="badge" :class="badgeClass(o.orderStatus)">{{ o.orderStatus }}</span>
-            <div class="total">{{ format(o.totalPrice) }}</div>
+            <span class="badge" :class="badgeClass(o.orderStatus)">{{ statusLabel(o.orderStatus) }}</span>
+            <div class="total" dir="ltr">{{ format(o.totalPrice) }}</div>
           </div>
         </div>
 
-        <div class="hr" />
+        <ol v-if="!isCancelled(o)" class="tracker" :aria-label="statusLabel(o.orderStatus)">
+          <li v-for="(step, i) in trackSteps" :key="step" :class="stepClass(o, i)">
+            <span class="stepDot"><AppIcon v-if="stepIndex(o) > i" name="check" :size="14" :stroke="3" /></span>
+            <span class="stepLabel">{{ statusLabel(step) }}</span>
+          </li>
+        </ol>
+        <p v-else class="cancelled">{{ t('orders.cancelledNote') }}</p>
 
         <div class="lines">
           <div v-for="it in o.items" :key="it.productID" class="line">
-            <div class="lineLeft">{{ it.name }} × {{ it.quantity }}</div>
-            <div class="lineRight">{{ format(it.subtotal) }}</div>
+            <div class="lineLeft" dir="auto">{{ it.name }} × {{ it.quantity }}</div>
+            <div class="lineRight" dir="ltr">{{ format(it.subtotal) }}</div>
           </div>
         </div>
 
         <div class="metaRow">
-          <div class="pay">Payment: <span class="strong">{{ paymentLabel(o.paymentMethod) }}</span></div>
+          <div class="pay">{{ t('orders.payment') }}: <span class="strong">{{ tp(paymentLabel(o.paymentMethod)) }}</span></div>
           <div class="pay">
-            Shipping: <span class="strong">{{ o.shippingService || 'FedEx Express' }}</span>
-            <span class="mutedInline"> · {{ o.shippingEstimatedDelivery || '3–5 business days' }}</span>
+            {{ t('orders.shipping') }}: <span class="strong">{{ o.shippingService || 'FedEx Express' }}</span>
+            <span class="mutedInline"> · {{ o.shippingEstimatedDelivery || t('orders.days') }}</span>
           </div>
           <div v-if="o.shippingTrackingNumber" class="pay tracking">
-            FedEx tracking: <span class="strong mono">{{ o.shippingTrackingNumber }}</span>
+            {{ t('orders.tracking') }}: <span class="strong mono">{{ o.shippingTrackingNumber }}</span>
           </div>
         </div>
 
         <div class="actions">
           <RouterLink class="btnPrimary small" :to="{ name: 'checkoutInvoice', params: { orderId: o.orderID } }">
-            View invoice
+            <AppIcon name="receipt" :size="18" />
+            {{ t('orders.invoice') }}
           </RouterLink>
-          <button class="btnGhost small" type="button" @click="downloadPdf(o.orderID)">Download PDF</button>
-          <button class="btnGhost small" type="button" @click="reorder(o)">Reorder</button>
+          <button class="btnGhost small" type="button" @click="downloadPdf(o.orderID)">
+            <AppIcon name="download" :size="18" />
+            {{ t('orders.pdf') }}
+          </button>
+          <button class="btnGhost small" type="button" @click="reorder(o)">
+            <AppIcon name="refresh" :size="18" />
+            {{ t('orders.reorder') }}
+          </button>
         </div>
       </article>
     </div>
@@ -68,8 +88,39 @@ import { onMounted, ref, computed } from 'vue'
 import { api } from '../api/client'
 import { downloadInvoicePdf, paymentMethodLabel } from '../utils/invoice'
 import { useCartStore } from '../stores/cart'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useCurrency } from '../composables/useCurrency'
+import { useI18n } from '../i18n'
+import AppIcon from '../components/AppIcon.vue'
+
+const { t, tp, statusLabel } = useI18n()
+const statusOptions = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
+const trackSteps = ['Placed', 'Processing', 'Shipped', 'Delivered']
+
+function shortId(id) {
+  const s = String(id || '')
+  return s.length > 14 ? `#${s.slice(0, 8).toUpperCase()}` : `#${s}`
+}
+
+function isCancelled(o) {
+  return String(o.orderStatus || '').toLowerCase().includes('cancel')
+}
+
+// Index of the step the order has reached (Delivered = all done).
+function stepIndex(o) {
+  const s = String(o.orderStatus || '').toLowerCase()
+  if (s.includes('deliver') || s.includes('complete')) return 4
+  if (s.includes('ship')) return 2
+  if (s.includes('process')) return 1
+  return 0
+}
+
+function stepClass(o, i) {
+  const at = stepIndex(o)
+  if (at > i) return 'done'
+  if (at === i) return 'current'
+  return 'todo'
+}
 
 const allOrders = ref([])
 const loading = ref(false)
@@ -115,7 +166,7 @@ async function load() {
     const res = await api.get('/api/orders/mine')
     allOrders.value = res.data
   } catch (e) {
-    error.value = e?.response?.data || 'Failed to load orders'
+    error.value = (typeof e?.response?.data === 'string' && e.response.data) || t('orders.loadFailed')
   } finally {
     loading.value = false
   }
@@ -125,7 +176,7 @@ async function downloadPdf(orderID) {
   try {
     await downloadInvoicePdf(api, orderID)
   } catch (e) {
-    error.value = e?.response?.data || 'Unable to download PDF invoice'
+    error.value = (typeof e?.response?.data === 'string' && e.response.data) || t('orders.pdfFailed')
   }
 }
 
@@ -145,6 +196,87 @@ onMounted(load)
 </script>
 
 <style scoped>
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.emptyBox {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 22px;
+  color: var(--text);
+  text-align: center;
+}
+.emptyBox p {
+  margin: 0;
+}
+.tracker {
+  list-style: none;
+  margin: 16px 0 6px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.tracker li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.tracker li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  inset-inline-start: calc(50% + 16px);
+  width: calc(100% - 32px);
+  height: 2px;
+  background: var(--border-strong);
+}
+.tracker li.done:not(:last-child)::after {
+  background: var(--ink);
+}
+.stepDot {
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  border: 2px solid var(--border-strong);
+  background: #fff;
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.done .stepDot {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.current .stepDot {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 5px var(--sand);
+}
+.stepLabel {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.todo .stepLabel {
+  color: var(--muted);
+  font-weight: 500;
+}
+.cancelled {
+  margin: 12px 0 4px;
+  color: var(--danger);
+  font-size: 14px;
+}
+
 .page {
   display: grid;
   gap: 14px;
@@ -242,9 +374,9 @@ onMounted(load)
   border-color: rgba(16, 185, 129, 0.22);
 }
 .bBlue {
-  background: rgba(37, 99, 235, 0.12);
-  color: #1d4ed8;
-  border-color: rgba(37, 99, 235, 0.22);
+  background: rgba(184, 145, 79, 0.12);
+  color: #85652A;
+  border-color: rgba(184, 145, 79, 0.22);
 }
 .bAmber {
   background: rgba(245, 158, 11, 0.14);
@@ -257,9 +389,9 @@ onMounted(load)
   border-color: rgba(239, 68, 68, 0.18);
 }
 .bGray {
-  background: rgba(148, 163, 184, 0.14);
-  color: #334155;
-  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(207, 199, 184, 0.14);
+  color: #3A352D;
+  border-color: rgba(207, 199, 184, 0.22);
 }
 
 .hr {
@@ -370,6 +502,16 @@ onMounted(load)
     text-align: center;
     justify-content: center;
   }
+}
+.actions .btnPrimary,
+.actions .btnGhost,
+.filters .btnGhost,
+.emptyBox .btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  font-weight: 600;
 }
 </style>
 

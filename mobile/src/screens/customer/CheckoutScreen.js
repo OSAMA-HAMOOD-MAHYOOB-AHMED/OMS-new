@@ -10,6 +10,7 @@ import { colors, radius } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
 import { SHIPPING } from '../../utils/format'
 import { detectCardBrand, digitsOnly, formatCardNumber, formatExpiry, validateCardForm } from '../../utils/validation'
+import { tp } from '../../i18n'
 
 const METHODS = [
   { key: 'Cash', title: 'Cash on Delivery', subtitle: 'Pay when your order arrives', icon: 'cash-outline' },
@@ -76,17 +77,15 @@ export default function CheckoutScreen({ navigation }) {
               <Text style={styles.strong}>{profile.name}</Text>
               <Text style={styles.soft}>{profile.address}</Text>
               <Text style={styles.soft}>{profile.phoneNumber}</Text>
-              <Text style={[styles.soft, { marginTop: 8, fontSize: 12 }]}>
-                To change this address, edit your profile.
-              </Text>
+              <Text style={[styles.soft, { marginTop: 8, fontSize: 12 }]}>{tp('To change this address, edit your profile.')}</Text>
             </>
           ) : (
-            <Text style={styles.soft}>Loading your address…</Text>
+            <Text style={styles.soft}>{tp('Loading your address…')}</Text>
           )}
           <Divider />
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="airplane-outline" size={18} color={colors.primary} />
-            <Text style={[styles.soft, { marginLeft: 8 }]}>
+            <Text style={[styles.soft, { marginStart: 8 }]}>
               {SHIPPING.service} · {SHIPPING.costLabel} · {SHIPPING.estimatedDelivery}
             </Text>
           </View>
@@ -98,7 +97,7 @@ export default function CheckoutScreen({ navigation }) {
           return (
             <Pressable key={m.key} onPress={() => setMethod(m.key)} style={[styles.method, active && styles.methodActive]}>
               <Ionicons name={m.icon} size={24} color={active ? colors.primary : colors.textSoft} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
+              <View style={{ flex: 1, marginStart: 12 }}>
                 <Text style={styles.strong}>{m.title}</Text>
                 <Text style={styles.soft}>{m.subtitle}</Text>
               </View>
@@ -110,14 +109,14 @@ export default function CheckoutScreen({ navigation }) {
         {method === 'CreditCard' ? (
           <Card style={{ marginTop: 4 }}>
             <Input
-              label="Cardholder name"
+              label={tp('Cardholder name')}
               value={card.cardName}
               onChangeText={(v) => setCard((c) => ({ ...c, cardName: v }))}
               autoCapitalize="words"
               error={cardErrors.cardName}
             />
             <Input
-              label={`Card number${brand && brand !== 'Card' ? ` · ${brand}` : ''}`}
+              label={`${tp('Card Number')}${brand && brand !== 'Card' ? ` · ${brand}` : ''}`}
               value={card.cardNumber}
               onChangeText={(v) => setCard((c) => ({ ...c, cardNumber: formatCardNumber(v) }))}
               keyboardType="number-pad"
@@ -128,17 +127,17 @@ export default function CheckoutScreen({ navigation }) {
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <Input
                 style={{ flex: 1 }}
-                label="Expiry"
+                label={tp('Expiry')}
                 value={card.cardExpiry}
                 onChangeText={(v) => setCard((c) => ({ ...c, cardExpiry: formatExpiry(v) }))}
                 keyboardType="number-pad"
-                placeholder="MM/YY"
+                placeholder={tp('MM/YY')}
                 maxLength={5}
                 error={cardErrors.cardExpiry}
               />
               <Input
                 style={{ flex: 1 }}
-                label="CVV"
+                label={tp('CVV')}
                 value={card.cardCvv}
                 onChangeText={(v) => setCard((c) => ({ ...c, cardCvv: digitsOnly(v).slice(0, 4) }))}
                 keyboardType="number-pad"
@@ -150,7 +149,7 @@ export default function CheckoutScreen({ navigation }) {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="shield-checkmark-outline" size={16} color={colors.success} />
-              <Text style={[styles.soft, { marginLeft: 6, fontSize: 12 }]}>Card details are sent securely and never stored on this phone.</Text>
+              <Text style={[styles.soft, { marginStart: 6, fontSize: 12 }]}>{tp('Card details are sent securely and never stored on this phone.')}</Text>
             </View>
           </Card>
         ) : null}
@@ -161,9 +160,9 @@ export default function CheckoutScreen({ navigation }) {
             <Row key={i.productID} label={`${i.quantity} × ${i.name}`} value={format(i.price * i.quantity)} />
           ))}
           <Divider />
-          <Row label={`Items (${count})`} value={format(total)} />
-          <Row label="Shipping" value={SHIPPING.costLabel} />
-          <Row label="Total" value={format(total)} bold />
+          <Row label={`${tp('Items')} (${count})`} value={format(total)} />
+          <Row label={tp('Shipping')} value={SHIPPING.costLabel} />
+          <Row label={tp('Total')} value={format(total)} bold />
         </Card>
 
         <ErrorBox message={error} />

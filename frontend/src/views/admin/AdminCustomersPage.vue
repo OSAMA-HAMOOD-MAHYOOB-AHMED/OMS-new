@@ -2,31 +2,31 @@
   <section class="page">
     <div class="head">
       <div>
-        <h1 class="h1">Customer Management</h1>
-        <p class="sub">View registered customers</p>
+        <h1 class="h1">{{ tp('Customer Management') }}</h1>
+        <p class="sub">{{ tp('View registered customers') }}</p>
       </div>
-      <button class="btnGhost" type="button" :disabled="loading" @click="load">Refresh</button>
+      <button class="btnGhost" type="button" :disabled="loading" @click="load">{{ tp('Refresh') }}</button>
     </div>
 
     <div class="toolbar">
       <div class="search">
         <span class="searchIcon" aria-hidden="true">⌕</span>
-        <input v-model.trim="q" class="searchInput" type="search" placeholder="Search customers..." />
+        <input v-model.trim="q" class="searchInput" type="search" :placeholder="tp('Search customers...')" />
       </div>
-      <button class="btnPrimary" type="button" :disabled="loading" @click="load">Search</button>
+      <button class="btnPrimary" type="button" :disabled="loading" @click="load">{{ tp('Search') }}</button>
     </div>
 
-    <div v-if="loading" class="muted">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-if="loading" class="muted">{{ tp('Loading...') }}</div>
+    <div v-else-if="error" class="error">{{ tp(error) }}</div>
 
     <div v-else class="tableWrap">
       <table class="table">
         <thead>
           <tr>
-            <th>Customer</th>
-            <th>Contact</th>
-            <th>Registered</th>
-            <th class="right">Orders</th>
+            <th>{{ tp('Customer') }}</th>
+            <th>{{ tp('Contact') }}</th>
+            <th>{{ tp('Registered') }}</th>
+            <th class="right">{{ tp('Orders') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -51,8 +51,11 @@
 </template>
 
 <script setup>
+import { useI18n } from '../../i18n'
 import { onMounted, ref } from 'vue'
 import { api } from '../../api/client'
+
+const { tp } = useI18n()
 
 const q = ref('')
 const customers = ref([])
@@ -173,23 +176,23 @@ function orderCountLabel(email) {
   min-width: 980px;
 }
 thead th {
-  text-align: left;
+  text-align: start;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 950;
   padding: 12px 14px;
-  background: #f8fafc;
+  background: #FAF8F4;
   border-bottom: 1px solid var(--border);
 }
 tbody td {
   padding: 14px;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid #F1ECE2;
   vertical-align: top;
 }
 .right {
-  text-align: right;
+  text-align: end;
 }
 .strong {
   font-weight: 950;
@@ -224,9 +227,9 @@ tbody td {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 950;
-  background: rgba(37, 99, 235, 0.12);
-  color: #1d4ed8;
-  border: 1px solid rgba(37, 99, 235, 0.22);
+  background: rgba(184, 145, 79, 0.12);
+  color: #85652A;
+  border: 1px solid rgba(184, 145, 79, 0.22);
 }
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;

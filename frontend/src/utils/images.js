@@ -15,8 +15,12 @@ const productDefaults = {
   'P-CASE-01': '/images/products/case.jpg',
 }
 
+// Photos uploaded by the admin are served by the API (/api/products/{id}/image).
+const apiBase = String(import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:8080')).replace(/\/+$/, '')
+
 export function productImageUrl(product) {
   const url = String(product?.imageUrl || '').trim()
+  if (url.startsWith('/api/')) return `${apiBase}${url}`
   if (url) return url
 
   const id = String(product?.productID || '').trim()

@@ -6,6 +6,7 @@ import { useCurrency } from '../../context/CurrencyContext'
 import { colors, radius } from '../../theme'
 import { SHIPPING } from '../../utils/format'
 import { productImageSource } from '../../utils/images'
+import { tp } from '../../i18n'
 
 export default function CartScreen({ navigation }) {
   const { items, total, count, setQuantity, remove, clear } = useCart()
@@ -16,18 +17,18 @@ export default function CartScreen({ navigation }) {
       <Screen contentStyle={{ flexGrow: 1, justifyContent: 'center' }}>
         <Empty
           icon="cart-outline"
-          title="Your cart is empty"
-          message="Browse the shop and add some products."
-          action={<Button title="Start shopping" onPress={() => navigation.navigate('Shop')} />}
+          title={tp('Your cart is empty')}
+          message={tp('Browse the shop and add some products.')}
+          action={<Button title={tp('Start shopping')} onPress={() => navigation.navigate('Shop')} />}
         />
       </Screen>
     )
   }
 
   function confirmClear() {
-    Alert.alert('Clear cart?', 'Remove all items from your cart.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear', style: 'destructive', onPress: clear },
+    Alert.alert(tp('Clear cart?'), tp('Remove all items from your cart.'), [
+      { text: tp('Cancel'), style: 'cancel' },
+      { text: tp('Clear'), style: 'destructive', onPress: clear },
     ])
   }
 
@@ -36,7 +37,7 @@ export default function CartScreen({ navigation }) {
       {items.map((it) => (
         <Card key={it.productID} style={styles.item}>
           <Image source={productImageSource(it)} style={styles.thumb} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={{ flex: 1, marginStart: 12 }}>
             <Text style={styles.name} numberOfLines={2}>
               {it.name}
             </Text>
@@ -46,7 +47,7 @@ export default function CartScreen({ navigation }) {
                 <Pressable
                   onPress={() => (it.quantity <= 1 ? remove(it.productID) : setQuantity(it.productID, it.quantity - 1))}
                   style={styles.stepBtn}
-                  accessibilityLabel="Decrease quantity"
+                  accessibilityLabel={tp('Decrease quantity')}
                 >
                   <Ionicons name={it.quantity <= 1 ? 'trash-outline' : 'remove'} size={18} color={colors.text} />
                 </Pressable>
@@ -54,7 +55,7 @@ export default function CartScreen({ navigation }) {
                 <Pressable
                   onPress={() => setQuantity(it.productID, it.quantity + 1)}
                   style={styles.stepBtn}
-                  accessibilityLabel="Increase quantity"
+                  accessibilityLabel={tp('Increase quantity')}
                   disabled={it.stockLevel != null && it.quantity >= it.stockLevel}
                 >
                   <Ionicons name="add" size={18} color={colors.text} />
@@ -67,21 +68,21 @@ export default function CartScreen({ navigation }) {
       ))}
 
       <Card>
-        <Row label={`Items (${count})`} value={format(total)} />
-        <Row label="Shipping" value={`${SHIPPING.carrier} — ${SHIPPING.costLabel}`} />
+        <Row label={`${tp('Items')} (${count})`} value={format(total)} />
+        <Row label={tp('Shipping')} value={`${SHIPPING.carrier} — ${SHIPPING.costLabel}`} />
         <Divider />
-        <Row label="Total" value={format(total)} bold />
+        <Row label={tp('Total')} value={format(total)} bold />
       </Card>
 
-      <Button title="Proceed to checkout" icon="lock-closed" onPress={() => navigation.navigate('Checkout')} />
-      <Button title="Clear cart" variant="ghost" onPress={confirmClear} style={{ marginTop: 8 }} />
+      <Button title={tp('Proceed to checkout')} icon="lock-closed" onPress={() => navigation.navigate('Checkout')} />
+      <Button title={tp('Clear cart')} variant="ghost" onPress={confirmClear} style={{ marginTop: 8 }} />
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
   item: { flexDirection: 'row', padding: 12 },
-  thumb: { width: 72, height: 72, borderRadius: radius.sm, backgroundColor: '#eef2f7' },
+  thumb: { width: 72, height: 72, borderRadius: radius.sm, backgroundColor: '#F4F0E8' },
   name: { fontWeight: '700', color: colors.text },
   unit: { color: colors.textSoft, fontSize: 12, marginTop: 2 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },

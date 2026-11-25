@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Oms.Api.Catalog;
 using Oms.Api.Dashboards;
 using Oms.Api.Models;
 
@@ -8,7 +9,7 @@ namespace Oms.Api.Admin;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = UserRole.Admin)]
-public sealed class AdminController(AdminRepository admin, DashboardRepository dashboards) : ControllerBase
+public sealed class AdminController(AdminRepository admin, DashboardRepository dashboards, ProductImageRepository images) : ControllerBase
 {
     [HttpGet("dashboard")]
     public async Task<ActionResult<SalesDashboardResponse>> Dashboard()
@@ -41,6 +42,32 @@ public sealed class AdminController(AdminRepository admin, DashboardRepository d
 
         await admin.UpsertProduct(req);
         return NoContent();
+    }
+
+    /// <summary>Upload a product photo (JPEG, PNG or WebP, up to 5 MB) as multipart field "file".</summary>
+    [HttpPost("products/{productID}/image")]
+    [RequestSizeLimit(ProductImageRepository.MaxBytes + 512 * 1024)]
+    public async Task<IActionResult> UploadProductImage([FromRoute] string productID, IFormFile? file)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest("Choose a photo to upload.");
+        if (file.Length > ProductImageRepository.MaxBytes)
+            return BadRequest("The photo is too large. The maximum size is 5 MB.");
+
+        byte[] data;
+        using (var ms = new MemoryStream())
+        {
+            await file.CopyToAsync(ms);
+            data = ms.ToArray();
+        }
+
+        // Trust the file's bytes, not the name or the type the client sent.
+        var contentType = ProductImageRepository.DetectImageType(data);
+        if (contentType is null)
+            return BadRequest("Only JPEG, PNG or WebP photos are allowed.");
+
+        var url = await images.Save(productID, contentType, data);
+        return url is null ? NotFound("Product not found.") : Ok(new { imageUrl = url });
     }
 
     [HttpDelete("products/{productID}")]

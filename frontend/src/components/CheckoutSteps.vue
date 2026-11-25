@@ -1,5 +1,5 @@
 <template>
-  <nav class="steps" aria-label="Checkout progress">
+  <nav class="steps" :aria-label="tp('Checkout progress')">
     <div
       v-for="(step, index) in steps"
       :key="step.key"
@@ -14,14 +14,17 @@
         <span v-if="index < currentIndex">✓</span>
         <span v-else>{{ index + 1 }}</span>
       </div>
-      <div class="label">{{ step.label }}</div>
+      <div class="label">{{ tp(step.label) }}</div>
       <div v-if="index < steps.length - 1" class="line" aria-hidden="true" />
     </div>
   </nav>
 </template>
 
 <script setup>
+import { useI18n } from '../i18n'
 import { computed } from 'vue'
+
+const { tp } = useI18n()
 
 const props = defineProps({
   current: {
@@ -77,7 +80,7 @@ const currentIndex = computed(() => {
   color: #fff;
 }
 .step.upcoming .dot {
-  background: #f8fafc;
+  background: #FAF8F4;
 }
 .label {
   font-size: 11px;

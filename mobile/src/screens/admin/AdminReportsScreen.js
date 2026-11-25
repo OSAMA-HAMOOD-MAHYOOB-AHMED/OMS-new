@@ -5,6 +5,7 @@ import { Card, Chip, Empty, ErrorBox, Loading, Row, Screen, SectionTitle, StatCa
 import { useCurrency } from '../../context/CurrencyContext'
 import { colors } from '../../theme'
 import { formatDate } from '../../utils/format'
+import { tp } from '../../i18n'
 
 const RANGES = [7, 30, 60]
 
@@ -36,21 +37,21 @@ export default function AdminReportsScreen() {
       <ErrorBox message={error} onRetry={reload} />
       <View style={{ flexDirection: 'row', marginBottom: 12 }}>
         {RANGES.map((r) => (
-          <Chip key={r} label={`Last ${r} days`} active={range === r} onPress={() => setRange(r)} />
+          <Chip key={r} label={tp('Last {n} days').replace('{n}', r)} active={range === r} onPress={() => setRange(r)} />
         ))}
       </View>
 
       <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
-        <StatCard icon="cash-outline" label="Revenue" value={format(totals.revenue)} tint={colors.success} />
-        <StatCard icon="receipt-outline" label="Orders" value={String(totals.orders)} />
+        <StatCard icon="cash-outline" label={tp('Revenue')} value={format(totals.revenue)} tint={colors.success} />
+        <StatCard icon="receipt-outline" label={tp('Orders')} value={String(totals.orders)} />
       </View>
       <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
-        <StatCard icon="trending-up-outline" label="Avg. order value" value={format(totals.avg)} tint={colors.teal} />
+        <StatCard icon="trending-up-outline" label={tp('Avg. order value')} value={format(totals.avg)} tint={colors.teal} />
       </View>
 
       <SectionTitle>Orders by status</SectionTitle>
       <Card>
-        {statusRows.length === 0 ? <Text style={{ color: colors.textSoft }}>No data.</Text> : null}
+        {statusRows.length === 0 ? <Text style={{ color: colors.textSoft }}>{tp('No data.')}</Text> : null}
         {statusRows.map((s) => (
           <View key={s.orderStatus} style={{ marginBottom: 10 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -68,7 +69,7 @@ export default function AdminReportsScreen() {
 
       <SectionTitle>Daily revenue</SectionTitle>
       {daily.length === 0 ? (
-        <Empty icon="bar-chart-outline" title="No sales in this period" />
+        <Empty icon="bar-chart-outline" title={tp('No sales in this period')} />
       ) : (
         <Card>
           {daily.map((r) => (
@@ -84,7 +85,7 @@ export default function AdminReportsScreen() {
               </View>
             </View>
           ))}
-          <Row label="Average per order" value={format(totals.avg)} />
+          <Row label={tp('Average per order')} value={format(totals.avg)} />
         </Card>
       )}
     </Screen>
