@@ -121,4 +121,5 @@ export const appPhrases = {
   OK: 'حسنًا',
   'Keep order': 'إبقاء الطلب',
   'Cancel order': 'إلغاء الطلب',
+  'Or type a new category': 'أو اكتب قسمًا جديدًا',
 }

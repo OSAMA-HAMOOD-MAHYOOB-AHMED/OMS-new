@@ -39,6 +39,7 @@ builder.Services.AddSingleton<Oms.Api.Auth.UserRepository>();
 builder.Services.AddSingleton<Oms.Api.Auth.TokenService>();
 builder.Services.AddSingleton<Oms.Api.Catalog.ProductRepository>();
 builder.Services.AddSingleton<Oms.Api.Catalog.ProductImageRepository>();
+builder.Services.AddSingleton<Oms.Api.Catalog.CategoryRepository>();
 builder.Services.AddSingleton<Oms.Api.Orders.OrderRepository>();
 builder.Services.AddSingleton<Oms.Api.Inventory.InventoryRepository>();
 builder.Services.AddSingleton<Oms.Api.Dashboards.DashboardRepository>();
@@ -92,6 +93,7 @@ var demoSeedEnabled = builder.Configuration.GetValue("DemoSeed:Enabled", true);
 await DemoUserSeeder.SeedAsync(app, demoSeedEnabled);
 await Oms.Api.Catalog.ProductSeeder.SeedAsync(app);
 await Oms.Api.Catalog.ProductImageRepository.EnsureSchemaAsync(app);
+await Oms.Api.Catalog.CategoryRepository.EnsureSchemaAsync(app);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

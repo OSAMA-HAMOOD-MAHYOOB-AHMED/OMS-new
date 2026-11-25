@@ -29,6 +29,13 @@ CREATE TABLE IF NOT EXISTS product (
   imageurl VARCHAR(512) NULL
 );
 
+-- Product categories managed by the admin (the backend also creates/fills this on startup).
+CREATE TABLE IF NOT EXISTS category (
+  name VARCHAR(100) PRIMARY KEY,
+  namear VARCHAR(100) NULL,
+  createdat TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Product photos uploaded by the admin (served at /api/products/{id}/image).
 CREATE TABLE IF NOT EXISTS product_image (
   productid VARCHAR(50) PRIMARY KEY REFERENCES product(productid) ON DELETE CASCADE,

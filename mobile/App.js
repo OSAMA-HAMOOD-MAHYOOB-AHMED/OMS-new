@@ -11,8 +11,9 @@ import {
 import { NavigationContainer } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
-import { useRef } from 'react'
-import { View } from 'react-native'
+import * as Updates from 'expo-updates'
+import { useEffect, useRef } from 'react'
+import { AppState, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider } from './src/context/AuthContext'
 import { CartProvider } from './src/context/CartContext'
@@ -66,7 +67,37 @@ function Navigation() {
   )
 }
 
+// Over-the-air updates (EAS Update): check when the app opens and whenever it comes back to the
+// foreground; if a newer version was published, download it and restart into it straight away.
+function useAutoUpdates() {
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return undefined
+    let busy = false
+    const check = async () => {
+      if (busy) return
+      busy = true
+      try {
+        const result = await Updates.checkForUpdateAsync()
+        if (result.isAvailable) {
+          await Updates.fetchUpdateAsync()
+          await Updates.reloadAsync()
+        }
+      } catch {
+        // Offline or the update server is unreachable: keep running the current version.
+      } finally {
+        busy = false
+      }
+    }
+    check()
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') check()
+    })
+    return () => sub.remove()
+  }, [])
+}
+
 export default function App() {
+  useAutoUpdates()
   const [fontsLoaded, fontError] = useFonts({
     Cairo_700Bold,
     Cairo_800ExtraBold,

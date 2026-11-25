@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useMemo, useRef, useState } from 'react'
 import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useCategories } from '../../api/categories'
 import { useApi } from '../../api/useApi'
 import { Chip, Empty, ErrorBox, Loading } from '../../components/ui'
 import { ROLES, useAuth } from '../../context/AuthContext'
@@ -11,12 +12,14 @@ import { categoryGroup, useI18n } from '../../i18n'
 import { colors, fonts, radius } from '../../theme'
 import { hero, logo, productImageSource } from '../../utils/images'
 
-const CATS = [
-  { key: 'chargers', icon: 'flash-outline' },
-  { key: 'powerbanks', icon: 'battery-charging-outline' },
-  { key: 'earphones', icon: 'headset-outline' },
-  { key: 'cases', icon: 'phone-portrait-outline' },
-]
+// Icons for the usual kinds of products; any new category the admin adds gets a generic one.
+const GROUP_ICONS = {
+  chargers: 'flash-outline',
+  powerbanks: 'battery-charging-outline',
+  earphones: 'headset-outline',
+  cases: 'phone-portrait-outline',
+}
+const iconFor = (name) => GROUP_ICONS[categoryGroup(name)] || 'grid-outline'
 
 const SORTS = ['featured', 'priceAsc', 'priceDesc', 'name']
 const SORT_LABEL = { featured: 'home.sortFeatured', priceAsc: 'home.sortPriceAsc', priceDesc: 'home.sortPriceDesc', name: 'home.sortName' }
@@ -75,7 +78,9 @@ export default function ProductsScreen({ navigation }) {
   const { role } = useAuth()
   const isCustomer = role === ROLES.Customer
   const { add } = useCart()
-  const { t, textAlign, inputAlign } = useI18n()
+  const { t, textAlign, inputAlign, categoryLabel } = useI18n()
+  const { data: catData } = useCategories()
+  const cats = (catData || []).filter((c) => c.productCount > 0)
   const { data, error, loading, refreshing, refresh, reload } = useApi('/api/products', { initial: [] })
 
   const [query, setQuery] = useState('')
@@ -86,9 +91,9 @@ export default function ProductsScreen({ navigation }) {
   const products = useMemo(() => {
     const q = query.trim().toLowerCase()
     let list = (data || []).filter((p) => {
-      if (cat !== 'all' && categoryGroup(p.category) !== cat) return false
+      if (cat !== 'all' && p.category !== cat) return false
       if (inStockOnly && p.stockLevel <= 0) return false
-      if (q && !`${p.name} ${p.category} ${p.productID} ${t(`cats.${categoryGroup(p.category)}`)}`.toLowerCase().includes(q)) return false
+      if (q && !`${p.name} ${p.category} ${p.productID} ${categoryLabel(p.category)}`.toLowerCase().includes(q)) return false
       return true
     })
     if (sort === 'priceAsc') list = [...list].sort((a, b) => a.price - b.price)
@@ -96,7 +101,7 @@ export default function ProductsScreen({ navigation }) {
     if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name))
     if (sort === 'featured') list = [...list].sort((a, b) => (b.stockLevel > 0) - (a.stockLevel > 0))
     return list
-  }, [data, query, cat, sort, inStockOnly, t])
+  }, [data, query, cat, sort, inStockOnly, categoryLabel])
 
   if (loading) return <Loading label={t('home.loadingProducts')} />
 
@@ -146,25 +151,27 @@ export default function ProductsScreen({ navigation }) {
         </View>
       ) : null}
 
-      <View style={styles.cats}>
-        {CATS.map((c) => {
-          const active = cat === c.key
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cats}>
+        {cats.map((c) => {
+          const active = cat === c.name
           return (
             <Pressable
-              key={c.key}
+              key={c.name}
               style={styles.catItem}
-              onPress={() => setCat(active ? 'all' : c.key)}
+              onPress={() => setCat(active ? 'all' : c.name)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
               <View style={[styles.catIcon, active && { backgroundColor: colors.ink, borderColor: colors.ink }]}>
-                <Ionicons name={c.icon} size={24} color={active ? colors.gold : colors.goldText} />
+                <Ionicons name={iconFor(c.name)} size={24} color={active ? colors.gold : colors.goldText} />
               </View>
-              <Text style={[styles.catLabel, active && { fontFamily: fonts.bold }]}>{t(`cats.${c.key}`)}</Text>
+              <Text style={[styles.catLabel, active && { fontFamily: fonts.bold }]} numberOfLines={1}>
+                {categoryLabel(c.name)}
+              </Text>
             </Pressable>
           )
         })}
-      </View>
+      </ScrollView>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
         <Chip label={t('home.inStockOnly')} active={inStockOnly} onPress={() => setInStockOnly((v) => !v)} />
@@ -176,7 +183,7 @@ export default function ProductsScreen({ navigation }) {
       <ErrorBox message={error} onRetry={reload} />
 
       <View style={styles.sectionRow}>
-        <Text style={styles.sectionTitle}>{cat === 'all' ? t('home.allProducts') : t(`cats.${cat}`)}</Text>
+        <Text style={styles.sectionTitle}>{cat === 'all' ? t('home.allProducts') : categoryLabel(cat)}</Text>
         <Text style={styles.count}>{t('home.count', { n: products.length })}</Text>
       </View>
     </View>
@@ -239,8 +246,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bannerBtnText: { color: colors.ink, fontFamily: fonts.semibold, fontSize: 13 },
-  cats: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  catItem: { alignItems: 'center', flex: 1, gap: 6 },
+  cats: { gap: 14, paddingBottom: 16, paddingHorizontal: 2 },
+  catItem: { alignItems: 'center', width: 72, gap: 6 },
   catIcon: {
     width: 62,
     height: 62,
@@ -265,7 +272,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     maxWidth: '48.5%',
   },
-  image: { width: '100%', aspectRatio: 1.1, backgroundColor: colors.sand2 },
+  // Fixed height: local (bundled) images ignore aspectRatio and would stretch the card.
+  image: { width: '100%', height: 165, backgroundColor: colors.sand2 },
   flag: {
     position: 'absolute',
     top: 8,

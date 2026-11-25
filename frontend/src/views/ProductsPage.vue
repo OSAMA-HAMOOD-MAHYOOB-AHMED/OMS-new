@@ -2,7 +2,7 @@
   <section class="page">
     <div class="head">
       <div>
-        <h1 class="h1">{{ activeCat === 'all' ? t('products.title') : t(`cats.${activeCat}`) }}</h1>
+        <h1 class="h1">{{ activeCat === 'all' ? t('products.title') : activeTitle }}</h1>
         <p class="sub">{{ t('products.sub') }}</p>
       </div>
     </div>
@@ -10,8 +10,8 @@
     <div class="toolbar">
       <div class="chips" role="group" :aria-label="t('shell.menu')">
         <button :class="['chip', { active: activeCat === 'all' }]" type="button" @click="setCat('all')">{{ t('cats.all') }}</button>
-        <button v-for="c in catKeys" :key="c" :class="['chip', { active: activeCat === c }]" type="button" @click="setCat(c)">
-          {{ t(`cats.${c}`) }}
+        <button v-for="c in shopCategories" :key="c.name" :class="['chip', { active: activeCat === c.name }]" type="button" @click="setCat(c.name)">
+          {{ categoryLabel(c.name) }}
         </button>
       </div>
       <div class="toolRight">
@@ -90,13 +90,16 @@ import { useCurrency } from '../composables/useCurrency'
 import { useI18n } from '../i18n'
 import AppIcon from '../components/AppIcon.vue'
 import ProductCard from '../components/ProductCard.vue'
+import { loadCategories, shopCategories } from '../stores/categories'
 
-const { t, categoryGroup } = useI18n()
+const { t, categoryGroup, categoryLabel } = useI18n()
 const { currencyCode, rate } = useCurrency()
 const route = useRoute()
 const router = useRouter()
 
-const catKeys = ['chargers', 'powerbanks', 'earphones', 'cases']
+// Older links used category groups (?cat=chargers); keep them working.
+const groupKeys = ['chargers', 'powerbanks', 'earphones', 'cases']
+loadCategories()
 
 const products = ref([])
 const loading = ref(false)
@@ -104,7 +107,7 @@ const loadingMessage = ref('')
 const error = ref(null)
 
 const q = ref(String(route.query.q || ''))
-const activeCat = ref(catKeys.includes(route.query.cat) ? route.query.cat : 'all')
+const activeCat = ref(String(route.query.cat || 'all'))
 const showFilter = ref(false)
 const minPrice = ref(null)
 const maxPrice = ref(null)
@@ -116,7 +119,7 @@ watch(
   () => [route.query.q, route.query.cat],
   ([qq, cat]) => {
     q.value = String(qq || '')
-    activeCat.value = catKeys.includes(cat) ? cat : 'all'
+    activeCat.value = String(cat || 'all')
   },
 )
 
@@ -125,6 +128,16 @@ function setCat(c) {
   if (c === 'all') delete query.cat
   else query.cat = c
   router.replace({ name: 'products', query }).catch(() => {})
+}
+
+const activeTitle = computed(() =>
+  groupKeys.includes(activeCat.value) ? t(`cats.${activeCat.value}`) : categoryLabel(activeCat.value),
+)
+
+function inActiveCategory(p) {
+  if (activeCat.value === 'all') return true
+  if (groupKeys.includes(activeCat.value)) return categoryGroup(p.category) === activeCat.value
+  return p.category === activeCat.value
 }
 
 const filterCount = computed(() => {
@@ -146,9 +159,9 @@ function clearFilters() {
 const filtered = computed(() => {
   const needle = q.value.toLowerCase()
   let result = products.value.filter((p) => {
-    if (activeCat.value !== 'all' && categoryGroup(p.category) !== activeCat.value) return false
+    if (!inActiveCategory(p)) return false
     if (needle) {
-      const hay = `${p.name} ${p.category} ${p.productID} ${t(`cats.${categoryGroup(p.category)}`)}`.toLowerCase()
+      const hay = `${p.name} ${p.category} ${p.productID} ${categoryLabel(p.category)}`.toLowerCase()
       if (!hay.includes(needle)) return false
     }
     if (inStockOnly.value && p.stockLevel <= 0) return false

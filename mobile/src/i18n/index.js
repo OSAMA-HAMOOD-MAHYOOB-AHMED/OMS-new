@@ -3,6 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getLocales } from 'expo-localization'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { cachedCategories } from '../api/categories'
 import { appPhrases } from './appPhrases'
 import { messages } from './messages'
 import { arPhrases } from './phrases'
@@ -89,9 +90,14 @@ export function LanguageProvider({ children }) {
         const text = t(key)
         return text === key ? String(status || '') : text
       },
+      // The admin's Arabic name for the category if set, else a built-in translation, else the name.
       categoryLabel: (category) => {
-        const g = categoryGroup(category)
-        return g === 'other' ? String(category || '') : t(`cats.${g}`)
+        const name = String(category || '')
+        if (lang !== 'ar') return name
+        const row = cachedCategories().find((c) => c.name === name)
+        if (row?.nameAr) return row.nameAr
+        const g = categoryGroup(name)
+        return g === 'other' ? name : t(`cats.${g}`)
       },
       // Under `direction: 'rtl'` React Native treats Text textAlign 'left' as the start side,
       // so 'left' lines text up correctly in both languages. TextInput does not swap.

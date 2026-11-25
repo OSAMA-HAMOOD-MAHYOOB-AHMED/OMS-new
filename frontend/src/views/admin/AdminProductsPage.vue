@@ -51,10 +51,12 @@
           </label>
           <label class="field">
             <span>{{ tp('Category') }}</span>
-            <input v-model.trim="form.category" list="categoryOptions" :placeholder="tp('Charger, Power Bank, Earphones, Phone Case')" />
-            <datalist id="categoryOptions">
-              <option v-for="c in categoryOptions" :key="c" :value="c" />
-            </datalist>
+            <select v-model="form.category">
+              <option value="" disabled>{{ tp('Choose a category') }}</option>
+              <option v-for="c in categories" :key="c.name" :value="c.name">
+                {{ c.name }}{{ c.nameAr ? ` · ${c.nameAr}` : '' }}
+              </option>
+            </select>
           </label>
           <label class="field">
             <span>{{ tp('Price (USD)') }}</span>
@@ -79,6 +81,50 @@
       <p v-if="ok" class="success">{{ tp(ok) }}</p>
       <p v-if="error" class="error">{{ tp(error) }}</p>
     </div>
+
+    <section id="admin-categories" class="panel">
+      <div class="catHead">
+        <h3 class="h3">{{ tp('Categories') }}</h3>
+        <span class="hint">{{ tp('Shoppers see a category in the menu once it has products.') }}</span>
+      </div>
+
+      <ul class="catList">
+        <li v-for="c in categories" :key="c.name" class="catRow">
+          <div class="catNames">
+            <span class="catName">{{ c.name }}</span>
+            <input
+              class="catAr"
+              :value="c.nameAr || ''"
+              :placeholder="tp('Arabic name')"
+              :aria-label="`${tp('Arabic name')}: ${c.name}`"
+              dir="rtl"
+              @change="renameAr(c, $event.target.value)"
+            />
+          </div>
+          <span class="catCount">{{ c.productCount }} {{ tp('products') }}</span>
+
+          <template v-if="deleting && deleting.name === c.name">
+            <select v-if="c.productCount > 0" v-model="moveTo" class="catMove" :aria-label="tp('Move products to')">
+              <option value="" disabled>{{ tp('Move products to…') }}</option>
+              <option v-for="o in categories.filter((x) => x.name !== c.name)" :key="o.name" :value="o.name">{{ o.name }}</option>
+            </select>
+            <button class="dangerBtn small" type="button" :disabled="catBusy || (c.productCount > 0 && !moveTo)" @click="confirmDeleteCategory(c)">
+              {{ tp('Confirm delete') }}
+            </button>
+            <button class="btnGhost small" type="button" @click="deleting = null">{{ tp('Cancel') }}</button>
+          </template>
+          <button v-else class="iconBtn danger" type="button" :title="tp('Delete')" :aria-label="`${tp('Delete')}: ${c.name}`" @click="startDeleteCategory(c)">🗑</button>
+        </li>
+      </ul>
+
+      <form class="catAdd" @submit.prevent="addCategory">
+        <input v-model.trim="newCat.name" :placeholder="tp('New category (English)')" :aria-label="tp('New category (English)')" />
+        <input v-model.trim="newCat.nameAr" :placeholder="tp('Arabic name')" :aria-label="tp('Arabic name')" dir="rtl" />
+        <button class="btnPrimary" type="submit" :disabled="catBusy || newCat.name.length < 2">{{ tp('Add category') }}</button>
+      </form>
+      <p v-if="catOk" class="success">{{ tp(catOk) }}</p>
+      <p v-if="catError" class="error">{{ tp(catError) }}</p>
+    </section>
 
     <div class="toolbar">
       <div class="search">
@@ -133,6 +179,7 @@ import { productImageUrl } from '../../utils/images'
 import { prepareProductPhoto, uploadProductPhoto } from '../../utils/imageUpload'
 import { useCurrency } from '../../composables/useCurrency'
 import AppIcon from '../../components/AppIcon.vue'
+import { categories, loadCategories } from '../../stores/categories'
 
 const { tp } = useI18n()
 
@@ -161,7 +208,68 @@ const emptyForm = () => ({
 })
 const form = reactive(emptyForm())
 
-const categoryOptions = computed(() => Array.from(new Set(products.value.map((p) => p.category).filter(Boolean))).sort())
+// Category management
+const newCat = reactive({ name: '', nameAr: '' })
+const deleting = ref(null)
+const moveTo = ref('')
+const catBusy = ref(false)
+const catOk = ref(null)
+const catError = ref(null)
+
+async function refreshCategories() {
+  await loadCategories(true)
+}
+
+async function addCategory() {
+  catBusy.value = true
+  catOk.value = null
+  catError.value = null
+  try {
+    await api.post('/api/admin/categories', { name: newCat.name, nameAr: newCat.nameAr || null })
+    catOk.value = 'Category added.'
+    newCat.name = ''
+    newCat.nameAr = ''
+    await refreshCategories()
+  } catch (e) {
+    catError.value = apiMessage(e, 'Could not add the category.')
+  } finally {
+    catBusy.value = false
+  }
+}
+
+async function renameAr(c, value) {
+  catOk.value = null
+  catError.value = null
+  try {
+    await api.put(`/api/admin/categories/${encodeURIComponent(c.name)}`, { nameAr: value.trim() || null })
+    catOk.value = 'Saved.'
+    await refreshCategories()
+  } catch (e) {
+    catError.value = apiMessage(e, 'Save failed')
+  }
+}
+
+function startDeleteCategory(c) {
+  deleting.value = c
+  moveTo.value = ''
+  catOk.value = null
+  catError.value = null
+}
+
+async function confirmDeleteCategory(c) {
+  catBusy.value = true
+  try {
+    const q = c.productCount > 0 ? `?moveTo=${encodeURIComponent(moveTo.value)}` : ''
+    await api.delete(`/api/admin/categories/${encodeURIComponent(c.name)}${q}`)
+    catOk.value = 'Deleted.'
+    deleting.value = null
+    await Promise.all([refreshCategories(), load()])
+  } catch (e) {
+    catError.value = apiMessage(e, 'Delete failed')
+  } finally {
+    catBusy.value = false
+  }
+}
 
 // New photo the admin picked, else the product's current photo.
 const previewUrl = computed(() => pendingPreview.value || (form.imageUrl ? productImageUrl(form) : ''))
@@ -314,7 +422,10 @@ async function del(p) {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  loadCategories(true)
+})
 onBeforeUnmount(clearPick)
 </script>
 
@@ -365,6 +476,81 @@ onBeforeUnmount(clearPick)
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
+}
+.catHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.catList {
+  list-style: none;
+  margin: 6px 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.catRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+}
+.catNames {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.catName {
+  font-weight: 600;
+  color: var(--text-h);
+  min-width: 120px;
+}
+.catAr {
+  flex: 1 1 160px;
+  width: auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.catCount {
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.catMove {
+  width: auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.catAdd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.catAdd input {
+  flex: 1 1 200px;
+  width: auto;
+}
+.dangerBtn {
+  border: 0;
+  border-radius: 12px;
+  background: var(--danger);
+  color: #fff;
+  padding: 9px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dangerBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .photoCol {
   flex: 0 0 220px;
@@ -447,6 +633,7 @@ onBeforeUnmount(clearPick)
 .field {
   display: grid;
   gap: 6px;
+  min-width: 0; /* let grid columns shrink instead of overflowing */
   font-size: 13px;
   font-weight: 600;
   color: var(--text-h);
@@ -460,7 +647,10 @@ onBeforeUnmount(clearPick)
   margin-top: 14px;
 }
 input,
-textarea {
+textarea,
+select {
+  width: 100%;
+  min-width: 0;
   padding: 12px 12px;
   border-radius: 14px;
   border: 1px solid var(--border-strong);
@@ -601,6 +791,10 @@ tbody td {
   display: inline-flex;
   gap: 8px;
   justify-content: flex-end;
+}
+.small {
+  padding: 8px 12px;
+  font-size: 13px;
 }
 .iconBtn {
   width: 40px;

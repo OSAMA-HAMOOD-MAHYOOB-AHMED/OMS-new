@@ -3,6 +3,7 @@
 import { computed, ref, watch } from 'vue'
 import { messages } from './messages'
 import { arPhrases } from './phrases'
+import { categories } from '../stores/categories'
 
 const STORAGE_KEY = 'oms_lang'
 
@@ -92,11 +93,25 @@ export function categoryGroup(category) {
   return 'other'
 }
 
+/** Category name in the active language: the admin's Arabic name if set, else a built-in one. */
 export function categoryLabel(category) {
-  const group = categoryGroup(category)
-  return group === 'other' ? String(category || '') : t(`cats.${group}`)
+  const name = String(category || '')
+  const row = categories.value.find((c) => c.name === name)
+  if (locale.value === 'ar') {
+    if (row?.nameAr) return row.nameAr
+    const group = categoryGroup(name)
+    if (group !== 'other') return t(`cats.${group}`)
+  }
+  return name
+}
+
+const groupIcons = { chargers: 'bolt', powerbanks: 'battery', earphones: 'headphones', cases: 'phone' }
+
+/** Icon for a category (known kinds get their own, anything new gets a generic one). */
+export function categoryIcon(category) {
+  return groupIcons[categoryGroup(category)] || 'grid'
 }
 
 export function useI18n() {
-  return { t, tp, locale, isRtl, setLocale, toggleLocale, statusLabel, categoryGroup, categoryLabel }
+  return { t, tp, locale, isRtl, setLocale, toggleLocale, statusLabel, categoryGroup, categoryLabel, categoryIcon }
 }

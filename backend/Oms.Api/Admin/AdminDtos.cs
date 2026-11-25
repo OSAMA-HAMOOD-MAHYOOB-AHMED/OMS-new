@@ -22,6 +22,8 @@ public sealed record AdminSalesReportResponse(
 
 public sealed record UpdateOrderStatusRequest(string Status);
 
+public sealed record CategoryRequest(string? Name, string? NameAr);
+
 public static class OrderStatus
 {
     public static readonly IReadOnlySet<string> Valid = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

@@ -6,7 +6,7 @@
       <RouterLink :to="{ name: 'products' }">{{ t('shell.products') }}</RouterLink>
       <template v-if="product">
         <span aria-hidden="true">/</span>
-        <RouterLink :to="{ name: 'products', query: { cat: categoryGroup(product.category) } }">{{ categoryLabel(product.category) }}</RouterLink>
+        <RouterLink :to="{ name: 'products', query: { cat: product.category } }">{{ categoryLabel(product.category) }}</RouterLink>
       </template>
     </nav>
 

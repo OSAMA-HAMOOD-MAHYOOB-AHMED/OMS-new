@@ -21,11 +21,11 @@
     <section class="section" aria-labelledby="catsTitle">
       <h2 id="catsTitle" class="sectionTitle">{{ t('home.browseCats') }}</h2>
       <div class="cats">
-        <RouterLink v-for="c in cats" :key="c.key" class="cat" :to="{ name: 'products', query: { cat: c.key } }">
-          <span class="catIcon"><AppIcon :name="c.icon" :size="26" /></span>
+        <RouterLink v-for="c in shopCategories" :key="c.name" class="cat" :to="{ name: 'products', query: { cat: c.name } }">
+          <span class="catIcon"><AppIcon :name="categoryIcon(c.name)" :size="26" /></span>
           <span class="catText">
-            <span class="catName">{{ t(`cats.${c.key}`) }}</span>
-            <span v-if="counts[c.key]" class="catCount">{{ t('cats.count', { n: counts[c.key] }) }}</span>
+            <span class="catName">{{ categoryLabel(c.name) }}</span>
+            <span class="catCount">{{ t('cats.count', { n: c.productCount }) }}</span>
           </span>
         </RouterLink>
       </div>
@@ -70,20 +70,14 @@ import { siteHeroUrl } from '../utils/images'
 import { useI18n } from '../i18n'
 import AppIcon from '../components/AppIcon.vue'
 import ProductCard from '../components/ProductCard.vue'
+import { loadCategories, shopCategories } from '../stores/categories'
 
-const { t, categoryGroup } = useI18n()
+const { t, categoryLabel, categoryIcon } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 auth.hydrate()
 
 const products = ref([])
-
-const cats = [
-  { key: 'chargers', icon: 'bolt' },
-  { key: 'powerbanks', icon: 'battery' },
-  { key: 'earphones', icon: 'headphones' },
-  { key: 'cases', icon: 'phone' },
-]
 
 const why = [
   { icon: 'cash', title: 'home.whyCod', body: 'home.whyCodText' },
@@ -94,22 +88,13 @@ const why = [
 
 const isStaff = computed(() => !!auth.token && auth.role !== 'Customer')
 
-const counts = computed(() => {
-  const c = {}
-  for (const p of products.value) {
-    const g = categoryGroup(p.category)
-    c[g] = (c[g] || 0) + 1
-  }
-  return c
-})
-
 // One in-stock product from each category first, then fill up to 8.
 const featured = computed(() => {
   const inStock = products.value.filter((p) => Number(p.stockLevel) > 0)
   const picked = []
-  for (const c of cats) {
-    const p = inStock.find((x) => categoryGroup(x.category) === c.key && !picked.includes(x))
-    if (p) picked.push(p)
+  for (const c of shopCategories.value) {
+    const p = inStock.find((x) => x.category === c.name && !picked.includes(x))
+    if (p && picked.length < 8) picked.push(p)
   }
   for (const p of inStock) {
     if (picked.length >= 8) break
@@ -135,7 +120,10 @@ function goPrimary() {
   return router.push({ name: 'home' })
 }
 
-onMounted(loadProducts)
+onMounted(() => {
+  loadProducts()
+  loadCategories()
+})
 </script>
 
 <style scoped>

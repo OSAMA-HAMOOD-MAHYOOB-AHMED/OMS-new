@@ -49,6 +49,12 @@
         "projectId": "1af02bd4-f712-4069-8942-ea4a38b07062"
       }
     },
-    "owner": "osama21"
+    "owner": "osama21",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1af02bd4-f712-4069-8942-ea4a38b07062"
+    }
   }
 }

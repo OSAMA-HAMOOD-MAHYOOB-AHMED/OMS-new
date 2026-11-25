@@ -78,6 +78,9 @@ public sealed class AdminRepository(IDbConnectionFactory db)
         await OpenAsync(conn);
         using var tx = conn.BeginTransaction();
 
+        // A product's category always appears in the category list.
+        await Oms.Api.Catalog.CategoryRepository.EnsureExists(conn, req.Category, tx);
+
         await conn.ExecuteAsync(upsertProduct, new
         {
             productID = req.ProductID,

@@ -9,7 +9,7 @@ namespace Oms.Api.Admin;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = UserRole.Admin)]
-public sealed class AdminController(AdminRepository admin, DashboardRepository dashboards, ProductImageRepository images) : ControllerBase
+public sealed class AdminController(AdminRepository admin, DashboardRepository dashboards, ProductImageRepository images, CategoryRepository categories) : ControllerBase
 {
     [HttpGet("dashboard")]
     public async Task<ActionResult<SalesDashboardResponse>> Dashboard()
@@ -79,6 +79,44 @@ public sealed class AdminController(AdminRepository admin, DashboardRepository d
             AdminRepository.DeleteProductResult.NotFound => NotFound("Product not found."),
             AdminRepository.DeleteProductResult.HasOrders => Conflict(
                 "This product appears in existing orders, so it can't be deleted. Set its stock to 0 to stop selling it."),
+            _ => NoContent()
+        };
+    }
+
+    [HttpPost("categories")]
+    public async Task<IActionResult> AddCategory([FromBody] CategoryRequest req)
+    {
+        var name = (req.Name ?? "").Trim();
+        var nameAr = string.IsNullOrWhiteSpace(req.NameAr) ? null : req.NameAr.Trim();
+        if (name.Length is < 2 or > 100)
+            return BadRequest("Category name must be 2–100 characters.");
+        if (name.IndexOfAny(['/', '\\', '?', '#']) >= 0)
+            return BadRequest("Category name can't contain / \\ ? or #.");
+        if (nameAr is { Length: > 100 })
+            return BadRequest("Arabic name must be at most 100 characters.");
+        var added = await categories.Add(name, nameAr);
+        return added ? NoContent() : Conflict("A category with this name already exists.");
+    }
+
+    [HttpPut("categories/{name}")]
+    public async Task<IActionResult> UpdateCategory([FromRoute] string name, [FromBody] CategoryRequest req)
+    {
+        var nameAr = string.IsNullOrWhiteSpace(req.NameAr) ? null : req.NameAr.Trim();
+        if (nameAr is { Length: > 100 })
+            return BadRequest("Arabic name must be at most 100 characters.");
+        return await categories.UpdateArabicName(name, nameAr) ? NoContent() : NotFound("Category not found.");
+    }
+
+    /// <summary>Delete a category. If products use it, pass ?moveTo=OtherCategory to move them first.</summary>
+    [HttpDelete("categories/{name}")]
+    public async Task<IActionResult> DeleteCategory([FromRoute] string name, [FromQuery] string? moveTo = null)
+    {
+        var (result, count) = await categories.Delete(name, moveTo);
+        return result switch
+        {
+            CategoryRepository.DeleteResult.NotFound => NotFound("Category not found."),
+            CategoryRepository.DeleteResult.HasProducts => Conflict($"{count} products use this category. Choose a category to move them to."),
+            CategoryRepository.DeleteResult.MoveTargetMissing => BadRequest("The category to move products to doesn't exist."),
             _ => NoContent()
         };
     }

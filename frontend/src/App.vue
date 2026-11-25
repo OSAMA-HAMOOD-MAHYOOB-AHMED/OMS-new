@@ -137,13 +137,13 @@
             </RouterLink>
             <RouterLink
               v-for="c in shopCats"
-              :key="c"
+              :key="c.name"
               class="pill"
-              :class="{ on: route.name === 'products' && route.query.cat === c }"
-              :to="{ name: 'products', query: { cat: c } }"
+              :class="{ on: route.name === 'products' && route.query.cat === c.name }"
+              :to="{ name: 'products', query: { cat: c.name } }"
               @click="closeNav"
             >
-              {{ t(`cats.${c}`) }}
+              {{ categoryLabel(c.name) }}
             </RouterLink>
           </template>
 
@@ -191,7 +191,7 @@
         </div>
         <nav class="footerCol" :aria-label="t('shell.footerShop')">
           <span class="footerHead">{{ t('shell.footerShop') }}</span>
-          <RouterLink v-for="c in shopCats" :key="c" :to="{ name: 'products', query: { cat: c } }">{{ t(`cats.${c}`) }}</RouterLink>
+          <RouterLink v-for="c in shopCats" :key="c.name" :to="{ name: 'products', query: { cat: c.name } }">{{ categoryLabel(c.name) }}</RouterLink>
         </nav>
         <nav class="footerCol" :aria-label="t('shell.footerAccount')">
           <span class="footerHead">{{ t('shell.footerAccount') }}</span>
@@ -224,10 +224,11 @@ import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
 import { siteLogoUrl } from './utils/images'
 import { useI18n } from './i18n'
+import { loadCategories, shopCategories } from './stores/categories'
 import ChatBot from './components/ChatBot.vue'
 import AppIcon from './components/AppIcon.vue'
 
-const { t, toggleLocale } = useI18n()
+const { t, toggleLocale, categoryLabel } = useI18n()
 
 const auth = useAuthStore()
 auth.hydrate()
@@ -241,7 +242,9 @@ const router = useRouter()
 const isAuthed = computed(() => !!auth.token)
 const role = computed(() => auth.role)
 
-const shopCats = ['chargers', 'powerbanks', 'earphones', 'cases']
+// Category menu comes from the admin-managed list (only categories that have products).
+loadCategories()
+const shopCats = shopCategories
 
 const isAdminShell = computed(() => {
   if (!isAuthed.value) return false
