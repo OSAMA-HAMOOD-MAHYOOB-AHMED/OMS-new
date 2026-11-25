@@ -13,6 +13,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen'
 import VerifyPendingScreen from '../screens/auth/VerifyPendingScreen'
 
 import CartScreen from '../screens/customer/CartScreen'
+import ChatScreen from '../screens/customer/ChatScreen'
 import CheckoutScreen from '../screens/customer/CheckoutScreen'
 import MyOrdersScreen from '../screens/customer/MyOrdersScreen'
 import OrderConfirmationScreen from '../screens/customer/OrderConfirmationScreen'
@@ -103,6 +104,7 @@ function CustomerStack() {
         options={{ title: t('titles.orderPlaced'), headerBackVisible: false, gestureEnabled: false }}
       />
       <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ title: t('titles.invoice') }} />
+      <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   )
 }

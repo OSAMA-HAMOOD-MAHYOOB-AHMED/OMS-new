@@ -8,7 +8,7 @@ import { Chip, Empty, ErrorBox, Loading } from '../../components/ui'
 import { ROLES, useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { useCurrency } from '../../context/CurrencyContext'
-import { categoryGroup, useI18n } from '../../i18n'
+import { categoryGroup, tp, useI18n } from '../../i18n'
 import { colors, fonts, radius } from '../../theme'
 import { hero, logo, productImageSource } from '../../utils/images'
 
@@ -190,31 +190,61 @@ export default function ProductsScreen({ navigation }) {
   )
 
   return (
-    <FlatList
-      ref={listRef}
-      data={products}
-      keyExtractor={(p) => p.productID}
-      numColumns={2}
-      columnWrapperStyle={{ gap: 12 }}
-      contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 32 }}
-      style={{ backgroundColor: colors.bg }}
-      ListHeaderComponent={header}
-      refreshing={refreshing}
-      onRefresh={refresh}
-      ListEmptyComponent={!error ? <Empty icon="search" title={t('home.noResults')} message={t('home.noResultsHint')} /> : null}
-      renderItem={({ item: p }) => (
-        <ProductCard
-          product={p}
-          canBuy={isCustomer}
-          onOpen={() => navigation.navigate('ProductDetails', { productID: p.productID, product: p })}
-          onAdd={() => add(p, 1)}
-        />
-      )}
-    />
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <FlatList
+        ref={listRef}
+        data={products}
+        keyExtractor={(p) => p.productID}
+        numColumns={2}
+        columnWrapperStyle={{ gap: 12 }}
+        contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: isCustomer ? 96 : 32 }}
+        style={{ backgroundColor: colors.bg }}
+        ListHeaderComponent={header}
+        refreshing={refreshing}
+        onRefresh={refresh}
+        ListEmptyComponent={!error ? <Empty icon="search" title={t('home.noResults')} message={t('home.noResultsHint')} /> : null}
+        renderItem={({ item: p }) => (
+          <ProductCard
+            product={p}
+            canBuy={isCustomer}
+            onOpen={() => navigation.navigate('ProductDetails', { productID: p.productID, product: p })}
+            onAdd={() => add(p, 1)}
+          />
+        )}
+      />
+      {isCustomer ? (
+        <Pressable
+          onPress={() => navigation.navigate('Chat')}
+          style={({ pressed }) => [styles.chatFab, pressed && { transform: [{ scale: 0.95 }] }]}
+          accessibilityRole="button"
+          accessibilityLabel={tp('Ask our assistant')}
+        >
+          <Ionicons name="chatbubbles" size={24} color={colors.gold} />
+        </Pressable>
+      ) : null}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  chatFab: {
+    position: 'absolute',
+    bottom: 18,
+    end: 18,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: colors.ink,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: { width: 46, height: 46, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border },

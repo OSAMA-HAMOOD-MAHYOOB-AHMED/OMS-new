@@ -126,4 +126,7 @@ export const appPhrases = {
   'Sharing is not available on this device.': 'المشاركة غير متاحة على هذا الجهاز.',
   'Could not download the PDF.': 'تعذّر تحميل ملف PDF.',
   'Loading...': 'جاري التحميل...',
+  Back: 'رجوع',
+  'New chat': 'محادثة جديدة',
+  'Ask our assistant': 'اسأل المساعد',
 }
