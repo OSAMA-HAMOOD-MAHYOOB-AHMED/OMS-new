@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { View } from 'react-native'
+import AppHeader from '../components/AppHeader'
 import { Loading } from '../components/ui'
 import { ROLES, useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
@@ -45,6 +46,9 @@ const stackOptions = {
   headerShadowVisible: false,
   contentStyle: { backgroundColor: colors.bg },
 }
+
+// Stack screens use a JS header so the back arrow and title follow the Arabic layout.
+const stackScreenOptions = { ...stackOptions, header: (props) => <AppHeader {...props} /> }
 
 const tabOptions = (icons) => ({ route }) => ({
   ...stackOptions,
@@ -94,7 +98,7 @@ function CustomerTabs() {
 function CustomerStack() {
   const { t } = useI18n()
   return (
-    <Stack.Navigator screenOptions={stackOptions}>
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="CustomerHome" component={CustomerTabs} options={{ headerShown: false }} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: t('titles.checkout') }} />
@@ -124,7 +128,7 @@ function SalesTabs() {
 
 function SalesStack() {
   return (
-    <Stack.Navigator screenOptions={stackOptions}>
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="SalesHome" component={SalesTabs} options={{ headerShown: false }} />
     </Stack.Navigator>
   )
@@ -149,7 +153,7 @@ function WarehouseTabs() {
 function WarehouseStack() {
   const { t } = useI18n()
   return (
-    <Stack.Navigator screenOptions={stackOptions}>
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="WarehouseHome" component={WarehouseTabs} options={{ headerShown: false }} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="InventoryAudit" component={InventoryAuditScreen} options={{ title: t('titles.stockHistory') }} />
@@ -183,7 +187,7 @@ function AdminTabs() {
 function AdminStack() {
   const { t } = useI18n()
   return (
-    <Stack.Navigator screenOptions={stackOptions}>
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="AdminHome" component={AdminTabs} options={{ headerShown: false }} />
       <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: t('titles.product') }} />
       <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{ title: t('titles.salesReports') }} />
@@ -197,7 +201,7 @@ function AdminStack() {
 function AuthStack() {
   const { t } = useI18n()
   return (
-    <Stack.Navigator screenOptions={stackOptions}>
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ title: t('titles.createAccount') }} />
       <Stack.Screen name="VerifyPending" component={VerifyPendingScreen} options={{ title: t('titles.verifyEmail') }} />

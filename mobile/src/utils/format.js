@@ -1,9 +1,17 @@
+import { currentLanguage } from '../i18n'
+
 export function formatDate(iso, withTime = false) {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return String(iso || '')
   const opts = { year: 'numeric', month: 'short', day: 'numeric' }
   if (withTime) Object.assign(opts, { hour: '2-digit', minute: '2-digit' })
-  return d.toLocaleDateString('en-GB', opts)
+  // Arabic month names with the same Western digits used for prices.
+  const locale = currentLanguage() === 'ar' ? 'ar-u-nu-latn' : 'en-GB'
+  try {
+    return d.toLocaleDateString(locale, opts)
+  } catch {
+    return d.toLocaleDateString('en-GB', opts)
+  }
 }
 
 export function paymentMethodLabel(method) {

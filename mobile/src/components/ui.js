@@ -101,7 +101,8 @@ const buttonVariants = {
   success: { bg: colors.success, fg: '#fff', border: colors.success },
 }
 
-export function Input({ label, error, secure, style, ...props }) {
+// `ltr` keeps numbers such as card numbers left to right even in Arabic.
+export function Input({ label, error, secure, style, ltr, ...props }) {
   const [hidden, setHidden] = useState(!!secure)
   return (
     <View style={[{ marginBottom: spacing.md }, style]}>
@@ -115,7 +116,11 @@ export function Input({ label, error, secure, style, ...props }) {
       >
         <TextInput
           placeholderTextColor={colors.muted}
-          style={[styles.input, props.multiline && { minHeight: 80, textAlignVertical: 'top' }]}
+          style={[
+            styles.input,
+            props.multiline && { minHeight: 80, textAlignVertical: 'top' },
+            ltr && { textAlign: 'left', writingDirection: 'ltr', direction: 'ltr' },
+          ]}
           secureTextEntry={hidden}
           autoCapitalize="none"
           {...props}
@@ -198,7 +203,10 @@ export function StatusBadge({ status }) {
 export function Chip({ label, active, onPress }) {
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && { color: '#fff' }]}>{tp(label)}</Text>
+      {/* One line: Android sometimes measures Arabic a little short and would wrap the last word away. */}
+      <Text style={[styles.chipText, active && { color: '#fff' }]} numberOfLines={1}>
+        {tp(label)}
+      </Text>
     </Pressable>
   )
 }
@@ -217,12 +225,17 @@ export function StatCard({ icon, label, value, tint = colors.primary }) {
   )
 }
 
+// Android cuts off a trailing "(1)" after Arabic words; an end RTL mark keeps it inside the box.
+function withRtlMark(text) {
+  return typeof text === 'string' && /[\u0600-\u06FF]/.test(text) ? text + '\u200F' : text
+}
+
 export function Row({ label, value, bold }) {
   // Keep a leading "+" (phone numbers) in place when the layout is right to left.
   const shown = typeof value === 'string' && /^[+\d]/.test(value) ? '\u200E' + value : value
   return (
     <View style={styles.kvRow}>
-      <Text style={styles.kvLabel}>{tp(label)}</Text>
+      <Text style={styles.kvLabel}>{withRtlMark(tp(label))}</Text>
       <Text style={[styles.kvValue, bold && { fontFamily: fonts.bold }]} selectable>
         {shown}
       </Text>
@@ -302,6 +315,6 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 20, fontFamily: fonts.headingHeavy, color: colors.text },
   statLabel: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSoft, marginTop: 2 },
   kvRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  kvLabel: { color: colors.textSoft, fontSize: 14, fontFamily: fonts.regular, marginEnd: 12, flexShrink: 1 },
+  kvLabel: { color: colors.textSoft, fontSize: 14, fontFamily: fonts.regular, marginEnd: 12, flexShrink: 1, textAlign: 'left' },
   kvValue: { color: colors.text, fontSize: 14, fontFamily: fonts.semibold, flexShrink: 0, maxWidth: '65%' },
 })

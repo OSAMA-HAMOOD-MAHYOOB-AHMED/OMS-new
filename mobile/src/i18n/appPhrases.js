@@ -129,4 +129,16 @@ export const appPhrases = {
   Back: 'رجوع',
   'New chat': 'محادثة جديدة',
   'Ask our assistant': 'اسأل المساعد',
+  // Checkout
+  'Deliver to': 'التوصيل إلى',
+  'Order summary': 'ملخص الطلب',
+  'Pay when your order arrives': 'ادفع لما يوصلك الطلب',
+  'Credit / Debit Card': 'بطاقة ائتمان / خصم',
+  'Visa, Mastercard, Amex': 'فيزا، ماستركارد، أمريكان إكسبريس',
+  'Your cart is empty.': 'سلتك فاضية.',
+  'Placing order…': 'جاري إرسال الطلب…',
+  'Thank you for your order!': 'شكرًا لطلبك!',
+  'A confirmation email with your invoice is on its way.': 'بيوصلك إيميل تأكيد ومعه الفاتورة.',
+  'each': 'للقطعة',
+  'Enter your email and password.': 'اكتب بريدك الإلكتروني وكلمة المرور.',
 }

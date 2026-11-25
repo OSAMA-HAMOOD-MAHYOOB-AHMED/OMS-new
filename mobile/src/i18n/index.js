@@ -15,11 +15,16 @@ const AR = { ...arPhrases, ...appPhrases }
 // because the navigation tree is remounted with the language as its key (App.js).
 let currentLang = 'en'
 
+/** The language the app is showing right now ('ar' or 'en'). */
+export function currentLanguage() {
+  return currentLang
+}
+
 /** Translate an English UI phrase (screens, validation and server messages). */
 export function tp(text) {
   if (currentLang !== 'ar' || text === null || text === undefined) return text
   const key = String(text)
-  return AR[key] ?? AR[key.trim()] ?? text
+  return AR[key] ?? AR[key.trim()] ?? patternPhrase(key, AR) ?? text
 }
 
 function deviceLanguage() {
@@ -113,4 +118,11 @@ export function useI18n() {
   const ctx = useContext(I18nContext)
   if (!ctx) throw new Error('useI18n must be used inside LanguageProvider')
   return ctx
+}
+
+// Server messages that carry an id or number are matched by their start.
+const PATTERNS = [[/^Insufficient stock for product /, 'Not enough stock for one of the items in your cart.']]
+function patternPhrase(text, dict) {
+  const hit = PATTERNS.find(([re]) => re.test(text))
+  return hit ? dict[hit[1]] : undefined
 }

@@ -6,7 +6,7 @@ import { useApi } from '../../api/useApi'
 import { Button, Card, Divider, ErrorBox, Input, Row, Screen, SectionTitle } from '../../components/ui'
 import { useCart } from '../../context/CartContext'
 import { useCurrency } from '../../context/CurrencyContext'
-import { colors, radius } from '../../theme'
+import { colors, fonts, radius } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
 import { SHIPPING } from '../../utils/format'
 import { detectCardBrand, digitsOnly, formatCardNumber, formatExpiry, validateCardForm } from '../../utils/validation'
@@ -18,7 +18,7 @@ const METHODS = [
 ]
 
 export default function CheckoutScreen({ navigation }) {
-  const { items, total, count, clear } = useCart()
+  const { items, total, clear } = useCart()
   const { format } = useCurrency()
   const { data: profile } = useApi('/api/profile')
   const [method, setMethod] = useState('Cash')
@@ -76,7 +76,7 @@ export default function CheckoutScreen({ navigation }) {
             <>
               <Text style={styles.strong}>{profile.name}</Text>
               <Text style={styles.soft}>{profile.address}</Text>
-              <Text style={styles.soft}>{profile.phoneNumber}</Text>
+              <Text style={styles.soft}>{`\u200E${profile.phoneNumber || ''}`}</Text>
               <Text style={[styles.soft, { marginTop: 8, fontSize: 12 }]}>{tp('To change this address, edit your profile.')}</Text>
             </>
           ) : (
@@ -86,7 +86,7 @@ export default function CheckoutScreen({ navigation }) {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="airplane-outline" size={18} color={colors.primary} />
             <Text style={[styles.soft, { marginStart: 8 }]}>
-              {SHIPPING.service} · {SHIPPING.costLabel} · {SHIPPING.estimatedDelivery}
+              {SHIPPING.service} · {tp(SHIPPING.costLabel)} · {tp(SHIPPING.estimatedDelivery)}
             </Text>
           </View>
         </Card>
@@ -96,12 +96,12 @@ export default function CheckoutScreen({ navigation }) {
           const active = method === m.key
           return (
             <Pressable key={m.key} onPress={() => setMethod(m.key)} style={[styles.method, active && styles.methodActive]}>
-              <Ionicons name={m.icon} size={24} color={active ? colors.primary : colors.textSoft} />
+              <Ionicons name={m.icon} size={24} color={active ? colors.goldText : colors.textSoft} />
               <View style={{ flex: 1, marginStart: 12 }}>
-                <Text style={styles.strong}>{m.title}</Text>
-                <Text style={styles.soft}>{m.subtitle}</Text>
+                <Text style={styles.strong}>{tp(m.title)}</Text>
+                <Text style={styles.soft}>{tp(m.subtitle)}</Text>
               </View>
-              <Ionicons name={active ? 'radio-button-on' : 'radio-button-off'} size={22} color={active ? colors.primary : colors.muted} />
+              <Ionicons name={active ? 'radio-button-on' : 'radio-button-off'} size={22} color={active ? colors.ink : colors.muted} />
             </Pressable>
           )
         })}
@@ -120,6 +120,7 @@ export default function CheckoutScreen({ navigation }) {
               value={card.cardNumber}
               onChangeText={(v) => setCard((c) => ({ ...c, cardNumber: formatCardNumber(v) }))}
               keyboardType="number-pad"
+              ltr
               placeholder="1234 5678 9012 3456"
               maxLength={23}
               error={cardErrors.cardNumber}
@@ -131,6 +132,7 @@ export default function CheckoutScreen({ navigation }) {
                 value={card.cardExpiry}
                 onChangeText={(v) => setCard((c) => ({ ...c, cardExpiry: formatExpiry(v) }))}
                 keyboardType="number-pad"
+                ltr
                 placeholder={tp('MM/YY')}
                 maxLength={5}
                 error={cardErrors.cardExpiry}
@@ -141,6 +143,7 @@ export default function CheckoutScreen({ navigation }) {
                 value={card.cardCvv}
                 onChangeText={(v) => setCard((c) => ({ ...c, cardCvv: digitsOnly(v).slice(0, 4) }))}
                 keyboardType="number-pad"
+                ltr
                 placeholder="123"
                 secure
                 maxLength={4}
@@ -160,14 +163,14 @@ export default function CheckoutScreen({ navigation }) {
             <Row key={i.productID} label={`${i.quantity} × ${i.name}`} value={format(i.price * i.quantity)} />
           ))}
           <Divider />
-          <Row label={`${tp('Items')} (${count})`} value={format(total)} />
-          <Row label={tp('Shipping')} value={SHIPPING.costLabel} />
+          <Row label={tp('Subtotal')} value={format(total)} />
+          <Row label={tp('Shipping')} value={tp(SHIPPING.costLabel)} />
           <Row label={tp('Total')} value={format(total)} bold />
         </Card>
 
         <ErrorBox message={error} />
         <Button
-          title={placing ? 'Placing order…' : `Place order · ${format(total)}`}
+          title={placing ? tp('Placing order…') : `${tp('Place order')} · ${format(total)}`}
           icon="checkmark-circle"
           onPress={placeOrder}
           loading={placing}
@@ -179,8 +182,8 @@ export default function CheckoutScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  strong: { fontWeight: '700', color: colors.text, fontSize: 15 },
-  soft: { color: colors.textSoft, fontSize: 13, marginTop: 2 },
+  strong: { fontFamily: fonts.bold, color: colors.text, fontSize: 15, textAlign: 'left' },
+  soft: { fontFamily: fonts.regular, color: colors.textSoft, fontSize: 13, marginTop: 2, textAlign: 'left' },
   method: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -191,5 +194,5 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
-  methodActive: { borderColor: colors.primary, backgroundColor: '#f5f8ff' },
+  methodActive: { borderColor: colors.gold, backgroundColor: colors.sand },
 })

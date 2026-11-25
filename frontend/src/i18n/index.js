@@ -62,7 +62,7 @@ export function t(key, params) {
 export function tp(text) {
   if (locale.value !== 'ar' || text === null || text === undefined) return text
   const key = String(text)
-  return arPhrases[key] ?? arPhrases[key.trim()] ?? text
+  return arPhrases[key] ?? arPhrases[key.trim()] ?? patternPhrase(key, arPhrases) ?? text
 }
 
 export function setLocale(lang) {
@@ -114,4 +114,11 @@ export function categoryIcon(category) {
 
 export function useI18n() {
   return { t, tp, locale, isRtl, setLocale, toggleLocale, statusLabel, categoryGroup, categoryLabel, categoryIcon }
+}
+
+// Server messages that carry an id or number are matched by their start.
+const PATTERNS = [[/^Insufficient stock for product /, 'Not enough stock for one of the items in your cart.']]
+function patternPhrase(text, dict) {
+  const hit = PATTERNS.find(([re]) => re.test(text))
+  return hit ? dict[hit[1]] : undefined
 }

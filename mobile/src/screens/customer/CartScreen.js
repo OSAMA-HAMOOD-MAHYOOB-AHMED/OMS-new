@@ -3,7 +3,7 @@ import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Button, Card, Divider, Empty, Row, Screen } from '../../components/ui'
 import { useCart } from '../../context/CartContext'
 import { useCurrency } from '../../context/CurrencyContext'
-import { colors, radius } from '../../theme'
+import { colors, fonts, radius } from '../../theme'
 import { SHIPPING } from '../../utils/format'
 import { productImageSource } from '../../utils/images'
 import { tp } from '../../i18n'
@@ -41,7 +41,9 @@ export default function CartScreen({ navigation }) {
             <Text style={styles.name} numberOfLines={2}>
               {it.name}
             </Text>
-            <Text style={styles.unit}>{format(it.price)} each</Text>
+            <Text style={styles.unit}>
+              {format(it.price)} {tp('each')}
+            </Text>
             <View style={styles.row}>
               <View style={styles.stepper}>
                 <Pressable
@@ -69,7 +71,7 @@ export default function CartScreen({ navigation }) {
 
       <Card>
         <Row label={`${tp('Items')} (${count})`} value={format(total)} />
-        <Row label={tp('Shipping')} value={`${SHIPPING.carrier} — ${SHIPPING.costLabel}`} />
+        <Row label={tp('Shipping')} value={`${SHIPPING.carrier} — ${tp(SHIPPING.costLabel)}`} />
         <Divider />
         <Row label={tp('Total')} value={format(total)} bold />
       </Card>
@@ -83,11 +85,11 @@ export default function CartScreen({ navigation }) {
 const styles = StyleSheet.create({
   item: { flexDirection: 'row', padding: 12 },
   thumb: { width: 72, height: 72, borderRadius: radius.sm, backgroundColor: '#F4F0E8' },
-  name: { fontWeight: '700', color: colors.text },
-  unit: { color: colors.textSoft, fontSize: 12, marginTop: 2 },
+  name: { fontFamily: fonts.bold, color: colors.text, textAlign: 'left' },
+  unit: { fontFamily: fonts.regular, color: colors.textSoft, fontSize: 12, marginTop: 2, textAlign: 'left' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 8 },
   stepBtn: { paddingHorizontal: 10, paddingVertical: 6 },
-  qty: { minWidth: 28, textAlign: 'center', fontWeight: '700', color: colors.text },
-  subtotal: { fontWeight: '800', color: colors.text },
+  qty: { minWidth: 28, textAlign: 'center', fontFamily: fonts.bold, color: colors.text },
+  subtotal: { fontFamily: fonts.bold, color: colors.text },
 })
