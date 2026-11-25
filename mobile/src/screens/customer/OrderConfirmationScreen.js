@@ -33,6 +33,9 @@ export default function OrderConfirmationScreen({ navigation, route }) {
 
       <Card>
         <Row label={tp('Order ID')} value={order.orderID} />
+        {order.discount > 0 ? (
+          <Row label={`${tp('Discount')}${order.couponCode ? ` (${order.couponCode})` : ''}`} value={`-${format(order.discount)}`} />
+        ) : null}
         <Row
           label={tp(order.paymentMethod === 'Cash' ? 'Amount due on delivery' : 'Total paid')}
           value={format(order.totalPrice)}

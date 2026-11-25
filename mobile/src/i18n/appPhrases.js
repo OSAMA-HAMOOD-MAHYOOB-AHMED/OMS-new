@@ -141,4 +141,5 @@ export const appPhrases = {
   'A confirmation email with your invoice is on its way.': 'بيوصلك إيميل تأكيد ومعه الفاتورة.',
   'each': 'للقطعة',
   'Enter your email and password.': 'اكتب بريدك الإلكتروني وكلمة المرور.',
+  'Incorrect email, phone number or password.': 'البريد الإلكتروني أو رقم الجوال أو كلمة المرور غير صحيحة.',
 }

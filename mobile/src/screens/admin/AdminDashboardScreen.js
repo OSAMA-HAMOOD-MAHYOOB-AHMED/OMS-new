@@ -53,6 +53,7 @@ export default function AdminDashboardScreen({ navigation }) {
           </View>
 
           <Button title={tp('Sales reports')} icon="bar-chart-outline" variant="secondary" onPress={() => navigation.navigate('AdminReports')} style={{ marginBottom: 8 }} />
+          <Button title={tp('Discount codes')} icon="pricetag-outline" variant="secondary" onPress={() => navigation.navigate('AdminCoupons')} style={{ marginBottom: 8 }} />
 
           {lowStock.length > 0 ? (
             <>

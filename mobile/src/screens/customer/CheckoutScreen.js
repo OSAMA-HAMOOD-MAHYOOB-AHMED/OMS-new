@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { api } from '../../api/client'
 import { useApi } from '../../api/useApi'
 import { Button, Card, Divider, ErrorBox, Input, Row, Screen, SectionTitle } from '../../components/ui'
@@ -26,6 +26,28 @@ export default function CheckoutScreen({ navigation }) {
   const [cardErrors, setCardErrors] = useState({})
   const [error, setError] = useState(null)
   const [placing, setPlacing] = useState(false)
+  // Discount code: checked now, and again by the server when the order is placed.
+  const [codeInput, setCodeInput] = useState('')
+  const [coupon, setCoupon] = useState(null)
+  const [couponError, setCouponError] = useState(null)
+  const [checking, setChecking] = useState(false)
+  const discount = coupon ? Math.round(total * coupon.percent) / 100 : 0
+  const grandTotal = Math.max(0, total - discount)
+
+  async function applyCoupon() {
+    setCouponError(null)
+    if (!codeInput.trim()) return
+    setChecking(true)
+    try {
+      const res = await api.post('/api/coupons/check', { code: codeInput.trim(), subtotal: total })
+      setCoupon({ code: res.data.code, percent: res.data.percent })
+      setCodeInput('')
+    } catch (e) {
+      setCouponError(formatApiError(e))
+    } finally {
+      setChecking(false)
+    }
+  }
 
   const brand = detectCardBrand(card.cardNumber)
 
@@ -57,6 +79,7 @@ export default function CheckoutScreen({ navigation }) {
         paymentMethod: method,
         items: items.map((i) => ({ productID: i.productID, quantity: i.quantity })),
         paymentDetails,
+        couponCode: coupon?.code || null,
       })
       clear()
       navigation.replace('OrderConfirmation', { order: res.data })
@@ -165,12 +188,44 @@ export default function CheckoutScreen({ navigation }) {
           <Divider />
           <Row label={tp('Subtotal')} value={format(total)} />
           <Row label={tp('Shipping')} value={tp(SHIPPING.costLabel)} />
-          <Row label={tp('Total')} value={format(total)} bold />
+          {coupon ? <Row label={`${tp('Discount')} (${coupon.code})`} value={`-${format(discount)}`} /> : null}
+          <Row label={tp('Total')} value={format(grandTotal)} bold />
+
+          <Divider />
+          {coupon ? (
+            <View style={styles.couponOn}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+              <Text style={styles.couponOnText}>
+                {coupon.code} · {coupon.percent}% {tp('off')}
+              </Text>
+              <Pressable onPress={() => setCoupon(null)} hitSlop={8}>
+                <Text style={styles.couponRemove}>{tp('Remove')}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.couponRow}>
+              <Ionicons name="pricetag-outline" size={18} color={colors.goldText} />
+              <TextInput
+                value={codeInput}
+                onChangeText={setCodeInput}
+                placeholder={tp('Discount code')}
+                placeholderTextColor={colors.muted}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={40}
+                style={styles.couponInput}
+              />
+              <Pressable onPress={applyCoupon} disabled={checking || !codeInput.trim()} style={[styles.couponBtn, (checking || !codeInput.trim()) && { opacity: 0.5 }]}>
+                <Text style={styles.couponBtnText}>{checking ? tp('Checking…') : tp('Apply')}</Text>
+              </Pressable>
+            </View>
+          )}
+          {couponError ? <Text style={styles.couponError}>{tp(couponError)}</Text> : null}
         </Card>
 
         <ErrorBox message={error} />
         <Button
-          title={placing ? tp('Placing order…') : `${tp('Place order')} · ${format(total)}`}
+          title={placing ? tp('Placing order…') : `${tp('Place order')} · ${format(grandTotal)}`}
           icon="checkmark-circle"
           onPress={placeOrder}
           loading={placing}
@@ -195,4 +250,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   methodActive: { borderColor: colors.gold, backgroundColor: colors.sand },
+  couponRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.gold,
+    backgroundColor: colors.sand,
+    borderRadius: radius.sm,
+    paddingStart: 12,
+    padding: 4,
+  },
+  couponInput: { flex: 1, height: 40, fontFamily: fonts.semibold, fontSize: 14, color: colors.text, textAlign: 'left', writingDirection: 'ltr' },
+  couponBtn: { backgroundColor: colors.ink, borderRadius: 10, paddingHorizontal: 14, height: 38, justifyContent: 'center' },
+  couponBtnText: { color: '#fff', fontFamily: fonts.semibold, fontSize: 13 },
+  couponOn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.successSoft, borderRadius: radius.sm, padding: 10 },
+  couponOnText: { flex: 1, color: colors.success, fontFamily: fonts.semibold, fontSize: 13, textAlign: 'left' },
+  couponRemove: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 13 },
+  couponError: { color: colors.danger, fontFamily: fonts.regular, fontSize: 13, marginTop: 6, textAlign: 'left' },
 })

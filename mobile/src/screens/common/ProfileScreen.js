@@ -5,6 +5,7 @@ import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { api } from '../../api/client'
 import { useApi } from '../../api/useApi'
 import { Button, Card, ErrorBox, InfoBox, Input, Loading, Row, Screen, SectionTitle } from '../../components/ui'
+import ContactCard from '../../components/ContactCard'
 import { API_URL } from '../../config'
 import { useAuth } from '../../context/AuthContext'
 import { useI18n, tp } from '../../i18n'
@@ -244,6 +245,8 @@ export default function ProfileScreen() {
           />
         </View>
       </Card>
+
+      <ContactCard />
 
       <SectionTitle>Security</SectionTitle>
       <Card>

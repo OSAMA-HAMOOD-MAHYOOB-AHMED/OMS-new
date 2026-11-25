@@ -6,12 +6,13 @@ import AppHeader from '../components/AppHeader'
 import { Loading } from '../components/ui'
 import { ROLES, useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { useI18n } from '../i18n'
+import { tp, useI18n } from '../i18n'
 import { colors, fonts } from '../theme'
 
 import LoginScreen from '../screens/auth/LoginScreen'
 import RegisterScreen from '../screens/auth/RegisterScreen'
 import VerifyPendingScreen from '../screens/auth/VerifyPendingScreen'
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen'
 
 import CartScreen from '../screens/customer/CartScreen'
 import ChatScreen from '../screens/customer/ChatScreen'
@@ -34,6 +35,7 @@ import AdminCustomersScreen from '../screens/admin/AdminCustomersScreen'
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen'
 import AdminProductsScreen from '../screens/admin/AdminProductsScreen'
 import AdminReportsScreen from '../screens/admin/AdminReportsScreen'
+import AdminCouponsScreen from '../screens/admin/AdminCouponsScreen'
 import ProductFormScreen from '../screens/admin/ProductFormScreen'
 
 const Stack = createNativeStackNavigator()
@@ -191,6 +193,7 @@ function AdminStack() {
       <Stack.Screen name="AdminHome" component={AdminTabs} options={{ headerShown: false }} />
       <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: t('titles.product') }} />
       <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{ title: t('titles.salesReports') }} />
+      <Stack.Screen name="AdminCoupons" component={AdminCouponsScreen} options={{ title: tp('Discount codes') }} />
       <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ title: t('titles.orderDetails') }} />
     </Stack.Navigator>
   )
@@ -205,6 +208,7 @@ function AuthStack() {
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ title: t('titles.createAccount') }} />
       <Stack.Screen name="VerifyPending" component={VerifyPendingScreen} options={{ title: t('titles.verifyEmail') }} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: tp('Forgot password?') }} />
     </Stack.Navigator>
   )
 }

@@ -58,6 +58,8 @@ export default function ProductFormScreen({ navigation, route }) {
     stockLevel: existing ? String(existing.stockLevel) : '',
     description: existing?.description || '',
     imageUrl: existing?.imageUrl || '',
+    compareAtPrice: existing?.compareAtPrice ? String(existing.compareAtPrice) : '',
+    specs: existing?.specs || '',
   })
   const [photo, setPhoto] = useState(null) // picked but not uploaded yet
   const { data: categories } = useCategories()
@@ -122,6 +124,9 @@ export default function ProductFormScreen({ navigation, route }) {
         stockLevel: stock,
         description: f.description.trim() || null,
         imageUrl: f.imageUrl.trim() || null,
+        // 0 and "" clear the sale price and specifications.
+        compareAtPrice: Number(f.compareAtPrice) > 0 ? Number(f.compareAtPrice) : 0,
+        specs: f.specs.trim(),
       })
     } catch (e) {
       setError(formatApiError(e))
@@ -198,7 +203,21 @@ export default function ProductFormScreen({ navigation, route }) {
           />
           <Input label={tp('Price (USD)')} value={f.price} onChangeText={set('price')} keyboardType="decimal-pad" error={errors.price} />
           <Input label={tp('Stock level')} value={f.stockLevel} onChangeText={set('stockLevel')} keyboardType="number-pad" error={errors.stockLevel} />
+          <Input
+            label={tp('Original price (USD) — for sales')}
+            value={f.compareAtPrice}
+            onChangeText={set('compareAtPrice')}
+            keyboardType="decimal-pad"
+            placeholder={tp('Leave empty if not on sale')}
+          />
           <Input label={tp('Description')} value={f.description} onChangeText={set('description')} multiline autoCapitalize="sentences" />
+          <Input
+            label={tp('Specifications')}
+            value={f.specs}
+            onChangeText={set('specs')}
+            multiline
+            placeholder={tp('One per line, e.g. Capacity: 20000mAh')}
+          />
           <Button title={isEdit ? 'Save changes' : 'Create product'} onPress={save} loading={saving} />
         </Card>
       </Screen>

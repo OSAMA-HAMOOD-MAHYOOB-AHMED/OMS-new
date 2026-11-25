@@ -3,7 +3,7 @@ import { Image, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'r
 import { Button, Card, ErrorBox, InfoBox, Input, Screen } from '../../components/ui'
 import { APP_NAME } from '../../config'
 import { useAuth } from '../../context/AuthContext'
-import { colors } from '../../theme'
+import { colors, fonts } from '../../theme'
 import { logo } from '../../utils/images'
 import { tp } from '../../i18n'
 
@@ -25,7 +25,7 @@ export default function LoginScreen({ navigation }) {
     const res = await login(email, password)
     setLoading(false)
     if (res.status === 'unverified') {
-      navigation.navigate('VerifyPending', { email: email.trim().toLowerCase(), message: res.message })
+      navigation.navigate('VerifyPending', { email: res.email || email.trim().toLowerCase(), message: res.message })
     } else if (res.status === 'failed') {
       setError(res.message)
     }
@@ -45,13 +45,14 @@ export default function LoginScreen({ navigation }) {
           {sessionExpired ? <InfoBox tone="warning" message={tp('Your session expired. Please sign in again.')} /> : null}
           <ErrorBox message={error} />
           <Input
-            label={tp('Email')}
+            label={tp('Email or phone number')}
             value={email}
             onChangeText={setEmail}
-            placeholder={tp('you@example.com')}
+            placeholder="you@example.com / 05XXXXXXXX"
             keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
+            autoComplete="username"
+            textContentType="username"
+            ltr
           />
           <Input
             label={tp('Password')}
@@ -63,6 +64,12 @@ export default function LoginScreen({ navigation }) {
             onSubmitEditing={onSubmit}
             returnKeyType="go"
           />
+          <Text
+            style={styles.forgot}
+            onPress={() => navigation.navigate('ForgotPassword', { email: email.includes('@') ? email.trim() : '' })}
+          >
+            {tp('Forgot password?')}
+          </Text>
           <Button title={tp('Sign in')} onPress={onSubmit} loading={loading} />
           <Text style={styles.hint}>{tp('Customers, sales staff, warehouse managers and admins all sign in here.')}</Text>
         </Card>
@@ -79,6 +86,7 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  forgot: { alignSelf: 'flex-end', color: colors.goldText, fontFamily: fonts.semibold, fontSize: 13, marginTop: -4, marginBottom: 12 },
   header: { alignItems: 'center', marginBottom: 24 },
   logo: { width: 96, height: 96, borderRadius: 20, marginBottom: 12, backgroundColor: '#fff' },
   brand: { fontSize: 24, fontWeight: '800', color: colors.text },

@@ -9,6 +9,7 @@ import { ROLES, useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { useCurrency } from '../../context/CurrencyContext'
 import { categoryGroup, tp, useI18n } from '../../i18n'
+import { discountPercent, isOnSale } from '../../utils/pricing'
 import { colors, fonts, radius } from '../../theme'
 import { hero, logo, productImageSource } from '../../utils/images'
 
@@ -21,8 +22,21 @@ const GROUP_ICONS = {
 }
 const iconFor = (name) => GROUP_ICONS[categoryGroup(name)] || 'grid-outline'
 
-const SORTS = ['featured', 'priceAsc', 'priceDesc', 'name']
-const SORT_LABEL = { featured: 'home.sortFeatured', priceAsc: 'home.sortPriceAsc', priceDesc: 'home.sortPriceDesc', name: 'home.sortName' }
+const SORTS = ['featured', 'newest', 'popular', 'rating', 'priceAsc', 'priceDesc', 'name']
+const SORT_KEYS = { featured: 'home.sortFeatured', priceAsc: 'home.sortPriceAsc', priceDesc: 'home.sortPriceDesc', name: 'home.sortName' }
+const SORT_PHRASES = { newest: 'Newest', popular: 'Best selling', rating: 'Top rated' }
+const sortLabel = (s, t) => (SORT_KEYS[s] ? t(SORT_KEYS[s]) : tp(SORT_PHRASES[s]))
+
+/** Small star line: ★ 4.5 (3). */
+export function Stars({ rating, count, size = 12 }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+      <Ionicons name="star" size={size} color={colors.gold} />
+      <Text style={{ fontSize: size, fontFamily: fonts.semibold, color: colors.text }}>{Number(rating).toFixed(1)}</Text>
+      {count != null ? <Text style={{ fontSize: size - 1, fontFamily: fonts.regular, color: colors.muted }}>({count})</Text> : null}
+    </View>
+  )
+}
 
 function ProductCard({ product: p, onOpen, onAdd, canBuy }) {
   const { t, categoryLabel, textAlign } = useI18n()
@@ -30,6 +44,7 @@ function ProductCard({ product: p, onOpen, onAdd, canBuy }) {
   const [justAdded, setJustAdded] = useState(false)
   const out = p.stockLevel <= 0
   const low = !out && p.stockLevel <= 15
+  const sale = isOnSale(p)
 
   return (
     <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]} onPress={onOpen}>
@@ -38,8 +53,13 @@ function ProductCard({ product: p, onOpen, onAdd, canBuy }) {
         {out || low ? (
           <View style={[styles.flag, out && { backgroundColor: '#EEEBE5' }]}>
             <Text style={[styles.flagText, out && { color: '#57514A' }]}>
-              {out ? t('common.outOfStock') : t('common.onlyLeft', { n: p.stockLevel })}
+              {out ? tp('Sold out') : t('common.onlyLeft', { n: p.stockLevel })}
             </Text>
+          </View>
+        ) : null}
+        {sale ? (
+          <View style={styles.saleBadge}>
+            <Text style={styles.saleText}>{`\u200E-${discountPercent(p)}%`}</Text>
           </View>
         ) : null}
       </View>
@@ -48,8 +68,12 @@ function ProductCard({ product: p, onOpen, onAdd, canBuy }) {
         <Text style={[styles.name, { textAlign }]} numberOfLines={2}>
           {p.name}
         </Text>
+        {p.reviewCount ? <Stars rating={p.rating} count={p.reviewCount} /> : null}
         <View style={styles.cardBottom}>
-          <Text style={styles.price}>{format(p.price)}</Text>
+          <View style={{ flexShrink: 1 }}>
+            <Text style={styles.price}>{format(p.price)}</Text>
+            {sale ? <Text style={styles.was}>{format(p.compareAtPrice)}</Text> : null}
+          </View>
           {canBuy ? (
             <Pressable
               disabled={out}
@@ -87,12 +111,14 @@ export default function ProductsScreen({ navigation }) {
   const [cat, setCat] = useState('all')
   const [sort, setSort] = useState('featured')
   const [inStockOnly, setInStockOnly] = useState(false)
+  const [offersOnly, setOffersOnly] = useState(false)
 
   const products = useMemo(() => {
     const q = query.trim().toLowerCase()
     let list = (data || []).filter((p) => {
       if (cat !== 'all' && p.category !== cat) return false
       if (inStockOnly && p.stockLevel <= 0) return false
+      if (offersOnly && !isOnSale(p)) return false
       if (q && !`${p.name} ${p.category} ${p.productID} ${categoryLabel(p.category)}`.toLowerCase().includes(q)) return false
       return true
     })
@@ -100,8 +126,13 @@ export default function ProductsScreen({ navigation }) {
     if (sort === 'priceDesc') list = [...list].sort((a, b) => b.price - a.price)
     if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name))
     if (sort === 'featured') list = [...list].sort((a, b) => (b.stockLevel > 0) - (a.stockLevel > 0))
+    if (sort === 'newest') list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    if (sort === 'popular') list = [...list].sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0))
+    if (sort === 'rating')
+      list = [...list].sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.reviewCount || 0) - (a.reviewCount || 0))
     return list
-  }, [data, query, cat, sort, inStockOnly, categoryLabel])
+  }, [data, query, cat, sort, inStockOnly, offersOnly, categoryLabel])
+  const hasOffers = (data || []).some(isOnSale)
 
   if (loading) return <Loading label={t('home.loadingProducts')} />
 
@@ -174,16 +205,17 @@ export default function ProductsScreen({ navigation }) {
       </ScrollView>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+        {hasOffers ? <Chip label={`% ${tp('Offers')}`} active={offersOnly} onPress={() => setOffersOnly((v) => !v)} /> : null}
         <Chip label={t('home.inStockOnly')} active={inStockOnly} onPress={() => setInStockOnly((v) => !v)} />
         {SORTS.map((s) => (
-          <Chip key={s} label={t(SORT_LABEL[s])} active={sort === s} onPress={() => setSort(s)} />
+          <Chip key={s} label={sortLabel(s, t)} active={sort === s} onPress={() => setSort(s)} />
         ))}
       </ScrollView>
 
       <ErrorBox message={error} onRetry={reload} />
 
       <View style={styles.sectionRow}>
-        <Text style={styles.sectionTitle}>{cat === 'all' ? t('home.allProducts') : categoryLabel(cat)}</Text>
+        <Text style={styles.sectionTitle}>{offersOnly ? tp('Offers') : cat === 'all' ? t('home.allProducts') : categoryLabel(cat)}</Text>
         <Text style={styles.count}>{t('home.count', { n: products.length })}</Text>
       </View>
     </View>
@@ -314,6 +346,17 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   flagText: { color: colors.danger, fontSize: 11, fontFamily: fonts.semibold },
+  saleBadge: {
+    position: 'absolute',
+    top: 8,
+    end: 8,
+    backgroundColor: colors.danger,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  saleText: { color: '#fff', fontSize: 11, fontFamily: fonts.bold, writingDirection: 'ltr' },
+  was: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted, textDecorationLine: 'line-through' },
   cardBody: { padding: 12, paddingTop: 10, flex: 1 },
   cat: { fontSize: 11, color: colors.goldText, fontFamily: fonts.medium },
   name: { fontSize: 13, lineHeight: 20, fontFamily: fonts.semibold, color: colors.text, marginTop: 2, minHeight: 40 },

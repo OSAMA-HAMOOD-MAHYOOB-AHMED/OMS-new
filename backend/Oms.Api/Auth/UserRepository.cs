@@ -34,18 +34,23 @@ public sealed class UserRepository(IDbConnectionFactory db)
         return await conn.QuerySingleOrDefaultAsync<UserRow>(sql, new { email });
     }
 
-    /// <summary>Accounts whose phone number has these digits (ignoring +, spaces and dashes).</summary>
+    /// <summary>
+    /// Accounts whose phone number matches, ignoring +, spaces and dashes, and with or without the
+    /// country code: 0500000002, 500000002 and +966500000002 all find +966 50 000 0002.
+    /// </summary>
     public async Task<IReadOnlyList<UserRow>> GetByPhoneDigits(string digits)
     {
+        var tail = digits.TrimStart('0');
+        if (tail.Length < 8) return [];
         var sql = $"""
             SELECT {SelectColumns}
             FROM "User"
-            WHERE regexp_replace(phonenumber, '[^0-9]', '', 'g') = @digits
+            WHERE regexp_replace(phonenumber, '[^0-9]', '', 'g') LIKE '%' || @tail
             LIMIT 2;
             """;
 
         using var conn = db.Create();
-        return (await conn.QueryAsync<UserRow>(sql, new { digits })).ToList();
+        return (await conn.QueryAsync<UserRow>(sql, new { tail })).ToList();
     }
 
     public async Task<UserRow?> GetByVerificationToken(string token)

@@ -15,7 +15,7 @@
               type="text"
               inputmode="email"
               dir="ltr"
-              :placeholder="tp('you@example.com or 05XXXXXXXX')"
+              placeholder="you@example.com / 05XXXXXXXX"
               autocomplete="username"
               required
             />

@@ -107,6 +107,9 @@ export default function InvoiceScreen({ route }) {
         ))}
         <Divider />
         <Row label={tp('Shipping')} value={tp(inv.shippingCostLabel)} />
+        {inv.discount > 0 ? (
+          <Row label={`${tp('Discount')}${inv.couponCode ? ` (${inv.couponCode})` : ''}`} value={`-${format(inv.discount)}`} />
+        ) : null}
         <Row label={tp(paid ? 'Total paid' : 'Amount due')} value={format(inv.totalPrice)} bold />
       </Card>
 

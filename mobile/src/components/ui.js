@@ -232,7 +232,7 @@ function withRtlMark(text) {
 
 export function Row({ label, value, bold }) {
   // Keep a leading "+" (phone numbers) in place when the layout is right to left.
-  const shown = typeof value === 'string' && /^[+\d]/.test(value) ? '\u200E' + value : value
+  const shown = typeof value === 'string' && /^[+\-\d]/.test(value) ? '\u200E' + value : value
   return (
     <View style={styles.kvRow}>
       <Text style={styles.kvLabel}>{withRtlMark(tp(label))}</Text>

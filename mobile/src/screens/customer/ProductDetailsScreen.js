@@ -1,13 +1,16 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useApi } from '../../api/useApi'
 import { ErrorBox, InfoBox, Loading, Screen } from '../../components/ui'
 import { ROLES, useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { useCurrency } from '../../context/CurrencyContext'
-import { useI18n } from '../../i18n'
+import { tp, useI18n } from '../../i18n'
+import ProductTabs from '../../components/ProductTabs'
+import { discountPercent, isOnSale } from '../../utils/pricing'
+import { Stars } from './ProductsScreen'
 import { colors, fonts, radius } from '../../theme'
 import { SHIPPING } from '../../utils/format'
 import { productImageSource } from '../../utils/images'
@@ -37,6 +40,12 @@ export default function ProductDetailsScreen({ navigation, route }) {
   const maxQty = Math.max(0, p.stockLevel - inCart)
   const out = p.stockLevel <= 0
   const low = !out && p.stockLevel <= 15
+  const sale = isOnSale(p)
+
+  function share() {
+    // The website's product page, so the link opens for anyone.
+    Share.share({ message: `${p.name}\nhttps://alwakeel-alshamel.vercel.app/products/${encodeURIComponent(p.productID)}` }).catch(() => {})
+  }
 
   function onAdd() {
     add(p, qty)
@@ -58,6 +67,20 @@ export default function ProductDetailsScreen({ navigation, route }) {
           >
             <Ionicons name={isRtl ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.ink} />
           </Pressable>
+          <Pressable
+            onPress={share}
+            style={[styles.roundBtn, { top: insets.top + 10, end: 16 }]}
+            accessibilityRole="button"
+            accessibilityLabel={tp('Share')}
+            hitSlop={6}
+          >
+            <Ionicons name="share-social-outline" size={20} color={colors.ink} />
+          </Pressable>
+          {sale ? (
+            <View style={styles.saleBadge}>
+              <Text style={styles.saleText}>{`\u200E-${discountPercent(p)}%`}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.sheet}>
@@ -74,14 +97,24 @@ export default function ProductDetailsScreen({ navigation, route }) {
           </View>
 
           <Text style={[styles.name, { textAlign }]}>{p.name}</Text>
-          {!isCustomer ? <Text style={[styles.priceBig, { textAlign }]}>{format(p.price)}</Text> : null}
-
-          {p.description ? (
-            <View style={{ marginTop: 14 }}>
-              <Text style={[styles.h2, { textAlign }]}>{t('product.description')}</Text>
-              <Text style={[styles.desc, { textAlign }]}>{p.description}</Text>
+          {p.reviewCount ? (
+            <View style={{ marginTop: 4 }}>
+              <Stars rating={p.rating} count={p.reviewCount} size={14} />
             </View>
           ) : null}
+          {!isCustomer ? <Text style={[styles.priceBig, { textAlign }]}>{format(p.price)}</Text> : null}
+          {sale ? (
+            <View style={styles.saveRow}>
+              <Text style={styles.wasBig}>{format(p.compareAtPrice)}</Text>
+              <View style={styles.savePill}>
+                <Text style={styles.saveText}>
+                  {tp('You save')} {format(p.compareAtPrice - p.price)}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          <ProductTabs product={p} onChanged={reload} />
 
           <View style={styles.infoBox}>
             <View style={styles.infoRow}>
@@ -91,7 +124,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
             <View style={styles.infoRow}>
               <Ionicons name="car-outline" size={20} color={colors.goldText} />
               <Text style={styles.infoText}>
-                {SHIPPING.service} · {SHIPPING.estimatedDelivery}
+                {SHIPPING.service} · {tp(SHIPPING.estimatedDelivery)}
               </Text>
             </View>
             <View style={styles.infoRow}>
@@ -162,6 +195,20 @@ export default function ProductDetailsScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   hero: { height: 340, backgroundColor: '#fff' },
+  saleBadge: {
+    position: 'absolute',
+    bottom: 44,
+    start: 16,
+    backgroundColor: colors.danger,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  saleText: { color: '#fff', fontFamily: fonts.bold, fontSize: 13 },
+  saveRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  wasBig: { fontFamily: fonts.regular, fontSize: 15, color: colors.muted, textDecorationLine: 'line-through' },
+  savePill: { backgroundColor: colors.dangerSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  saveText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 12 },
   heroImg: { width: '100%', height: '100%' },
   roundBtn: {
     position: 'absolute',

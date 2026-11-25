@@ -74,8 +74,8 @@ export function AuthProvider({ children }) {
         return { status: 'ok' }
       } catch (e) {
         const status = e?.response?.status
-        if (status === 403) return { status: 'unverified', message: formatApiError(e) }
-        if (status === 401) return { status: 'failed', message: 'Incorrect email or password.' }
+        if (status === 403) return { status: 'unverified', message: formatApiError(e), email: e?.response?.data?.email }
+        if (status === 401) return { status: 'failed', message: 'Incorrect email, phone number or password.' }
         return { status: 'failed', message: formatApiError(e) }
       }
     },
