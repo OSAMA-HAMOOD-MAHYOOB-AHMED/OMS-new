@@ -54,6 +54,14 @@ function readPersistedToken() {
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  // A different page (e.g. another product from "You may also like") opens at the top; Back returns
+  // to where you were; filter or search changes on the same page keep the scroll position.
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    if (to.hash) return { el: to.hash }
+    if (to.path !== from.path) return { top: 0 }
+    return false
+  },
   routes: [
     { path: '/', name: 'home', component: HomePage },
     { path: '/contact', name: 'contact', component: ContactPage },
