@@ -28,8 +28,13 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               imageUrl AS ImageUrl,
               compareatprice AS CompareAtPrice,
               specs AS Specs,
-              createdat AS CreatedAt
-            FROM Product
+              createdat AS CreatedAt,
+              ARRAY(
+                SELECT '/api/products/' || pr.productid || '/photos/' || ph.photoid
+                FROM product_photo ph WHERE ph.productid = pr.productid
+                ORDER BY ph.sortorder, ph.photoid
+              ) AS Gallery
+            FROM Product pr
             ORDER BY name ASC;
             """;
         using var conn = db.Create();

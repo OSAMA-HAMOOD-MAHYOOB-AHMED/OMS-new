@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
-import { Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useApi } from '../../api/useApi'
 import { ErrorBox, InfoBox, Loading, Screen } from '../../components/ui'
@@ -9,11 +9,12 @@ import { useCart } from '../../context/CartContext'
 import { useCurrency } from '../../context/CurrencyContext'
 import { tp, useI18n } from '../../i18n'
 import ProductTabs from '../../components/ProductTabs'
+import ProductGallery from '../../components/ProductGallery'
 import { discountPercent, isOnSale } from '../../utils/pricing'
 import { Stars } from './ProductsScreen'
 import { colors, fonts, radius } from '../../theme'
 import { SHIPPING } from '../../utils/format'
-import { productImageSource } from '../../utils/images'
+import { productGallerySources } from '../../utils/images'
 
 export default function ProductDetailsScreen({ navigation, route }) {
   const insets = useSafeAreaInsets()
@@ -56,8 +57,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: isCustomer ? 120 : 32 }}>
-        <View style={styles.hero}>
-          <Image source={productImageSource(p)} style={styles.heroImg} resizeMode="cover" />
+        <ProductGallery sources={productGallerySources(p)}>
           <Pressable
             onPress={() => navigation.goBack()}
             style={[styles.roundBtn, { top: insets.top + 10, start: 16 }]}
@@ -77,11 +77,11 @@ export default function ProductDetailsScreen({ navigation, route }) {
             <Ionicons name="share-social-outline" size={20} color={colors.ink} />
           </Pressable>
           {sale ? (
-            <View style={styles.saleBadge}>
+            <View style={styles.saleBadge} pointerEvents="none">
               <Text style={styles.saleText}>{`\u200E-${discountPercent(p)}%`}</Text>
             </View>
           ) : null}
-        </View>
+        </ProductGallery>
 
         <View style={styles.sheet}>
           <View style={styles.metaRow}>

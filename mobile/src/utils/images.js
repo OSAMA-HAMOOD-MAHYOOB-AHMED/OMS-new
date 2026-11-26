@@ -32,3 +32,14 @@ export function productImageSource(product) {
   if (bundled[url]) return bundled[url]
   return byCategory(product?.category)
 }
+
+/** Every photo of a product for the gallery: the main photo first, then the admin's extra photos. */
+export function productGallerySources(product) {
+  const extra = (product?.gallery || []).map((u) => ({ uri: String(u).startsWith('/api/') ? `${API_URL}${u}` : u }))
+  return [productImageSource(product), ...extra]
+}
+
+/** Image source for an API photo path such as /api/products/X/photos/3. */
+export function apiImageSource(path) {
+  return { uri: String(path).startsWith('/api/') ? `${API_URL}${path}` : path }
+}

@@ -41,6 +41,7 @@ builder.Services.AddSingleton<Oms.Api.Catalog.ProductRepository>();
 builder.Services.AddSingleton<Oms.Api.Catalog.ProductImageRepository>();
 builder.Services.AddSingleton<Oms.Api.Catalog.CategoryRepository>();
 builder.Services.AddSingleton<Oms.Api.Catalog.ReviewRepository>();
+builder.Services.AddSingleton<Oms.Api.Catalog.ProductPhotoRepository>();
 builder.Services.AddSingleton<Oms.Api.Auth.PasswordResetService>();
 builder.Services.AddSingleton<Oms.Api.Catalog.SiteSettingsRepository>();
 builder.Services.AddSingleton<Oms.Api.Orders.CouponRepository>();
@@ -100,6 +101,7 @@ await Oms.Api.Catalog.ProductSeeder.SeedAsync(app);
 await Oms.Api.Catalog.ProductImageRepository.EnsureSchemaAsync(app);
 await Oms.Api.Catalog.CategoryRepository.EnsureSchemaAsync(app);
 await Oms.Api.Catalog.StoreFeaturesSchema.EnsureAsync(app);
+await Oms.Api.Catalog.ProductPhotoRepository.EnsureSchemaAsync(app);
 await Oms.Api.Auth.PasswordResetService.EnsureSchemaAsync(app);
 
 // Configure the HTTP request pipeline.

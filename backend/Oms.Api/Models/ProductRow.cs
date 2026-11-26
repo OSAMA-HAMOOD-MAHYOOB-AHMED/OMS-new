@@ -19,5 +19,7 @@ public sealed class ProductRow
     public int ReviewCount { get; init; }
     /// <summary>Units sold in orders that were not cancelled (for "best selling").</summary>
     public int SoldCount { get; init; }
+    /// <summary>Extra gallery photos (URLs), in the admin's order. The main photo is <see cref="ImageUrl"/>.</summary>
+    public string[] Gallery { get; init; } = [];
 }
 

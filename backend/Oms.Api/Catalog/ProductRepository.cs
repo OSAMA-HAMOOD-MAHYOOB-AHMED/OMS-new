@@ -22,7 +22,12 @@ public sealed class ProductRepository(IDbConnectionFactory db)
               createdat AS CreatedAt,
               COALESCE(r.rating, 0) AS Rating,
               COALESCE(r.reviews, 0) AS ReviewCount,
-              COALESCE(s.sold, 0) AS SoldCount
+              COALESCE(s.sold, 0) AS SoldCount,
+              ARRAY(
+                SELECT '/api/products/' || p.productid || '/photos/' || ph.photoid
+                FROM product_photo ph WHERE ph.productid = p.productid
+                ORDER BY ph.sortorder, ph.photoid
+              ) AS Gallery
             FROM Product p
             LEFT JOIN (
               SELECT productid, ROUND(AVG(rating)::numeric, 1) AS rating, COUNT(*)::int AS reviews
@@ -58,7 +63,12 @@ public sealed class ProductRepository(IDbConnectionFactory db)
               createdat AS CreatedAt,
               COALESCE(r.rating, 0) AS Rating,
               COALESCE(r.reviews, 0) AS ReviewCount,
-              COALESCE(s.sold, 0) AS SoldCount
+              COALESCE(s.sold, 0) AS SoldCount,
+              ARRAY(
+                SELECT '/api/products/' || p.productid || '/photos/' || ph.photoid
+                FROM product_photo ph WHERE ph.productid = p.productid
+                ORDER BY ph.sortorder, ph.photoid
+              ) AS Gallery
             FROM Product p
             LEFT JOIN (
               SELECT productid, ROUND(AVG(rating)::numeric, 1) AS rating, COUNT(*)::int AS reviews

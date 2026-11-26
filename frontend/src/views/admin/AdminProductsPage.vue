@@ -38,6 +38,30 @@
           </div>
           <p class="hint">{{ tp('JPEG, PNG or WebP · up to 5 MB. Big photos are resized automatically.') }}</p>
           <p v-if="pendingFile" class="hint pending">{{ tp('New photo will be uploaded when you save.') }}</p>
+
+          <!-- Extra photos for the product page gallery (the photo above is the main one). -->
+          <div class="morePhotos">
+            <span class="moreTitle">{{ tp('More photos') }} <span class="muted">({{ gallery.length }}/10)</span></span>
+            <template v-if="isEditing">
+              <div v-if="gallery.length" class="galleryGrid">
+                <div v-for="(g, i) in gallery" :key="g.id" class="galleryItem">
+                  <img :src="g.src" alt="" />
+                  <div class="galleryTools">
+                    <button type="button" :disabled="i === 0 || galleryBusy" :aria-label="tp('Move left')" @click="moveGallery(i, -1)">‹</button>
+                    <button type="button" class="del" :disabled="galleryBusy" :aria-label="tp('Delete')" @click="removeGallery(g)">✕</button>
+                    <button type="button" :disabled="i === gallery.length - 1 || galleryBusy" :aria-label="tp('Move right')" @click="moveGallery(i, 1)">›</button>
+                  </div>
+                </div>
+              </div>
+              <input id="galleryPhotos" class="srOnly" type="file" accept="image/jpeg,image/png,image/webp" multiple @change="addGallery" />
+              <label for="galleryPhotos" class="btnGhost small" :class="{ disabled: galleryBusy || gallery.length >= 10 }">
+                <AppIcon name="plus" :size="16" />
+                {{ galleryBusy ? tp('Uploading…') : tp('Add photos') }}
+              </label>
+              <p v-if="galleryError" class="hint errorText">{{ tp(galleryError) }}</p>
+            </template>
+            <p v-else class="hint">{{ tp('Save the product first, then add more photos.') }}</p>
+          </div>
         </div>
 
         <div class="form">
@@ -183,7 +207,7 @@
 import { useI18n } from '../../i18n'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { api } from '../../api/client'
-import { productImageUrl } from '../../utils/images'
+import { apiImageUrl, productImageUrl } from '../../utils/images'
 import { prepareProductPhoto, uploadProductPhoto } from '../../utils/imageUpload'
 import { useCurrency } from '../../composables/useCurrency'
 import AppIcon from '../../components/AppIcon.vue'
@@ -355,6 +379,7 @@ function resetForm() {
   Object.assign(form, emptyForm())
   isEditing.value = false
   clearPick()
+  setGallery([])
 }
 
 function newProduct() {
@@ -364,8 +389,73 @@ function newProduct() {
   focusPanel()
 }
 
+// ----- Extra photos (gallery) -----
+const gallery = ref([])
+const galleryBusy = ref(false)
+const galleryError = ref(null)
+
+function setGallery(urls) {
+  gallery.value = (urls || []).map((u) => ({ id: Number(String(u).split('/').pop()), url: u, src: apiImageUrl(u) }))
+}
+
+async function addGallery(e) {
+  const files = [...(e.target.files || [])]
+  e.target.value = ''
+  if (!files.length) return
+  galleryError.value = null
+  galleryBusy.value = true
+  try {
+    for (const file of files) {
+      if (gallery.value.length >= 10) break
+      const ready = await prepareProductPhoto(file)
+      const body = new FormData()
+      body.append('file', ready)
+      const { data } = await api.post(`/api/admin/products/${encodeURIComponent(form.productID)}/photos`, body)
+      gallery.value.push({ id: data.photoId, url: data.url, src: apiImageUrl(data.url) })
+    }
+    await load()
+  } catch (err) {
+    galleryError.value = apiMessage(err, err?.message || 'Could not upload the photo.')
+  } finally {
+    galleryBusy.value = false
+  }
+}
+
+async function removeGallery(g) {
+  if (!confirm(tp('Delete this photo?'))) return
+  galleryBusy.value = true
+  try {
+    await api.delete(`/api/admin/products/${encodeURIComponent(form.productID)}/photos/${g.id}`)
+    gallery.value = gallery.value.filter((x) => x.id !== g.id)
+    await load()
+  } catch (err) {
+    galleryError.value = apiMessage(err, 'Could not delete the photo.')
+  } finally {
+    galleryBusy.value = false
+  }
+}
+
+async function moveGallery(i, step) {
+  const list = [...gallery.value]
+  const j = i + step
+  if (j < 0 || j >= list.length) return
+  ;[list[i], list[j]] = [list[j], list[i]]
+  gallery.value = list
+  galleryBusy.value = true
+  try {
+    await api.put(`/api/admin/products/${encodeURIComponent(form.productID)}/photos/order`, { photoIds: list.map((g) => g.id) })
+    await load()
+  } catch (err) {
+    galleryError.value = apiMessage(err, 'Could not save the photo order.')
+  } finally {
+    galleryBusy.value = false
+  }
+}
+
 function edit(p) {
   clearPick()
+  setGallery(p.gallery)
+  galleryError.value = null
   isEditing.value = true
   form.productID = p.productID
   form.name = p.name
@@ -864,6 +954,74 @@ tbody td {
   border: 1px solid rgba(5, 96, 58, 0.18);
   padding: 8px 10px;
   border-radius: 12px;
+}
+/* ----- Extra photos ----- */
+.morePhotos {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.moreTitle {
+  font-weight: 700;
+  font-size: 14px;
+}
+.moreTitle .muted {
+  color: var(--muted);
+  font-weight: 500;
+}
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.galleryItem {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  aspect-ratio: 1;
+}
+.galleryItem img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.galleryTools {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  direction: ltr;
+  background: rgba(20, 20, 20, 0.55);
+}
+.galleryTools button {
+  flex: 1;
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.galleryTools button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.galleryTools .del {
+  color: #ffb4a8;
+}
+.btnGhost.small.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.errorText {
+  color: var(--danger);
 }
 </style>
 

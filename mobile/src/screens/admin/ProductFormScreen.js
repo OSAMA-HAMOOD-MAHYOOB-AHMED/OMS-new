@@ -1,21 +1,21 @@
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { useLayoutEffect, useState } from 'react'
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useCategories } from '../../api/categories'
 import { api, authHeader } from '../../api/client'
 import { Button, Card, Chip, ErrorBox, InfoBox, Input, Screen } from '../../components/ui'
 import { API_URL } from '../../config'
 import { colors, fonts, radius } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
-import { productImageSource } from '../../utils/images'
+import { apiImageSource, productImageSource } from '../../utils/images'
 import { tp } from '../../i18n'
 
 const MAX_BYTES = 5 * 1024 * 1024
 
 // Sends the photo as multipart "file" to POST /api/admin/products/{id}/image.
 // Uses XMLHttpRequest because Expo's fetch does not accept React Native's { uri, name, type } file parts.
-function uploadPhoto(productID, asset) {
+function uploadPhoto(productID, asset, path = 'image') {
   const body = new FormData()
   body.append('file', {
     uri: asset.uri,
@@ -24,7 +24,7 @@ function uploadPhoto(productID, asset) {
   })
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', `${API_URL}/api/admin/products/${encodeURIComponent(productID)}/image`)
+    xhr.open('POST', `${API_URL}/api/admin/products/${encodeURIComponent(productID)}/${path}`)
     const auth = authHeader()
     if (auth.Authorization) xhr.setRequestHeader('Authorization', auth.Authorization)
     xhr.setRequestHeader('Accept', 'application/json')
@@ -32,7 +32,8 @@ function uploadPhoto(productID, asset) {
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
-          resolve(JSON.parse(xhr.responseText).imageUrl)
+          const json = JSON.parse(xhr.responseText)
+          resolve(path === 'image' ? json.imageUrl : json)
         } catch {
           resolve(null)
         }
@@ -62,6 +63,58 @@ export default function ProductFormScreen({ navigation, route }) {
     specs: existing?.specs || '',
   })
   const [photo, setPhoto] = useState(null) // picked but not uploaded yet
+  // Extra gallery photos (the photo above is the main one). Only for a saved product.
+  const [gallery, setGallery] = useState(existing?.gallery || [])
+  const [galleryBusy, setGalleryBusy] = useState(false)
+
+  async function addGalleryPhotos() {
+    setError(null)
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!perm.granted) {
+      setError('Allow photo access to add a product photo.')
+      return
+    }
+    const room = 10 - gallery.length
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: room,
+      quality: 0.75,
+    })
+    if (result.canceled || !result.assets?.length) return
+    setGalleryBusy(true)
+    try {
+      for (const asset of result.assets.slice(0, room)) {
+        const type = asset.mimeType || 'image/jpeg'
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(type)) continue
+        if (asset.fileSize && asset.fileSize > MAX_BYTES) continue
+        const res = await uploadPhoto(existing.productID, asset, 'photos')
+        if (res?.url) setGallery((g) => [...g, res.url])
+      }
+    } catch (e) {
+      setError(formatApiError(e))
+    } finally {
+      setGalleryBusy(false)
+    }
+  }
+
+  function removeGalleryPhoto(url) {
+    Alert.alert(tp('Delete this photo?'), '', [
+      { text: tp('Cancel'), style: 'cancel' },
+      {
+        text: tp('Delete'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.delete(`/api/admin/products/${encodeURIComponent(existing.productID)}/photos/${String(url).split('/').pop()}`)
+            setGallery((g) => g.filter((x) => x !== url))
+          } catch (e) {
+            setError(formatApiError(e))
+          }
+        },
+      },
+    ])
+  }
   const { data: categories } = useCategories()
   const [errors, setErrors] = useState({})
   const [error, setError] = useState(null)
@@ -171,6 +224,31 @@ export default function ProductFormScreen({ navigation, route }) {
         {photo ? <InfoBox tone="info" message={tp('The new photo will be uploaded when you save.')} /> : null}
 
         <Card>
+          <Text style={styles.moreTitle}>
+            {tp('More photos')} <Text style={styles.moreCount}>({gallery.length}/10)</Text>
+          </Text>
+          {isEdit ? (
+            <View style={styles.galleryGrid}>
+              {gallery.map((url) => (
+                <View key={url} style={styles.galleryItem}>
+                  <Image source={apiImageSource(url)} style={styles.galleryImg} resizeMode="cover" />
+                  <Pressable onPress={() => removeGalleryPhoto(url)} style={styles.galleryDel} hitSlop={6} accessibilityLabel={tp('Delete')}>
+                    <Ionicons name="close" size={14} color="#fff" />
+                  </Pressable>
+                </View>
+              ))}
+              {gallery.length < 10 ? (
+                <Pressable onPress={addGalleryPhotos} disabled={galleryBusy} style={[styles.galleryItem, styles.galleryAdd]} accessibilityRole="button" accessibilityLabel={tp('Add photos')}>
+                  <Ionicons name={galleryBusy ? 'hourglass-outline' : 'add'} size={26} color={colors.goldText} />
+                </Pressable>
+              ) : null}
+            </View>
+          ) : (
+            <Text style={styles.moreHint}>{tp('Save the product first, then add more photos.')}</Text>
+          )}
+        </Card>
+
+        <Card>
           <ErrorBox message={error} />
           <Input
             label={tp('Product ID')}
@@ -238,6 +316,24 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   photo: { width: '100%', height: '100%' },
+  moreTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.text, textAlign: 'left', marginBottom: 10 },
+  moreCount: { fontFamily: fonts.regular, color: colors.muted },
+  moreHint: { fontFamily: fonts.regular, fontSize: 13, color: colors.textSoft, textAlign: 'left' },
+  galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  galleryItem: { width: 72, height: 72, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, backgroundColor: '#fff' },
+  galleryImg: { width: '100%', height: '100%' },
+  galleryDel: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(20,20,20,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryAdd: { alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderColor: colors.gold, backgroundColor: colors.sand },
   photoEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
   photoEmptyText: { color: colors.textSoft, fontFamily: fonts.medium, fontSize: 14 },
   photoBadge: {

@@ -40,3 +40,14 @@ export function productImageUrl(product) {
 export function categoryImageUrl(key) {
   return categoryImages[key] || '/mock/frame-01.png'
 }
+
+/** Every photo of a product for the gallery: the main photo first, then the admin's extra photos. */
+export function productGalleryUrls(product) {
+  const extra = (product?.gallery || []).map((u) => (String(u).startsWith('/api/') ? `${apiBase}${u}` : u))
+  return [productImageUrl(product), ...extra]
+}
+
+/** Absolute URL for an API image path such as /api/products/X/photos/3. */
+export function apiImageUrl(path) {
+  return String(path).startsWith('/api/') ? `${apiBase}${path}` : path
+}

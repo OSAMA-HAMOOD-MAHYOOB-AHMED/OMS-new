@@ -17,10 +17,9 @@
     <div v-else-if="error" class="error">{{ error }}</div>
 
     <div v-else-if="product" class="mainGrid">
-      <div class="media">
-        <img :src="productImageUrl(product)" :alt="product.name" />
+      <ProductGallery :images="productGalleryUrls(product)" :alt="product.name">
         <span v-if="sale" class="saleBadge" dir="ltr">-{{ off }}%</span>
-      </div>
+      </ProductGallery>
 
       <div class="info">
         <div class="metaRow">
@@ -184,12 +183,13 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
-import { productImageUrl } from '../utils/images'
+import { productGalleryUrls } from '../utils/images'
 import { useCurrency } from '../composables/useCurrency'
 import { useI18n } from '../i18n'
 import AppIcon from '../components/AppIcon.vue'
 import ProductCard from '../components/ProductCard.vue'
 import StarRating from '../components/StarRating.vue'
+import ProductGallery from '../components/ProductGallery.vue'
 import { discountPercent, isOnSale } from '../utils/pricing'
 
 const { t, tp, locale, categoryGroup, categoryLabel } = useI18n()
@@ -688,6 +688,7 @@ onMounted(load)
 }
 .saleBadge {
   position: absolute;
+  z-index: 1;
   top: 18px;
   inset-inline-start: 18px;
   background: var(--danger);
