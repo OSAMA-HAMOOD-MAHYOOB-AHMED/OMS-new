@@ -44,7 +44,7 @@ public sealed class InvoicePdfGenerator(IWebHostEnvironment env, ILogger<Invoice
         EnsureFonts();
         var logoBytes = TryLoadAsset("logo.jpg");
         // Amounts are stored in Saudi riyals; the currency arguments are kept for older app versions.
-        static string Fmt(decimal sar) => $"SAR {sar:N2}";
+        static string Fmt(decimal sar) => sar == decimal.Truncate(sar) ? $"SAR {sar:N0}" : $"SAR {sar:N2}";
 
         return Document.Create(document =>
         {

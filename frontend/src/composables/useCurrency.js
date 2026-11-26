@@ -6,13 +6,16 @@ import { locale } from '../i18n'
 const code = ref('SAR')
 const rate = ref(1)
 
-export function formatSar(amount) {
+// Whole riyals print without decimals ("172"); anything else keeps two ("17.20").
+export function plainAmount(amount) {
   const value = Number(amount) || 0
-  if (locale.value === 'ar') {
-    // "172.46 ر.س" with Western digits, like the rest of the Arabic site.
-    return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`
-  }
-  return `SAR ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const digits = Number.isInteger(Math.round(value * 100) / 100) ? 0 : 2
+  return value.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+}
+
+export function formatSar(amount) {
+  // Western digits, like the rest of the Arabic site: "172 ر.س" / "SAR 172".
+  return locale.value === 'ar' ? `${plainAmount(amount)} ر.س` : `SAR ${plainAmount(amount)}`
 }
 
 export function useCurrency() {

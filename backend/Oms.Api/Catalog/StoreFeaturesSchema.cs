@@ -52,6 +52,35 @@ public static class StoreFeaturesSchema
             """);
 
         await ConvertToRiyalsOnceAsync(conn, app.Logger);
+        await RoundPricesOnceAsync(conn, app.Logger);
+    }
+
+    /// <summary>
+    /// After the riyal conversion prices looked like 172.46. The owner asked for whole riyals:
+    /// .50 and above goes up, below .50 goes down. Runs once; past orders keep what was charged.
+    /// </summary>
+    private static async Task RoundPricesOnceAsync(System.Data.IDbConnection conn, ILogger logger)
+    {
+        if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+        using var tx = conn.BeginTransaction();
+        await conn.ExecuteAsync("LOCK TABLE site_setting IN EXCLUSIVE MODE;", transaction: tx);
+        var done = await conn.ExecuteScalarAsync<string?>(
+            "SELECT value FROM site_setting WHERE key = 'pricesRounded';", transaction: tx);
+        if (done is not null)
+        {
+            tx.Rollback();
+            return;
+        }
+
+        // ROUND(x) on numeric rounds halves away from zero: 172.50 -> 173, 172.46 -> 172.
+        var rows = await conn.ExecuteAsync("""
+            UPDATE product SET price = ROUND(price), compareatprice = ROUND(compareatprice);
+            -- A sale needs an original price above the selling price.
+            UPDATE product SET compareatprice = NULL WHERE compareatprice IS NOT NULL AND compareatprice <= price;
+            INSERT INTO site_setting (key, value) VALUES ('pricesRounded', NOW()::text);
+            """, transaction: tx);
+        tx.Commit();
+        logger.LogWarning("Rounded product prices to whole riyals ({Rows} rows changed)", rows);
     }
 
     /// <summary>The store's currency. All amounts in the database are in this currency.</summary>

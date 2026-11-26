@@ -123,9 +123,9 @@
 import { computed, onMounted, ref } from 'vue'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { plainAmount } from '../../composables/useCurrency'
 
-const pdfMoney = (v) =>
-  `SAR ${(Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const pdfMoney = (v) => `SAR ${plainAmount(v)}`
 import { api } from '../../api/client'
 import { useCurrency } from '../../composables/useCurrency'
 import { useI18n } from '../../i18n'
