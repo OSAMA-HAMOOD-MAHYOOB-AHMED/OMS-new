@@ -1,59 +1,24 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo } from 'react'
+import { useI18n } from '../i18n'
 
-// Same behavior as the website's useCurrency(): prices are stored in USD and
-// shown in the visitor's local currency, detected by IP and cached for 24h.
-const CACHE_KEY = 'oms_currency_v1'
-const CACHE_TTL = 24 * 60 * 60 * 1000
+// The store sells in Saudi riyals: every amount from the API is already in SAR (same as the website).
+// `code` and `rate` stay for screens that pass them to the server (rate is always 1).
 
-const CurrencyContext = createContext({ code: 'USD', rate: 1, format: (v) => `$${Number(v || 0).toFixed(2)}` })
-
-async function detectCurrency() {
-  const cachedRaw = await AsyncStorage.getItem(CACHE_KEY)
-  if (cachedRaw) {
-    const cached = JSON.parse(cachedRaw)
-    if (Date.now() - cached.ts < CACHE_TTL) return cached
-  }
-  const geo = await fetch('https://ipapi.co/json/').then((r) => r.json())
-  const code = geo.currency || 'USD'
-  let rate = 1
-  if (code !== 'USD') {
-    const rates = await fetch('https://open.er-api.com/v6/latest/USD').then((r) => r.json())
-    rate = rates.rates?.[code] ?? 1
-    if (!rates.rates?.[code]) return { code: 'USD', rate: 1 }
-  }
-  const value = { code, rate, ts: Date.now() }
-  await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(value))
-  return value
+function plain(amount) {
+  return (Number(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+/** "172.46 ر.س" in Arabic, "SAR 172.46" in English. */
+export function formatSar(amount, lang) {
+  return lang === 'ar' ? `${plain(amount)} ر.س` : `SAR ${plain(amount)}`
+}
+
+const CurrencyContext = createContext({ code: 'SAR', rate: 1, format: (v) => formatSar(v, 'en') })
+
 export function CurrencyProvider({ children }) {
-  const [state, setState] = useState({ code: 'USD', rate: 1 })
-
-  useEffect(() => {
-    detectCurrency()
-      .then((v) => setState({ code: v.code, rate: v.rate }))
-      .catch(() => {})
-  }, [])
-
-  const format = useCallback(
-    (usdAmount) => {
-      const converted = Number(usdAmount || 0) * state.rate
-      try {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: state.code,
-          minimumFractionDigits: 2, // always $4.60, never $4.6
-          maximumFractionDigits: 2,
-        }).format(converted)
-      } catch {
-        return `${state.code} ${converted.toFixed(2)}`
-      }
-    },
-    [state],
-  )
-
-  const value = useMemo(() => ({ ...state, format }), [state, format])
+  const { lang } = useI18n()
+  const format = useCallback((amount) => formatSar(amount, lang), [lang])
+  const value = useMemo(() => ({ code: 'SAR', rate: 1, format }), [format])
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>
 }
 

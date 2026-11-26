@@ -545,4 +545,8 @@ export const arPhrases = {
   "This reset link is invalid or has expired. Please request a new one.": "رابط إعادة التعيين غير صالح أو منتهي. اطلب رابطًا جديدًا.",
   "Could not send the link. Please try again.": "تعذّر إرسال الرابط. حاول مرة ثانية.",
   "Could not change the password. Please try again.": "تعذّر تغيير كلمة المرور. حاول مرة ثانية.",
+  // Saudi riyal labels
+  "Price (SAR)": "السعر (ريال)",
+  "Original price (SAR) — for sales": "السعر الأصلي (ريال) — للعروض",
+  "Minimum cart total (SAR)": "أقل مجموع للسلة (ريال)",
 }

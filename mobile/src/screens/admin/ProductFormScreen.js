@@ -201,10 +201,10 @@ export default function ProductFormScreen({ navigation, route }) {
             placeholder={tp('Charger, Earphones, Power Bank, Phone Case')}
             error={errors.category}
           />
-          <Input label={tp('Price (USD)')} value={f.price} onChangeText={set('price')} keyboardType="decimal-pad" error={errors.price} />
+          <Input label={tp('Price (SAR)')} value={f.price} onChangeText={set('price')} keyboardType="decimal-pad" error={errors.price} />
           <Input label={tp('Stock level')} value={f.stockLevel} onChangeText={set('stockLevel')} keyboardType="number-pad" error={errors.stockLevel} />
           <Input
-            label={tp('Original price (USD) — for sales')}
+            label={tp('Original price (SAR) — for sales')}
             value={f.compareAtPrice}
             onChangeText={set('compareAtPrice')}
             keyboardType="decimal-pad"

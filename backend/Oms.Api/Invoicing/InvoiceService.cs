@@ -150,10 +150,10 @@ public sealed class InvoiceService(
         lines.Add("");
         lines.Add("Items:");
         foreach (var it in data.Items)
-            lines.Add($"- {it.Name} ({it.ProductId}) x{it.Quantity} @ ${it.UnitPrice:F2} = ${it.Subtotal:F2}");
+            lines.Add($"- {it.Name} ({it.ProductId}) x{it.Quantity} @ SAR {it.UnitPrice:F2} = SAR {it.Subtotal:F2}");
 
         lines.Add("");
-        lines.Add($"Total: ${data.TotalPrice:F2}");
+        lines.Add($"Total: SAR {data.TotalPrice:F2}");
         return string.Join('\n', lines);
     }
 

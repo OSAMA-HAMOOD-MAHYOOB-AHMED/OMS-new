@@ -156,7 +156,7 @@ public sealed class NotificationService(IEmailSender emailSender, IConfiguration
             Thank you for your order! {paymentLine}
 
             Order ID:    {orderID}
-            Amount:      ${total:F2}
+            Amount:      SAR {total:F2}
             Method:      {methodLabel}
             Transaction: {transactionId ?? "—"}
             Status:      {statusLine}

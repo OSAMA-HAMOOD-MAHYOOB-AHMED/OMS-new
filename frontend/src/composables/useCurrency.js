@@ -1,57 +1,20 @@
 import { ref } from 'vue'
+import { locale } from '../i18n'
 
-const CACHE_KEY = 'oms_currency_v1'
-const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
-
-const code = ref('USD')
+// The store sells in Saudi riyals: every amount from the API is already in SAR.
+// `currencyCode` and `rate` stay for the pages that pass them along (rate is always 1).
+const code = ref('SAR')
 const rate = ref(1)
 
-let promise = null
-
-function loadCache() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY)
-    if (!raw) return false
-    const data = JSON.parse(raw)
-    if (Date.now() - data.ts > CACHE_TTL) return false
-    code.value = data.code
-    rate.value = data.rate
-    return true
-  } catch {
-    return false
+export function formatSar(amount) {
+  const value = Number(amount) || 0
+  if (locale.value === 'ar') {
+    // "172.46 ر.س" with Western digits, like the rest of the Arabic site.
+    return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`
   }
-}
-
-async function init() {
-  if (loadCache()) return
-  try {
-    const geo = await fetch('https://ipapi.co/json/').then((r) => r.json())
-    const currency = geo.currency || 'USD'
-    let exchangeRate = 1
-    if (currency !== 'USD') {
-      const rates = await fetch('https://open.er-api.com/v6/latest/USD').then((r) => r.json())
-      exchangeRate = rates.rates?.[currency] ?? 1
-    }
-    code.value = currency
-    rate.value = exchangeRate
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ code: currency, rate: exchangeRate, ts: Date.now() }))
-  } catch {
-    // fallback: keep USD
-  }
+  return `SAR ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export function useCurrency() {
-  if (!promise) promise = init()
-
-  function format(usdAmount) {
-    const converted = Number(usdAmount) * rate.value
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: code.value,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(converted)
-  }
-
-  return { currencyCode: code, rate, format }
+  return { currencyCode: code, rate, format: formatSar }
 }

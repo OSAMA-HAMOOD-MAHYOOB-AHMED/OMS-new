@@ -131,11 +131,16 @@ public static class ProductSeeder
                 var db = scope.ServiceProvider.GetRequiredService<IDbConnectionFactory>();
                 using var conn = db.Create();
 
+                // Only a brand-new, empty catalog gets the starter products (priced in US dollars; the
+                // one-time riyal conversion runs right after). Seeding on every start used to bring
+                // back products the admin had deleted and reset uploaded photos.
+                var existing = await conn.ExecuteScalarAsync<long>("SELECT COUNT(*) FROM Product;");
+                if (existing > 0) return;
+
                 const string productSql = """
                     INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl)
                     VALUES (@ProductID, @Name, @Category, @Price, @StockLevel, @Description, @ImageUrl)
-                    ON CONFLICT (productID) DO UPDATE SET
-                      imageUrl = EXCLUDED.imageUrl;
+                    ON CONFLICT (productID) DO NOTHING;
                     """;
 
                 const string inventorySql = """
@@ -144,9 +149,21 @@ public static class ProductSeeder
                     ON CONFLICT (inventoryID) DO NOTHING;
                     """;
 
+                // If the store already switched to riyals, seed riyal prices too.
+                var factor = 1m;
+                try
+                {
+                    var currency = await conn.ExecuteScalarAsync<string?>("SELECT value FROM site_setting WHERE key = 'baseCurrency';");
+                    if (currency == "SAR") factor = 3.75m;
+                }
+                catch
+                {
+                    // No settings table yet: a new database, converted after seeding.
+                }
+
                 foreach (var p in Products)
                 {
-                    await conn.ExecuteAsync(productSql, p);
+                    await conn.ExecuteAsync(productSql, p with { Price = Math.Round(p.Price * factor, 2) });
                     await conn.ExecuteAsync(inventorySql, new { InventoryID = $"INV-{p.ProductID}", p.ProductID, p.StockLevel });
                 }
 

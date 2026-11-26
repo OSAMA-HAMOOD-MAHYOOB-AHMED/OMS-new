@@ -1,4 +1,4 @@
-export async function downloadInvoicePdf(api, orderID, currencyCode = 'USD', rate = 1) {
+export async function downloadInvoicePdf(api, orderID, currencyCode = 'SAR', rate = 1) {
   const res = await api.get(`/api/invoices/${orderID}/pdf`, {
     responseType: 'blob',
     params: { currencyCode, rate },
@@ -14,7 +14,7 @@ export async function downloadInvoicePdf(api, orderID, currencyCode = 'USD', rat
   URL.revokeObjectURL(url)
 }
 
-export async function loadInvoicePdfUrl(api, orderID, currencyCode = 'USD', rate = 1) {
+export async function loadInvoicePdfUrl(api, orderID, currencyCode = 'SAR', rate = 1) {
   const res = await api.get(`/api/invoices/${orderID}/pdf`, {
     responseType: 'blob',
     params: { currencyCode, rate },
@@ -31,9 +31,7 @@ export function paymentMethodLabel(method) {
   return method || '—'
 }
 
-export function formatMoney(value) {
-  return `$${Number(value || 0).toFixed(2)}`
-}
+export { formatSar as formatMoney } from '../composables/useCurrency'
 
 export function formatDate(iso) {
   const d = new Date(iso)

@@ -59,11 +59,11 @@
             </select>
           </label>
           <label class="field">
-            <span>{{ tp('Price (USD)') }}</span>
+            <span>{{ tp('Price (SAR)') }}</span>
             <input v-model.number="form.price" type="number" step="0.01" min="0" />
           </label>
           <label class="field">
-            <span>{{ tp('Original price (USD) — for sales') }}</span>
+            <span>{{ tp('Original price (SAR) — for sales') }}</span>
             <input v-model.number="form.compareAtPrice" type="number" step="0.01" min="0" :placeholder="tp('Leave empty if not on sale')" />
           </label>
           <label class="field">

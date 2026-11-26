@@ -62,7 +62,7 @@ public sealed partial class CouponRepository(IDbConnectionFactory db)
         return await conn.ExecuteAsync("DELETE FROM coupon WHERE code = @code;", new { code }) > 0;
     }
 
-    /// <summary>Works out the discount a code gives on a cart subtotal (in USD, like all prices).</summary>
+    /// <summary>Works out the discount a code gives on a cart subtotal (in riyals, like all prices).</summary>
     public async Task<CouponResult> Evaluate(string? rawCode, decimal subtotal)
     {
         var code = Normalize(rawCode);
@@ -78,7 +78,7 @@ public sealed partial class CouponRepository(IDbConnectionFactory db)
         if (c is null || !c.Active) return new(code, 0, 0, "This discount code is not valid.");
         if (c.ExpiresAt is { } exp && exp < DateTime.UtcNow) return new(code, 0, 0, "This discount code has expired.");
         if (subtotal < c.MinSubtotal)
-            return new(code, 0, 0, $"This code needs a cart total of at least ${c.MinSubtotal:F2}.");
+            return new(code, 0, 0, $"This code needs a cart total of at least SAR {c.MinSubtotal:F2}.");
 
         var discount = Math.Round(subtotal * c.Percent / 100m, 2, MidpointRounding.AwayFromZero);
         return new(c.Code, c.Percent, discount, null);

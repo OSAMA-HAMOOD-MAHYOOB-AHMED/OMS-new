@@ -50,5 +50,47 @@ public static class StoreFeaturesSchema
               value TEXT NULL
             );
             """);
+
+        await ConvertToRiyalsOnceAsync(conn, app.Logger);
+    }
+
+    /// <summary>The store's currency. All amounts in the database are in this currency.</summary>
+    public const string Currency = "SAR";
+
+    /// <summary>Saudi riyal peg: 1 US dollar = 3.75 riyals.</summary>
+    private const decimal UsdToSar = 3.75m;
+
+    /// <summary>
+    /// Prices and order amounts used to be stored in US dollars. This converts all of them to Saudi
+    /// riyals once, in one transaction, and records that it ran so it never runs twice.
+    /// </summary>
+    private static async Task ConvertToRiyalsOnceAsync(System.Data.IDbConnection conn, ILogger logger)
+    {
+        if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+        using var tx = conn.BeginTransaction();
+        await conn.ExecuteAsync("LOCK TABLE site_setting IN EXCLUSIVE MODE;", transaction: tx);
+        var current = await conn.ExecuteScalarAsync<string?>(
+            "SELECT value FROM site_setting WHERE key = 'baseCurrency';", transaction: tx);
+        if (current == Currency)
+        {
+            tx.Rollback();
+            return;
+        }
+
+        var products = await conn.ExecuteAsync(
+            "UPDATE product SET price = ROUND(price * @r, 2), compareatprice = ROUND(compareatprice * @r, 2);",
+            new { r = UsdToSar }, tx);
+        var orders = await conn.ExecuteAsync(
+            """UPDATE "Order" SET totalprice = ROUND(totalprice * @r, 2), discount = ROUND(discount * @r, 2);""",
+            new { r = UsdToSar }, tx);
+        await conn.ExecuteAsync("""
+            UPDATE order_item SET subtotal = ROUND(subtotal * @r, 2);
+            UPDATE coupon SET minsubtotal = ROUND(minsubtotal * @r, 2);
+            INSERT INTO site_setting (key, value) VALUES ('baseCurrency', @c)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+            """, new { r = UsdToSar, c = Currency }, tx);
+        tx.Commit();
+        logger.LogWarning("Converted stored amounts from USD to SAR at {Rate}: {Products} products, {Orders} orders",
+            UsdToSar, products, orders);
     }
 }

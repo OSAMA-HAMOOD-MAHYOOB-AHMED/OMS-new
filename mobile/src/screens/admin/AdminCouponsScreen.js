@@ -5,6 +5,7 @@ import { api } from '../../api/client'
 import { useApi } from '../../api/useApi'
 import { Button, Card, Empty, ErrorBox, Input, Loading, Screen, SectionTitle } from '../../components/ui'
 import { tp, useI18n } from '../../i18n'
+import { useCurrency } from '../../context/CurrencyContext'
 import { colors, fonts } from '../../theme'
 import { formatApiError } from '../../utils/apiError'
 import { formatDate } from '../../utils/format'
@@ -13,6 +14,7 @@ const empty = { code: '', percent: '10', minSubtotal: '0' }
 
 export default function AdminCouponsScreen() {
   const { textAlign } = useI18n()
+  const { format } = useCurrency()
   const { data, error, loading, refreshing, refresh, reload } = useApi('/api/admin/coupons', { initial: [] })
   const [form, setForm] = useState(empty)
   const [saving, setSaving] = useState(false)
@@ -78,7 +80,7 @@ export default function AdminCouponsScreen() {
           />
           <Input
             style={{ flex: 1 }}
-            label={tp('Minimum cart total (USD)')}
+            label={tp('Minimum cart total (SAR)')}
             value={form.minSubtotal}
             onChangeText={(minSubtotal) => setForm((f) => ({ ...f, minSubtotal }))}
             keyboardType="decimal-pad"
@@ -108,7 +110,7 @@ export default function AdminCouponsScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.code}>{c.code}</Text>
                   <Text style={styles.meta}>
-                    {c.percent}% · {tp('Minimum')} ${Number(c.minSubtotal).toFixed(2)} · {tp('Used')} {c.timesUsed}
+                    {c.percent}% · {tp('Minimum')} {format(c.minSubtotal)} · {tp('Used')} {c.timesUsed}
                     {c.expiresAt ? ` · ${tp(expired ? 'Expired' : 'Expires')} ${formatDate(c.expiresAt)}` : ''}
                   </Text>
                 </View>

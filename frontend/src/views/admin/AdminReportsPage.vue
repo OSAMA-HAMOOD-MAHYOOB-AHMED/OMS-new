@@ -123,6 +123,9 @@
 import { computed, onMounted, ref } from 'vue'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+
+const pdfMoney = (v) =>
+  `SAR ${(Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 import { api } from '../../api/client'
 import { useCurrency } from '../../composables/useCurrency'
 import { useI18n } from '../../i18n'
@@ -258,9 +261,9 @@ function exportReport() {
 
   const kpis = [
     { label: 'Total Orders', value: String(totals.value.orders) },
-    { label: 'Gross Revenue', value: format(totals.value.revenue) },
-    { label: 'Avg Order Value', value: format(totals.value.avg) },
-    { label: 'Delivered Revenue', value: format(deliveredRevenue.value) },
+    { label: 'Gross Revenue', value: pdfMoney(totals.value.revenue) },
+    { label: 'Avg Order Value', value: pdfMoney(totals.value.avg) },
+    { label: 'Delivered Revenue', value: pdfMoney(deliveredRevenue.value) },
   ]
   const boxW = (pageW - 28 - 9) / 4
   kpis.forEach((k, i) => {
@@ -296,7 +299,7 @@ function exportReport() {
     startY: 73,
     head: [['Date', 'Orders', 'Revenue', 'Avg Value']],
     body: rangeRows.value.length
-      ? rangeRows.value.map((r) => [formatDay(r.day), String(r.orders), format(r.revenue), format(r.avgValue)])
+      ? rangeRows.value.map((r) => [formatDay(r.day), String(r.orders), pdfMoney(r.revenue), pdfMoney(r.avgValue)])
       : [['No sales in this period', '', '', '']],
     columnStyles: {
       0: { halign: 'left' },
@@ -317,7 +320,7 @@ function exportReport() {
     ...tableStyle,
     startY: afterDaily + 4,
     head: [['Status', 'Orders', 'Share', 'Revenue']],
-    body: statusRows.value.map((s) => [s.status, String(s.orders), `${s.share}%`, format(s.revenue)]),
+    body: statusRows.value.map((s) => [s.status, String(s.orders), `${s.share}%`, pdfMoney(s.revenue)]),
     columnStyles: {
       0: { halign: 'left', fontStyle: 'bold', cellPadding: { left: 8, top: 3.5, bottom: 3.5, right: 3.5 } },
       1: { halign: 'center' },

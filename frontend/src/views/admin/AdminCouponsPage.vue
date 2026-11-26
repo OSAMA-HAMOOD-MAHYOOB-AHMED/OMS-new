@@ -19,7 +19,7 @@
           <input v-model.number="form.percent" type="number" min="1" max="90" step="1" />
         </label>
         <label class="field">
-          <span>{{ tp('Minimum cart total (USD)') }}</span>
+          <span>{{ tp('Minimum cart total (SAR)') }}</span>
           <input v-model.number="form.minSubtotal" type="number" min="0" step="0.01" />
         </label>
         <label class="field">
@@ -59,7 +59,7 @@
             <tr v-for="c in coupons" :key="c.code">
               <td class="mono" dir="ltr">{{ c.code }}</td>
               <td>{{ c.percent }}%</td>
-              <td dir="ltr">${{ Number(c.minSubtotal).toFixed(2) }}</td>
+              <td>{{ formatSar(c.minSubtotal) }}</td>
               <td>{{ c.expiresAt ? day(c.expiresAt) : '—' }}</td>
               <td>{{ c.timesUsed }}</td>
               <td>
@@ -81,6 +81,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { api } from '../../api/client'
 import { useI18n } from '../../i18n'
+import { formatSar } from '../../composables/useCurrency'
 
 const { tp, locale } = useI18n()
 
