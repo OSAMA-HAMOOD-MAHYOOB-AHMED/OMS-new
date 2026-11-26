@@ -126,7 +126,7 @@ export const messages = {
       track: 'Track every step from your account',
       related: 'You may also like',
       loadFailed: 'Failed to load product',
-      priceNote: 'Shown in your local currency',
+      priceNote: 'Price in Saudi riyals',
     },
     orders: {
       title: 'My orders',
@@ -275,7 +275,7 @@ export const messages = {
       track: 'تتبّع كل خطوة من حسابك',
       related: 'قد يعجبك أيضًا',
       loadFailed: 'تعذّر تحميل المنتج',
-      priceNote: 'السعر بعملتك المحلية',
+      priceNote: 'السعر بالريال السعودي',
     },
     orders: {
       title: 'طلباتي',

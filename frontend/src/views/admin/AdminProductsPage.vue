@@ -394,8 +394,8 @@ const gallery = ref([])
 const galleryBusy = ref(false)
 const galleryError = ref(null)
 
-function setGallery(urls) {
-  gallery.value = (urls || []).map((u) => ({ id: Number(String(u).split('/').pop()), url: u, src: apiImageUrl(u) }))
+function setGallery(urls, ids = []) {
+  gallery.value = (urls || []).map((u, i) => ({ id: ids[i] ?? Number(String(u).split('/').pop()), url: u, src: apiImageUrl(u) }))
 }
 
 async function addGallery(e) {
@@ -454,7 +454,7 @@ async function moveGallery(i, step) {
 
 function edit(p) {
   clearPick()
-  setGallery(p.gallery)
+  setGallery(p.gallery, p.galleryIds)
   galleryError.value = null
   isEditing.value = true
   form.productID = p.productID

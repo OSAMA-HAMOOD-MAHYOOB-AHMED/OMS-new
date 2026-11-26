@@ -24,10 +24,14 @@ public sealed class ProductRepository(IDbConnectionFactory db)
               COALESCE(r.reviews, 0) AS ReviewCount,
               COALESCE(s.sold, 0) AS SoldCount,
               ARRAY(
-                SELECT '/api/products/' || p.productid || '/photos/' || ph.photoid
+                SELECT COALESCE(ph.externalurl, '/api/products/' || p.productid || '/photos/' || ph.photoid)
                 FROM product_photo ph WHERE ph.productid = p.productid
                 ORDER BY ph.sortorder, ph.photoid
-              ) AS Gallery
+              ) AS Gallery,
+              ARRAY(
+                SELECT ph.photoid FROM product_photo ph WHERE ph.productid = p.productid
+                ORDER BY ph.sortorder, ph.photoid
+              ) AS GalleryIds
             FROM Product p
             LEFT JOIN (
               SELECT productid, ROUND(AVG(rating)::numeric, 1) AS rating, COUNT(*)::int AS reviews
@@ -65,10 +69,14 @@ public sealed class ProductRepository(IDbConnectionFactory db)
               COALESCE(r.reviews, 0) AS ReviewCount,
               COALESCE(s.sold, 0) AS SoldCount,
               ARRAY(
-                SELECT '/api/products/' || p.productid || '/photos/' || ph.photoid
+                SELECT COALESCE(ph.externalurl, '/api/products/' || p.productid || '/photos/' || ph.photoid)
                 FROM product_photo ph WHERE ph.productid = p.productid
                 ORDER BY ph.sortorder, ph.photoid
-              ) AS Gallery
+              ) AS Gallery,
+              ARRAY(
+                SELECT ph.photoid FROM product_photo ph WHERE ph.productid = p.productid
+                ORDER BY ph.sortorder, ph.photoid
+              ) AS GalleryIds
             FROM Product p
             LEFT JOIN (
               SELECT productid, ROUND(AVG(rating)::numeric, 1) AS rating, COUNT(*)::int AS reviews

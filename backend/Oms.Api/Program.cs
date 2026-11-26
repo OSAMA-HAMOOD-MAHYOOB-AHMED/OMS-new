@@ -102,6 +102,7 @@ await Oms.Api.Catalog.ProductImageRepository.EnsureSchemaAsync(app);
 await Oms.Api.Catalog.CategoryRepository.EnsureSchemaAsync(app);
 await Oms.Api.Catalog.StoreFeaturesSchema.EnsureAsync(app);
 await Oms.Api.Catalog.ProductPhotoRepository.EnsureSchemaAsync(app);
+await Oms.Api.Catalog.StarterGallery.AddOnceAsync(app);
 await Oms.Api.Auth.PasswordResetService.EnsureSchemaAsync(app);
 
 // Configure the HTTP request pipeline.

@@ -30,10 +30,14 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               specs AS Specs,
               createdat AS CreatedAt,
               ARRAY(
-                SELECT '/api/products/' || pr.productid || '/photos/' || ph.photoid
+                SELECT COALESCE(ph.externalurl, '/api/products/' || pr.productid || '/photos/' || ph.photoid)
                 FROM product_photo ph WHERE ph.productid = pr.productid
                 ORDER BY ph.sortorder, ph.photoid
-              ) AS Gallery
+              ) AS Gallery,
+              ARRAY(
+                SELECT ph.photoid FROM product_photo ph WHERE ph.productid = pr.productid
+                ORDER BY ph.sortorder, ph.photoid
+              ) AS GalleryIds
             FROM Product pr
             ORDER BY name ASC;
             """;

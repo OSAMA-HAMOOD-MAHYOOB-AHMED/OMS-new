@@ -64,7 +64,9 @@ export default function ProductFormScreen({ navigation, route }) {
   })
   const [photo, setPhoto] = useState(null) // picked but not uploaded yet
   // Extra gallery photos (the photo above is the main one). Only for a saved product.
-  const [gallery, setGallery] = useState(existing?.gallery || [])
+  const [gallery, setGallery] = useState(
+    (existing?.gallery || []).map((url, i) => ({ url, id: existing?.galleryIds?.[i] ?? String(url).split('/').pop() })),
+  )
   const [galleryBusy, setGalleryBusy] = useState(false)
 
   async function addGalleryPhotos() {
@@ -89,7 +91,7 @@ export default function ProductFormScreen({ navigation, route }) {
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(type)) continue
         if (asset.fileSize && asset.fileSize > MAX_BYTES) continue
         const res = await uploadPhoto(existing.productID, asset, 'photos')
-        if (res?.url) setGallery((g) => [...g, res.url])
+        if (res?.url) setGallery((g) => [...g, { url: res.url, id: res.photoId }])
       }
     } catch (e) {
       setError(formatApiError(e))
@@ -98,7 +100,7 @@ export default function ProductFormScreen({ navigation, route }) {
     }
   }
 
-  function removeGalleryPhoto(url) {
+  function removeGalleryPhoto(photo) {
     Alert.alert(tp('Delete this photo?'), '', [
       { text: tp('Cancel'), style: 'cancel' },
       {
@@ -106,8 +108,8 @@ export default function ProductFormScreen({ navigation, route }) {
         style: 'destructive',
         onPress: async () => {
           try {
-            await api.delete(`/api/admin/products/${encodeURIComponent(existing.productID)}/photos/${String(url).split('/').pop()}`)
-            setGallery((g) => g.filter((x) => x !== url))
+            await api.delete(`/api/admin/products/${encodeURIComponent(existing.productID)}/photos/${photo.id}`)
+            setGallery((g) => g.filter((x) => x.id !== photo.id))
           } catch (e) {
             setError(formatApiError(e))
           }
@@ -229,10 +231,10 @@ export default function ProductFormScreen({ navigation, route }) {
           </Text>
           {isEdit ? (
             <View style={styles.galleryGrid}>
-              {gallery.map((url) => (
-                <View key={url} style={styles.galleryItem}>
-                  <Image source={apiImageSource(url)} style={styles.galleryImg} resizeMode="cover" />
-                  <Pressable onPress={() => removeGalleryPhoto(url)} style={styles.galleryDel} hitSlop={6} accessibilityLabel={tp('Delete')}>
+              {gallery.map((photo) => (
+                <View key={String(photo.id)} style={styles.galleryItem}>
+                  <Image source={apiImageSource(photo.url)} style={styles.galleryImg} resizeMode="cover" />
+                  <Pressable onPress={() => removeGalleryPhoto(photo)} style={styles.galleryDel} hitSlop={6} accessibilityLabel={tp('Delete')}>
                     <Ionicons name="close" size={14} color="#fff" />
                   </Pressable>
                 </View>

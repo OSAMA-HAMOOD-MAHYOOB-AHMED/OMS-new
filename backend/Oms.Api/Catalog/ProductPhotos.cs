@@ -30,6 +30,11 @@ public sealed class ProductPhotoRepository(IDbConnectionFactory db)
               createdat TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
             CREATE INDEX IF NOT EXISTS ix_product_photo_product ON product_photo (productid, sortorder);
+
+            -- A gallery photo is either uploaded (data) or a link to a free stock photo (externalurl).
+            ALTER TABLE product_photo ADD COLUMN IF NOT EXISTS externalurl TEXT NULL;
+            ALTER TABLE product_photo ALTER COLUMN data DROP NOT NULL;
+            ALTER TABLE product_photo ALTER COLUMN contenttype DROP NOT NULL;
             """);
     }
 
@@ -57,7 +62,7 @@ public sealed class ProductPhotoRepository(IDbConnectionFactory db)
     {
         using var conn = db.Create();
         return await conn.QueryFirstOrDefaultAsync<(string ContentType, byte[] Data)?>(
-            "SELECT contenttype AS ContentType, data AS Data FROM product_photo WHERE productid = @productId AND photoid = @photoId;",
+            "SELECT contenttype AS ContentType, data AS Data FROM product_photo WHERE productid = @productId AND photoid = @photoId AND data IS NOT NULL;",
             new { productId, photoId });
     }
 

@@ -21,5 +21,7 @@ public sealed class ProductRow
     public int SoldCount { get; init; }
     /// <summary>Extra gallery photos (URLs), in the admin's order. The main photo is <see cref="ImageUrl"/>.</summary>
     public string[] Gallery { get; init; } = [];
+    /// <summary>Photo ids matching <see cref="Gallery"/> (for deleting and reordering).</summary>
+    public long[] GalleryIds { get; init; } = [];
 }
 
