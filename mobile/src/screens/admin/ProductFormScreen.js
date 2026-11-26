@@ -61,6 +61,8 @@ export default function ProductFormScreen({ navigation, route }) {
     imageUrl: existing?.imageUrl || '',
     compareAtPrice: existing?.compareAtPrice ? String(existing.compareAtPrice) : '',
     specs: existing?.specs || '',
+    descriptionAr: existing?.descriptionAr || '',
+    specsAr: existing?.specsAr || '',
   })
   const [photo, setPhoto] = useState(null) // picked but not uploaded yet
   // Extra gallery photos (the photo above is the main one). Only for a saved product.
@@ -182,6 +184,8 @@ export default function ProductFormScreen({ navigation, route }) {
         // 0 and "" clear the sale price and specifications.
         compareAtPrice: Number(f.compareAtPrice) > 0 ? Number(f.compareAtPrice) : 0,
         specs: f.specs.trim(),
+        descriptionAr: f.descriptionAr.trim(),
+        specsAr: f.specsAr.trim(),
       })
     } catch (e) {
       setError(formatApiError(e))
@@ -290,13 +294,35 @@ export default function ProductFormScreen({ navigation, route }) {
             keyboardType="decimal-pad"
             placeholder={tp('Leave empty if not on sale')}
           />
-          <Input label={tp('Description')} value={f.description} onChangeText={set('description')} multiline autoCapitalize="sentences" />
           <Input
-            label={tp('Specifications')}
+            label={tp('Description in English')}
+            value={f.description}
+            onChangeText={set('description')}
+            multiline
+            autoCapitalize="sentences"
+            ltr
+          />
+          <Input
+            label={tp('Description in Arabic')}
+            value={f.descriptionAr}
+            onChangeText={set('descriptionAr')}
+            multiline
+            placeholder={tp('Shown when the store is in Arabic')}
+          />
+          <Input
+            label={tp('Specifications in English')}
             value={f.specs}
             onChangeText={set('specs')}
             multiline
             placeholder={tp('One per line, e.g. Capacity: 20000mAh')}
+            ltr
+          />
+          <Input
+            label={tp('Specifications in Arabic')}
+            value={f.specsAr}
+            onChangeText={set('specsAr')}
+            multiline
+            placeholder="السعة: 20000 ملي أمبير"
           />
           <Button title={isEdit ? 'Save changes' : 'Create product'} onPress={save} loading={saving} />
         </Card>

@@ -28,6 +28,8 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               imageUrl AS ImageUrl,
               compareatprice AS CompareAtPrice,
               specs AS Specs,
+              descriptionar AS DescriptionAr,
+              specsar AS SpecsAr,
               createdat AS CreatedAt,
               ARRAY(
                 SELECT COALESCE(ph.externalurl, '/api/products/' || pr.productid || '/photos/' || ph.photoid)
@@ -52,8 +54,8 @@ public sealed class AdminRepository(IDbConnectionFactory db)
     public async Task UpsertProduct(ProductUpsertRequest req)
     {
         const string upsertProduct = """
-            INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl, compareatprice, specs)
-            VALUES (@productID, @name, @category, @price, @stockLevel, @description, @imageUrl, @compareAtPrice, @specs)
+            INSERT INTO Product (productID, name, category, price, stockLevel, description, imageUrl, compareatprice, specs, descriptionar, specsar)
+            VALUES (@productID, @name, @category, @price, @stockLevel, @description, @imageUrl, @compareAtPrice, @specs, @descriptionAr, @specsAr)
             ON CONFLICT (productID) DO UPDATE SET
               name = EXCLUDED.name,
               category = EXCLUDED.category,
@@ -63,7 +65,9 @@ public sealed class AdminRepository(IDbConnectionFactory db)
               imageUrl = EXCLUDED.imageUrl,
               -- Not sent (older app versions) keeps the current value; 0 / "" clears it.
               compareatprice = CASE WHEN @keepCompare THEN Product.compareatprice ELSE EXCLUDED.compareatprice END,
-              specs = CASE WHEN @keepSpecs THEN Product.specs ELSE EXCLUDED.specs END;
+              specs = CASE WHEN @keepSpecs THEN Product.specs ELSE EXCLUDED.specs END,
+              descriptionar = CASE WHEN @keepDescriptionAr THEN Product.descriptionar ELSE EXCLUDED.descriptionar END,
+              specsar = CASE WHEN @keepSpecsAr THEN Product.specsar ELSE EXCLUDED.specsar END;
             """;
 
         const string lockInventory = """
@@ -109,7 +113,12 @@ public sealed class AdminRepository(IDbConnectionFactory db)
             compareAtPrice = req.CompareAtPrice is { } c && c > req.Price ? c : (decimal?)null,
             specs = string.IsNullOrWhiteSpace(req.Specs) ? null : req.Specs.Trim(),
             keepCompare = req.CompareAtPrice is null,
-            keepSpecs = req.Specs is null
+            keepSpecs = req.Specs is null,
+            descriptionAr = string.IsNullOrWhiteSpace(req.DescriptionAr) ? null : req.DescriptionAr.Trim(),
+            specsAr = string.IsNullOrWhiteSpace(req.SpecsAr) ? null : req.SpecsAr.Trim(),
+            // Older app versions don't send the Arabic fields: keep what is saved.
+            keepDescriptionAr = req.DescriptionAr is null,
+            keepSpecsAr = req.SpecsAr is null
         }, tx);
 
         var inv = await conn.QuerySingleOrDefaultAsync<(string InventoryID, int QuantityAvailable)>(

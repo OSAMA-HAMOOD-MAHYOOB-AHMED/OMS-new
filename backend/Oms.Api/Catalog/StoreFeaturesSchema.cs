@@ -19,6 +19,9 @@ public static class StoreFeaturesSchema
             -- Specifications, one "Label: value" per line.
             ALTER TABLE product ADD COLUMN IF NOT EXISTS specs TEXT NULL;
             ALTER TABLE product ADD COLUMN IF NOT EXISTS createdat TIMESTAMPTZ NOT NULL DEFAULT NOW();
+            -- Arabic description and specifications (the English ones are description / specs).
+            ALTER TABLE product ADD COLUMN IF NOT EXISTS descriptionar TEXT NULL;
+            ALTER TABLE product ADD COLUMN IF NOT EXISTS specsar TEXT NULL;
 
             CREATE TABLE IF NOT EXISTS product_review (
               reviewid BIGSERIAL PRIMARY KEY,

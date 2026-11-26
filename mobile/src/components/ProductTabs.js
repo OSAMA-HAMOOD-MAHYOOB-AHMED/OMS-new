@@ -11,7 +11,10 @@ import { Button } from './ui'
 
 /** Description / Specifications / Reviews for a product (same as the website's tabs). */
 export default function ProductTabs({ product: p, onChanged }) {
-  const { t, textAlign, inputAlign, categoryLabel } = useI18n()
+  const { t, lang, textAlign, inputAlign, categoryLabel } = useI18n()
+  // Description and specifications in the app's language (falling back to the other one).
+  const description = lang === 'ar' ? p.descriptionAr || p.description : p.description || p.descriptionAr
+  const specsText = (lang === 'ar' && p.specsAr) || p.specs || ''
   const { role } = useAuth()
   const [tab, setTab] = useState('desc')
   const [reviews, setReviews] = useState([])
@@ -38,7 +41,7 @@ export default function ProductTabs({ product: p, onChanged }) {
 
   // Admin-entered "Label: value" lines plus the basics every product has.
   const specs = useMemo(() => {
-    const rows = String(p.specs || '')
+    const rows = String(specsText)
       .split('\n')
       .map((l) => l.trim())
       .filter(Boolean)
@@ -47,7 +50,7 @@ export default function ProductTabs({ product: p, onChanged }) {
         return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : ['•', l]
       })
     return [[t('product.sku'), p.productID], [tp('Category'), categoryLabel(p.category)], ...rows]
-  }, [p, t, categoryLabel])
+  }, [p, t, categoryLabel, specsText])
 
   async function save() {
     setError(null)
@@ -101,7 +104,7 @@ export default function ProductTabs({ product: p, onChanged }) {
       </View>
 
       {tab === 'desc' ? (
-        <Text style={[styles.body, { textAlign }]}>{p.description || t('product.defaultDesc')}</Text>
+        <Text style={[styles.body, { textAlign }]}>{description || t('product.defaultDesc')}</Text>
       ) : null}
 
       {tab === 'specs'

@@ -565,4 +565,10 @@ export const arPhrases = {
   "Could not delete the photo.": "تعذّر حذف الصورة.",
   "Could not save the photo order.": "تعذّر حفظ ترتيب الصور.",
   "A product can have up to 10 extra photos.": "المنتج يقبل حتى 10 صور إضافية.",
+  // Bilingual product text
+  "Description in English": "الوصف بالإنجليزي",
+  "Description in Arabic": "الوصف بالعربي",
+  "Specifications in English": "المواصفات بالإنجليزي",
+  "Specifications in Arabic": "المواصفات بالعربي",
+  "Shown when the store is in Arabic": "يظهر لما يكون المتجر بالعربي",
 }

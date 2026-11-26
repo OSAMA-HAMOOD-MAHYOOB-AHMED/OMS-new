@@ -14,6 +14,9 @@ public sealed class ProductRow
     public decimal? CompareAtPrice { get; init; }
     /// <summary>Specifications, one "Label: value" per line.</summary>
     public string? Specs { get; init; }
+    /// <summary>Arabic description and specifications (shown when the store is in Arabic).</summary>
+    public string? DescriptionAr { get; init; }
+    public string? SpecsAr { get; init; }
     public DateTime CreatedAt { get; init; }
     public decimal Rating { get; init; }
     public int ReviewCount { get; init; }

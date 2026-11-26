@@ -9,7 +9,9 @@ public sealed record ProductUpsertRequest(
     string? Description,
     string? ImageUrl,
     decimal? CompareAtPrice = null,
-    string? Specs = null
+    string? Specs = null,
+    string? DescriptionAr = null,
+    string? SpecsAr = null
 );
 
 public sealed record AdminCustomerRow(string Email, string Name, string PhoneNumber, string Address, string Role);

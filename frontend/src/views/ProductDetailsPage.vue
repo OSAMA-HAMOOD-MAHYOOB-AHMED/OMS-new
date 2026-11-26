@@ -107,7 +107,7 @@
       </div>
 
       <div v-if="activeTab === 'desc'" id="panel-desc" class="infoBody" role="tabpanel" aria-labelledby="tab-desc">
-        <p class="descText" dir="auto">{{ product.description || t('product.defaultDesc') }}</p>
+        <p class="descText" dir="auto">{{ description || t('product.defaultDesc') }}</p>
       </div>
 
       <div v-else-if="activeTab === 'specs'" id="panel-specs" class="infoBody" role="tabpanel" aria-labelledby="tab-specs">
@@ -211,6 +211,12 @@ const justAdded = ref(false)
 
 const canBuy = computed(() => !auth.token || auth.role === 'Customer')
 const sale = computed(() => isOnSale(product.value))
+// The description in the store's language (falls back to the other one if only one is written).
+const description = computed(() => {
+  const p = product.value
+  if (!p) return ''
+  return locale.value === 'ar' ? p.descriptionAr || p.description : p.description || p.descriptionAr
+})
 const off = computed(() => discountPercent(product.value))
 
 // ----- Tabs -----
@@ -231,7 +237,8 @@ function openTab(key) {
 const specRows = computed(() => {
   const p = product.value
   if (!p) return []
-  const rows = String(p.specs || '')
+  // Arabic specifications when the store is in Arabic (falls back to the English ones).
+  const rows = String((locale.value === 'ar' && p.specsAr) || p.specs || '')
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)

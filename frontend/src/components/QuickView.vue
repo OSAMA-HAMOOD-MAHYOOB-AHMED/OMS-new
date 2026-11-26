@@ -24,7 +24,7 @@
           <p class="stock" :class="{ out: product.stockLevel <= 0 }">
             {{ product.stockLevel > 0 ? t('common.inStock') : t('common.outOfStock') }}
           </p>
-          <p v-if="product.description" class="desc" dir="auto">{{ product.description }}</p>
+          <p v-if="description" class="desc" dir="auto">{{ description }}</p>
 
           <div v-if="canBuy && product.stockLevel > 0" class="buy">
             <div class="qty">
@@ -63,7 +63,12 @@ import { useI18n } from '../i18n'
 const props = defineProps({ product: { type: Object, required: true } })
 const emit = defineEmits(['close'])
 
-const { t, tp, categoryLabel, isRtl } = useI18n()
+const { t, tp, categoryLabel, isRtl, locale } = useI18n()
+const description = computed(() =>
+  locale.value === 'ar'
+    ? props.product.descriptionAr || props.product.description
+    : props.product.description || props.product.descriptionAr,
+)
 const { format } = useCurrency()
 const auth = useAuthStore()
 const cart = useCartStore()

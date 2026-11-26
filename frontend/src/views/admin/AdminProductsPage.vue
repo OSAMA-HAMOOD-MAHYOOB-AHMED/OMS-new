@@ -95,12 +95,20 @@
             <input v-model.number="form.stockLevel" type="number" step="1" min="0" />
           </label>
           <label class="field wide">
-            <span>{{ tp('Description') }}</span>
-            <textarea v-model.trim="form.description" rows="3" :placeholder="tp('Short description (optional)')" />
+            <span>{{ tp('Description in English') }}</span>
+            <textarea v-model.trim="form.description" rows="3" dir="ltr" :placeholder="tp('Short description (optional)')" />
           </label>
           <label class="field wide">
-            <span>{{ tp('Specifications') }}</span>
-            <textarea v-model="form.specs" rows="4" dir="auto" :placeholder="tp('One per line, e.g. Capacity: 20000mAh')" />
+            <span>{{ tp('Description in Arabic') }}</span>
+            <textarea v-model.trim="form.descriptionAr" rows="3" dir="rtl" :placeholder="tp('Shown when the store is in Arabic')" />
+          </label>
+          <label class="field wide">
+            <span>{{ tp('Specifications in English') }}</span>
+            <textarea v-model="form.specs" rows="4" dir="ltr" :placeholder="tp('One per line, e.g. Capacity: 20000mAh')" />
+          </label>
+          <label class="field wide">
+            <span>{{ tp('Specifications in Arabic') }}</span>
+            <textarea v-model="form.specsAr" rows="4" dir="rtl" placeholder="السعة: 20000 ملي أمبير" />
           </label>
         </div>
       </div>
@@ -239,6 +247,8 @@ const emptyForm = () => ({
   imageUrl: '',
   compareAtPrice: null,
   specs: '',
+  descriptionAr: '',
+  specsAr: '',
 })
 const form = reactive(emptyForm())
 
@@ -466,6 +476,8 @@ function edit(p) {
   form.imageUrl = p.imageUrl || ''
   form.compareAtPrice = p.compareAtPrice != null ? Number(p.compareAtPrice) : null
   form.specs = p.specs || ''
+  form.descriptionAr = p.descriptionAr || ''
+  form.specsAr = p.specsAr || ''
   ok.value = null
   error.value = null
   focusPanel()
@@ -491,6 +503,8 @@ async function save() {
       // 0 and "" clear these; leaving them out would keep the old values.
       compareAtPrice: Number(form.compareAtPrice) > 0 ? Number(form.compareAtPrice) : 0,
       specs: form.specs || '',
+      descriptionAr: form.descriptionAr || '',
+      specsAr: form.specsAr || '',
     })
     if (pendingFile.value) {
       try {
