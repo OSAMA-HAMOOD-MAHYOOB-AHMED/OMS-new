@@ -54,12 +54,13 @@ public sealed class InvoiceService(
               o.paymentStatus AS PaymentStatus,
               COALESCE(o.discount, 0) AS Discount,
               o.couponcode AS CouponCode,
-              u.name AS CustomerName,
-              u.email AS CustomerEmail,
-              u.phoneNumber AS CustomerPhone,
-              u.address AS CustomerAddress
+              -- Orders stay viewable even if the customer's account was deleted later.
+              COALESCE(u.name, 'Customer') AS CustomerName,
+              o.email AS CustomerEmail,
+              COALESCE(u.phoneNumber, '') AS CustomerPhone,
+              COALESCE(u.address, '') AS CustomerAddress
             FROM "Order" o
-            JOIN "User" u ON u.email = o.email
+            LEFT JOIN "User" u ON u.email = o.email
             WHERE o.orderID = @orderID
             LIMIT 1;
             """;
@@ -67,13 +68,14 @@ public sealed class InvoiceService(
         const string itemsSql = """
             SELECT
               oi.productID AS ProductId,
-              p.name AS Name,
+              -- A product removed from the catalog later still appears on its old invoices.
+              COALESCE(p.name, oi.productID) AS Name,
               oi.quantity AS Quantity,
               oi.subtotal AS Subtotal
             FROM Order_Item oi
-            JOIN Product p ON p.productID = oi.productID
+            LEFT JOIN Product p ON p.productID = oi.productID
             WHERE oi.orderID = @orderID
-            ORDER BY p.name ASC;
+            ORDER BY COALESCE(p.name, oi.productID) ASC;
             """;
 
         const string txnSql = """

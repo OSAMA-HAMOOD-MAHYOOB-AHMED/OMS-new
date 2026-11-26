@@ -9,32 +9,12 @@ namespace Oms.Api.Invoicing;
 [ApiController]
 [Route("api/invoices")]
 [Authorize]
-public sealed class InvoiceController(IDbConnectionFactory db, InvoiceService invoices) : ControllerBase
+public sealed class InvoiceController(IDbConnectionFactory db, InvoiceService invoices, InvoiceRepository invoiceRecords) : ControllerBase
 {
     [HttpGet("{orderID}")]
     public async Task<ActionResult<InvoiceSummaryResponse>> GetByOrder([FromRoute] string orderID)
     {
-        var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
-        if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
-
-        var isAdmin = User.IsInRole(Oms.Api.Models.UserRole.Admin);
-
-        const string sql = """
-            SELECT
-              invoiceID AS InvoiceId,
-              orderID AS OrderId,
-              email AS Email,
-              subject AS Subject,
-              createdAt AS CreatedAt
-            FROM Invoice
-            WHERE orderID = @orderID
-              AND (@isAdmin = 1 OR email = @email)
-            ORDER BY invoiceID DESC
-            LIMIT 1;
-            """;
-
-        using var conn = db.Create();
-        var row = await conn.QuerySingleOrDefaultAsync<InvoiceMetaRow>(sql, new { orderID, email, isAdmin = isAdmin ? 1 : 0 });
+        var row = await FindOrCreateInvoice(orderID);
         if (row is null) return NotFound();
 
         var data = await invoices.LoadDocumentData(orderID);
@@ -70,25 +50,50 @@ public sealed class InvoiceController(IDbConnectionFactory db, InvoiceService in
         [FromQuery] string? currencyCode = null,
         [FromQuery] decimal? rate = null)
     {
-        var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
-        if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
-
-        var isAdmin = User.IsInRole(Oms.Api.Models.UserRole.Admin);
-
-        const string sql = """
-            SELECT 1
-            FROM Invoice
-            WHERE orderID = @orderID
-              AND (@isAdmin = 1 OR email = @email)
-            LIMIT 1;
-            """;
-
-        using var conn = db.Create();
-        var allowed = await conn.QuerySingleOrDefaultAsync<int?>(sql, new { orderID, email, isAdmin = isAdmin ? 1 : 0 });
-        if (allowed is null) return NotFound();
+        var row = await FindOrCreateInvoice(orderID);
+        if (row is null) return NotFound();
 
         var pdf = await invoices.GeneratePdf(orderID, currencyCode ?? "USD", rate ?? 1m);
         return File(pdf, "application/pdf", $"invoice-{orderID}.pdf");
+    }
+
+    /// <summary>
+    /// The invoice record for an order the signed-in customer owns (any order for the admin).
+    /// Access follows the order itself: orders whose invoice record was never saved (for example
+    /// when sending the invoice failed at checkout) get one now instead of showing "not found".
+    /// </summary>
+    private async Task<InvoiceMetaRow?> FindOrCreateInvoice(string orderID)
+    {
+        var email = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(email)) return null;
+        var isAdmin = User.IsInRole(Oms.Api.Models.UserRole.Admin);
+
+        using var conn = db.Create();
+        var owner = await conn.QuerySingleOrDefaultAsync<string?>(
+            """SELECT email FROM "Order" WHERE orderID = @orderID LIMIT 1;""", new { orderID });
+        if (owner is null) return null;
+        if (!isAdmin && !string.Equals(owner, email, StringComparison.OrdinalIgnoreCase)) return null;
+
+        const string findSql = """
+            SELECT
+              invoiceID AS InvoiceId,
+              orderID AS OrderId,
+              email AS Email,
+              subject AS Subject,
+              createdAt AS CreatedAt
+            FROM Invoice
+            WHERE orderID = @orderID
+            ORDER BY invoiceID DESC
+            LIMIT 1;
+            """;
+        var row = await conn.QuerySingleOrDefaultAsync<InvoiceMetaRow>(findSql, new { orderID });
+        if (row is not null) return row;
+
+        var data = await invoices.LoadDocumentData(orderID);
+        if (data is null) return null;
+        var subject = $"Invoice for Order {orderID}";
+        await invoiceRecords.Create(orderID, owner, subject, InvoiceService.BuildTextSummary(data));
+        return await conn.QuerySingleOrDefaultAsync<InvoiceMetaRow>(findSql, new { orderID });
     }
 
     private sealed class InvoiceMetaRow
